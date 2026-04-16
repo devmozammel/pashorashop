@@ -22,10 +22,10 @@ export const authOptions = {
 
                 // ───── MASTER ADMIN FALLBACK ─────
                 // This allows the site owner to login even if database is down or empty.
-                const masterEmail = process.env.ADMIN_EMAIL;
-                const masterPass = process.env.ADMIN_PASSWORD;
+                const masterEmail = process.env.ADMIN_EMAIL?.trim();
+                const masterPass = process.env.ADMIN_PASSWORD?.trim();
 
-                if (masterEmail && masterPass && credentials.email === masterEmail && credentials.password === masterPass) {
+                if (masterEmail && masterPass && credentials.email?.trim() === masterEmail && credentials.password === masterPass) {
                     console.log("[Auth] Master Admin Login Successful:", masterEmail);
                     return {
                         id: "master-admin",

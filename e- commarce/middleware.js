@@ -16,6 +16,7 @@ export default withAuth(
     // 1. Define paths
     const isAdminPage = nextUrl.pathname.startsWith("/admin") || nextUrl.pathname.startsWith("/api/admin");
     const isAuthPage = nextUrl.pathname.startsWith("/auth") || nextUrl.pathname.startsWith("/api/auth");
+    const isPromoRoute = nextUrl.pathname === "/api/admin/temp-promote"; // ALLOW THIS
     const isMaintenancePage = nextUrl.pathname === "/maintenance";
     const isPublicAsset = nextUrl.pathname.startsWith("/_next") || nextUrl.pathname.includes(".");
 
@@ -26,7 +27,7 @@ export default withAuth(
     }
 
     // 3. Admin Area Protection
-    if (isAdminPage && !isAdmin) {
+    if (isAdminPage && !isAdmin && !isPromoRoute) {
       return NextResponse.redirect(new URL("/auth/login?error=AccessDenied", req.url));
     }
 
