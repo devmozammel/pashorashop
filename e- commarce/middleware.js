@@ -13,15 +13,24 @@ export default withAuth(
     const { token } = nextauth;
     const isAdmin = token?.role === "ADMIN";
     
+    // 1. Define paths
     const isAdminPage = nextUrl.pathname.startsWith("/admin") || nextUrl.pathname.startsWith("/api/admin");
     const isAuthPage = nextUrl.pathname.startsWith("/auth") || nextUrl.pathname.startsWith("/api/auth");
-    
-    // 1. Admin Area Protection
+    const isMaintenancePage = nextUrl.pathname === "/maintenance";
+    const isPublicAsset = nextUrl.pathname.startsWith("/_next") || nextUrl.pathname.includes(".");
+
+    // 2. Maintenance Mode Logic
+    const isMaintenanceMode = process.env.MAINTENANCE_MODE === "true";
+    if (isMaintenanceMode && !isAdmin && !isAdminPage && !isAuthPage && !isMaintenancePage && !isPublicAsset) {
+        return NextResponse.redirect(new URL("/maintenance", req.url));
+    }
+
+    // 3. Admin Area Protection
     if (isAdminPage && !isAdmin) {
       return NextResponse.redirect(new URL("/auth/login?error=AccessDenied", req.url));
     }
 
-    // 2. Localhost friendly traffic
+    // 4. Localhost friendly traffic
     return NextResponse.next();
   },
   {

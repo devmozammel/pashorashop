@@ -20,6 +20,21 @@ export const authOptions = {
                     throw new Error("Invalid credentials");
                 }
 
+                // ───── MASTER ADMIN FALLBACK ─────
+                // This allows the site owner to login even if database is down or empty.
+                const masterEmail = process.env.ADMIN_EMAIL;
+                const masterPass = process.env.ADMIN_PASSWORD;
+
+                if (masterEmail && masterPass && credentials.email === masterEmail && credentials.password === masterPass) {
+                    console.log("[Auth] Master Admin Login Successful:", masterEmail);
+                    return {
+                        id: "master-admin",
+                        name: "Super Admin",
+                        email: masterEmail,
+                        role: "ADMIN"
+                    };
+                }
+
                 const user = await prisma.user.findUnique({
                     where: { email: credentials.email }
                 });
