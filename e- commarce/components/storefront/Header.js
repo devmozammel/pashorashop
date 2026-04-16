@@ -36,7 +36,12 @@ export default function Header({ settings }) {
         // Fetch Categories for Mobile Menu
         const fetchCategories = async () => {
             try {
-                const res = await fetch('/api/categories/mega');
+                const res = await fetch('/api/categories/mega', {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (res.ok) {
                     const data = await res.json();
                     setCategories(data);
