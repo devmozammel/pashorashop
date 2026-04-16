@@ -1,0 +1,538 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("USER") // USER, ADMIN
+  password      String?   // For credentials provider
+  phone         String?
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]
+  addresses     Address[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  shortDesc     String?  @db.Text
+  description   String?  @db.Text
+  price         Int      // Int
+  salePrice     Int?     // Int
+  discountPrice Int?     // Int
+  costPrice     Int?     // For profit calc
+  sku           String?
+  stock         Int      @default(0)
+  images        Json?    // Legacy JSON images
+  
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  
+  isActive      Boolean   @default(true)
+  isFeatured    Boolean   @default(false)
+  isNewArrival  Boolean   @default(false)
+  isFlashSale   Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orderItems    OrderItem[]
+  variants      ProductVariant[]
+  productImages ProductImage[]
+  landingPages  LandingPageProduct[]
+}
+
+model ProductVariant {
+  id              String  @id @default(cuid())
+  productId       String
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  size            String?
+  color           String?
+  stock           Int     @default(0)
+  priceAdjustment Int?    @default(0) // Int
+  price           Int?    // Optional override
+  sku             String?
+  isActive        Boolean @default(true) // For disabling a variant
+  
+  images          ProductImage[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([productId, size, color])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+
+  sortOrder Int     @default(0)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  color     String? // Optional mapping
+  
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  image          String?
+  parentId       String?
+  parent         Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children       Category[] @relation("CategoryToCategory")
+  products       Product[]
+  isActive       Boolean    @default(true)
+  showInMegaMenu Boolean    @default(true)
+  showInTopbar   Boolean    @default(false)
+  showOnHomepage Boolean    @default(false) // Was showInHomepage
+  sortOrder      Int        @default(0)
+  
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Order {
+  id              String    @id @default(cuid())
+  orderNumber     String    @unique // Readable ID e.g. ORD-123456
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  
+  customerName    String
+  phone           String
+  address         String
+  city            String?
+  
+  items           OrderItem[]
+  
+  subtotal        Int       // Int
+  discount        Int       @default(0)
+  deliveryFee     Int       @default(0) // Int
+  deliveryArea    String?   // "INSIDE_DHAKA", "OUTSIDE_DHAKA"
+  total           Int       // Int
+  
+  couponCode      String?
+  
+  status          String    @default("PENDING") // PENDING, CONFIRMED, PACKED, SHIPPED, DELIVERED, CANCELLED
+  paymentMethod   String    @default("COD")   // COD, ONLINE
+  paymentStatus   String    @default("PENDING") // PAID, PENDING, FAILED
+  
+  shippingAddress Json?     // Legacy snapshot backup
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  history         OrderStatusHistory[]
+  returnRequest   ReturnRequest?
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  variantId String? // If variant selected
+  name      String
+  quantity  Int
+  unitPrice Int     // Store snapshot price (Int)
+  total     Int     // quantity * unitPrice (Int)
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model ReturnRequest {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  userId    String?
+  reason    String
+  status    String   @default("REQUESTED") // REQUESTED, APPROVED, REJECTED, REFUNDED
+  adminNote String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  street    String
+  city      String
+  area      String?
+  isDefault Boolean @default(false)
+}
+
+model SiteSetting {
+  id        String   @id @default("default") // Fixed ID
+  
+  siteName  String   @default("Fashion House")
+  supportEmail String?
+  supportPhone String?
+  currencySymbol String @default("৳")
+  
+  insideDhakaFee  Int    @default(70)
+  outsideDhakaFee Int    @default(130)
+  freeShippingThreshold Int @default(0)
+  
+  // Announcement
+  showAnnouncement Boolean @default(true)
+  announcementText String  @default("")
+  
+  // Hero
+  showHero Boolean @default(true)
+  heroTitle String @default("New Collection")
+  heroDescription String @default("Discover the latest trends.")
+  heroButtonText String @default("Shop Now")
+  heroButtonLink String @default("/shop")
+  heroImageUrl String?
+  
+  // Home Sections
+  showFeatured Boolean @default(true)
+  showNewArrivals Boolean @default(true)
+  showCategoryGrid Boolean @default(true)
+  showFlashSale Boolean @default(false)
+  showBestSellers Boolean @default(false)
+  
+  // Feature Toggles
+  enableCoupons Boolean @default(true)
+  enableReturns Boolean @default(true)
+  enableWishlist Boolean @default(true)
+  enableReviews Boolean @default(true)
+  enableOnlinePayment Boolean @default(false)
+  enableCOD Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LandingPage {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  
+  heroTitle String?
+  heroDescription   String?
+  heroBtn   String?
+  heroLink  String?
+  heroImageUrl String?
+  ctaText   String? @default("Buy Now")
+  
+  countdownEnd DateTime?
+  discountCode String?
+  showTestimonials Boolean @default(false)
+  
+  products LandingPageProduct[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LandingPageProduct {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+  sortOrder     Int         @default(0)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // NEW_ORDER, LOW_STOCK, RETURN_REQUEST
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  discount  Int      // Value (Percentage or Fixed)
+  type      String   @default("PERCENTAGE") // PERCENTAGE, FIXED
+  minOrder  Int?     @default(0)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  usageLimit Int?
+  usedCount Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("USER") // USER, ADMIN
+  password      String?   // For credentials provider
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]
+  addresses     Address[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String?  @db.Text
+  price         Int      // Int
+  salePrice     Int?     // Int
+  discountPrice Int?     // Int
+  stock         Int      @default(0)
+  images        Json?    // Legacy JSON images
+  
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  
+  isFeatured    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orderItems    OrderItem[]
+  variants      ProductVariant[]
+  productImages ProductImage[]
+}
+
+model ProductVariant {
+  id              String  @id @default(cuid())
+  productId       String
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  size            String?
+  color           String?
+  stock           Int     @default(0)
+
+  priceAdjustment Int?    @default(0) // Int
+  price           Int?    // Optional override currency
+  images          ProductImage[]
+
+  @@unique([productId, size, color])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+
+  sortOrder Int     @default(0)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  color     String?
+}
+
+model Category {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  image          String?
+  parentId       String?
+  parent         Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children       Category[] @relation("CategoryToCategory")
+  products       Product[]
+  isActive       Boolean    @default(true)
+  showInMegaMenu Boolean    @default(false)
+  showInTopbar   Boolean    @default(false)
+  showInHomepage Boolean    @default(true)
+  sortOrder      Int        @default(0)
+}
+
+model Order {
+  id              String    @id @default(cuid())
+  orderNumber     String    @unique // Readable ID e.g. ORD-123456
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  
+  items           OrderItem[]
+  
+  total           Int       // Int
+  subtotal        Int       // Int
+  deliveryFee     Int       @default(0) // Int
+  deliveryArea    String?   // "inside", "outside"
+  
+  status          String    @default("PENDING") // PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+  paymentMethod   String    @default("COD")   // COD, ONLINE
+  paymentStatus   String    @default("PENDING") // PAID, PENDING, FAILED
+  
+  shippingAddress Json      // Store full address snapshot
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  history         OrderStatusHistory[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  variantId String? // If variant selected
+  name      String
+  quantity  Int
+  unitPrice Int     // Store snapshot price (Int)
+  total     Int     // quantity * unitPrice (Int)
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  street    String
+  city      String
+  area      String?
+  isDefault Boolean @default(false)
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LandingPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  heroTitle String?
+  heroSub   String?
+  heroBtn   String?
+  heroLink  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Coupon {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  discount  Int      // Value (Percentage or Fixed)
+  type      String   @default("PERCENTAGE") // PERCENTAGE, FIXED
+  minOrder  Int      @default(0)
+  usageLimit Int?
+  usedCount Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

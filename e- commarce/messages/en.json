@@ -1,0 +1,19 @@
+{
+    "HomePage": {
+        "title": "Fashion House",
+        "hero": {
+            "title": "New Arrivals",
+            "subtitle": "Check out the latest trends"
+        }
+    },
+    "Product": {
+        "addToCart": "Add to Cart",
+        "buyNow": "Buy Now",
+        "outOfStock": "Out of Stock"
+    },
+    "Common": {
+        "search": "Search...",
+        "login": "Login",
+        "logout": "Logout"
+    }
+}

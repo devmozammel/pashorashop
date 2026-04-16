@@ -1,0 +1,43 @@
+# dependencies
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+.next/
+**/ .next/
+out/
+
+# production
+build/
+
+# misc
+.DS_Store
+*.pem
+*.zip
+*.rar
+*.7z
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.env
+
+# vercel & cpanel backups
+.vercel
+CPANEL_READY/
+DEPLOY_TO_CPANEL/
+DEPLOY_TO_CPANEL*
+PRISMA_FIX.zip
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
