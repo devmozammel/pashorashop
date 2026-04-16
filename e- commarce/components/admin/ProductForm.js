@@ -6,10 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Loader2, Plus, Trash, X, Zap, UploadCloud, Image as ImageIcon, Box, Tag, Layers, DollarSign } from "lucide-react";
 import { sanitizeImageUrls } from "@/lib/productImages";
 import ImageUpload from "@/components/admin/ui/ImageUpload";
-import dynamic from "next/dynamic";
-import "react-quill-new/dist/quill.snow.css";
-
-const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+import RichTextEditor from "@/components/admin/ui/RichTextEditor";
 
 export default function ProductForm({ initialData, categories }) {
     const router = useRouter();
@@ -305,16 +302,13 @@ export default function ProductForm({ initialData, categories }) {
                                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all"
                                 />
                             </div>
-                            <div>
+                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description (Rich Text)</label>
-                                <div className="bg-white rounded-xl overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-500 transition-all [&_.ql-toolbar]:border-none [&_.ql-toolbar]:bg-gray-50/50 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-container]:border-none [&_.ql-editor]:min-h-[150px] [&_.ql-editor]:text-gray-700">
-                                    <ReactQuill
-                                        theme="snow"
-                                        value={formData.description || ""}
-                                        onChange={(val) => setFormData(prev => ({ ...prev, description: val }))}
-                                        placeholder="Describe the product details, materials, and benefits..."
-                                    />
-                                </div>
+                                <RichTextEditor
+                                    value={formData.description || ""}
+                                    onChange={(val) => setFormData(prev => ({ ...prev, description: val }))}
+                                    placeholder="Describe the product details, materials, and benefits..."
+                                />
                             </div>
                         </div>
                     </div>
