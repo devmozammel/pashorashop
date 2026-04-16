@@ -50,8 +50,8 @@ export default function ForgotPasswordPage() {
                 </div>
                 <div className="space-y-2">
                     <h2 className="text-3xl font-black text-white tracking-tight">Check Your Inbox</h2>
-                    <p className="text-neutral-500 text-sm font-medium px-4">
-                        একটি পাসওয়ার্ড রিসেট লিঙ্ক <strong>{email}</strong> ঠিকানায় পাঠানো হয়েছে। দয়া করে ইনবক্স বা স্প্যাম ফোল্ডার চেক করুন।
+                    <p className="text-neutral-500 text-sm font-medium px-4 leading-relaxed">
+                        একটি পাসওয়ার্ড রিসেট লিঙ্ক <strong>{email}</strong> ঠিকানায় পাঠানো হয়েছে। দয়া করে আপনার ইনবক্স অথবা <span className="text-white font-bold underline">SPAM / Junk</span> ফোল্ডার চেক করুন।
                     </p>
                 </div>
                 <Link

@@ -53,11 +53,19 @@ export async function POST(req) {
             },
         });
 
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://authenticbazar.com";
+        const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://authenticbazar.com").replace(/\/$/, "");
         const resetUrl = `${siteUrl}/auth/reset-password?token=${unhashedToken}`;
 
         // Send Email using unified utility
-        await sendPasswordResetEmail({ user, resetUrl });
+        try {
+            await sendPasswordResetEmail({ user, resetUrl });
+        } catch (emailError) {
+            console.error("[Email] Critical failure in forgot-password flow:", emailError.message);
+            return NextResponse.json(
+                { error: "ইমেইল পাঠাতে সমস্যা হয়েছে। দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।" },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({
             success: true,
