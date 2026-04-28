@@ -18,6 +18,7 @@ export default function CheckoutPage() {
     const { items, getCartTotal, clearCart, updateQuantity, removeItem } = useCartStore();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [isRedirecting, setIsRedirecting] = useState(false);
     const [error, setError] = useState("");
     const [settings, setSettings] = useState({ shipping_fee_inside: "60", shipping_fee_outside: "120" });
     // Zustand persist hydration guard — prevents false "empty cart" on page refresh
@@ -101,7 +102,7 @@ export default function CheckoutPage() {
         );
     }
 
-    if (items.length === 0) {
+    if (items.length === 0 && !isRedirecting) {
         return (
             <div className="container mx-auto px-4 py-20 text-center">
                 <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
@@ -177,11 +178,8 @@ export default function CheckoutPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // If guest, redirect to register page instead of checkout
-        if (isGuest) {
-            router.push("/auth/register?callbackUrl=/checkout");
-            return;
-        }
+        // Guest checkout is allowed, so we don't redirect to register anymore.
+        // The backend handles confirmedUserId as null for guests.
 
         setLoading(true);
         setError("");
@@ -205,12 +203,19 @@ export default function CheckoutPage() {
             if (!res.ok) throw new Error(data.error || "Checkout failed");
 
             // Success
-            clearCart();
-            // Clear coupon state too
+            // For COD, we clear the cart immediately. 
+            // For Online/Card, we keep it until they reach the success page 
+            // (in case they cancel or come back).
+            if (!data.paymentUrl) {
+                clearCart();
+            }
+
+            // Clear local coupon state
             setAppliedCoupon(null);
             setCouponCode("");
 
             if (data.paymentUrl) {
+                setIsRedirecting(true);
                 window.location.href = data.paymentUrl;
             } else {
                 router.push(`/order-success/${data.orderId}`);

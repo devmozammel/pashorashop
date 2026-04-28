@@ -6,7 +6,17 @@ import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import ConfettiEffect from "./ConfettiEffect";
 
+import { useEffect } from "react";
+import { useCartStore } from "@/lib/store/cart";
+
 export default function OrderSuccessDisplay({ order }) {
+    const clearCart = useCartStore(state => state.clearCart);
+
+    useEffect(() => {
+        // Clear cart when success page is reached
+        clearCart();
+    }, [clearCart]);
+
     const containerVariants = {
         hidden: { opacity: 0, y: 30 },
         visible: {

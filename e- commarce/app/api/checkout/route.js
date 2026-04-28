@@ -76,6 +76,17 @@ export async function POST(req) {
         // For now, trust the UI sent cost OR strictly enforce. 
         // Let's rely on server calculation if possible, or just accept for now but validate broadly.
 
+        // --- 🔒 ATOMIC USER VERIFICATION ---
+        let confirmedUserId = null;
+        if (session?.user?.id && session.user.id !== "master-admin") {
+            const userExists = await prisma.user.findUnique({ 
+                where: { id: session.user.id },
+                select: { id: true } 
+            });
+            if (userExists) confirmedUserId = userExists.id;
+        }
+        // -----------------------------------
+
         const order = await prisma.$transaction(async (tx) => {
             let calculatedSubtotal = 0;
             let totalAffiliateCommission = 0;
@@ -83,16 +94,8 @@ export async function POST(req) {
             const orderItemsData = [];
             const stockUpdates = [];
 
-            // --- 🔒 ATOMIC USER VERIFICATION ---
-            let confirmedUserId = null;
-            if (session?.user?.id && session.user.id !== "master-admin") {
-                const userExists = await tx.user.findUnique({ 
-                    where: { id: session.user.id },
-                    select: { id: true } 
-                });
-                if (userExists) confirmedUserId = userExists.id;
-            }
-            // -----------------------------------
+            // Use the already confirmed userId within the transaction if needed, 
+            // though it's already verified outside.
 
             // 1. Calculate Subtotal & Validate Stock
             for (const item of items) {

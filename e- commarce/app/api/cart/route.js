@@ -20,7 +20,7 @@ export async function GET(req) {
                         product: {
                             select: { id: true, name: true, price: true, salePrice: true, slug: true, images: true }
                         },
-                        productVariant: {
+                        variant: {
                             select: { id: true, size: true, color: true, priceAdjustment: true, stock: true }
                         }
                     }
@@ -37,12 +37,13 @@ export async function GET(req) {
             variantId: item.variantId,
             quantity: item.quantity,
             product: item.product,
-            variant: item.productVariant
+            variant: item.variant
         }));
 
         return NextResponse.json({ items });
 
     } catch (error) {
+        console.error("Cart API Error:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

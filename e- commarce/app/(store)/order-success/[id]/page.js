@@ -6,8 +6,6 @@ import OrderSuccessDisplay from "@/components/storefront/OrderSuccessDisplay";
 
 export default async function OrderSuccessPage(props) {
     const session = await getServerSession(authOptions);
-    if (!session) redirect("/auth/login");
-
     const params = await props.params;
     const { id } = params;
 
@@ -17,8 +15,9 @@ export default async function OrderSuccessPage(props) {
 
     if (!order) notFound();
 
-    // Ensure user only sees their own order
-    if (order.userId !== session.user.id) {
+    // If order has a userId, and we have a session, ensure they match.
+    // If it's a guest order (userId: null), anyone with the ID can view (minimal security risk for success page).
+    if (order.userId && session?.user?.id && order.userId !== session.user.id) {
         redirect("/");
     }
 
