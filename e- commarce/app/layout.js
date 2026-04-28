@@ -9,6 +9,8 @@ import AffiliateTracker from "@/components/analytics/AffiliateTracker";
 import WhatsAppButton from "@/components/storefront/WhatsAppButton";
 import Script from "next/script";
 import { Suspense } from "react";
+import NextTopLoader from "nextjs-toploader";
+import ScrollToTop from "@/components/ui/ScrollToTop";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -85,6 +87,7 @@ export default function RootLayout({ children }) {
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={inter.className} suppressHydrationWarning>
+                <NextTopLoader color="#000000" height={3} showSpinner={false} shadow="0 0 10px #000000,0 0 5px #000000" />
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
@@ -127,6 +130,7 @@ export default function RootLayout({ children }) {
 
                     {/* User Engagement Utilities */}
                     <WhatsAppButton />
+                    <ScrollToTop />
 
                     <Toaster position="top-right" richColors />
                 </AuthProvider>

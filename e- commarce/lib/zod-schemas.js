@@ -43,16 +43,16 @@ export const homepageConfigSchema = z.object({
     heroSubtitle: z.string().nullable(),
     heroButtonText: z.string().nullable(),
     heroButtonLink: z.string().nullable(),
-    heroImageUrl: z.string().nullable(),
+    heroImageUrl: z.string().nullable().optional(),
     heroProductTitle: z.string().nullable().optional(),
     heroProductPrice: z.string().nullable().optional(),
     heroProductImage: z.string().nullable().optional(),
     heroProductLink: z.string().nullable().optional(),
     heroTheme: z.string().nullable().optional(),
-    showFeatured: z.boolean(),
-    showNewArrivals: z.boolean(),
-    showTopSelling: z.boolean(),
-    showFlashSale: z.boolean(),
+    showFeatured: z.boolean().default(true),
+    showNewArrivals: z.boolean().default(true),
+    showTopSelling: z.boolean().default(true),
+    showFlashSale: z.boolean().default(true),
 });
 
 // --- Order Status ---

@@ -2,7 +2,7 @@
 
 import { useCartStore } from "@/lib/store/cart";
 import { X, Minus, Plus, ShoppingBag, Truck, CreditCard } from "lucide-react";
-import Image from "next/image";
+import SafeImage from "@/components/ui/SafeImage";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
@@ -34,13 +34,13 @@ export default function CartDrawer() {
             {/* Backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-50 transition-opacity backdrop-blur-sm"
+                    className="fixed inset-0 bg-black/50 z-[100] transition-opacity backdrop-blur-sm"
                     onClick={closeDrawer}
                 />
             )}
 
             {/* Drawer */}
-            <div className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[400px] bg-background shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
+            <div className={`fixed inset-y-0 right-0 z-[110] w-full sm:w-[400px] bg-background shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
 
                 {/* Header */}
                 <div className="p-4 border-b flex items-center justify-between bg-white z-10">
@@ -88,7 +88,7 @@ export default function CartDrawer() {
                             <div key={item.uniqueKey} className="flex gap-4 p-2 hover:bg-gray-50 rounded-lg transition-colors group">
                                 <div className="relative w-20 h-20 rounded-md overflow-hidden bg-gray-100 shrink-0 border">
                                     {item.product.images?.[0] ? (
-                                        <Image src={item.product.images[0]} alt={item.product.name} fill className="object-cover" />
+                                        <SafeImage src={item.product.images[0]} alt={item.product.name} fill className="object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No Image</div>
                                     )}

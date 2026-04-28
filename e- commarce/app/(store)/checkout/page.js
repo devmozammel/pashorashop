@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useCartStore } from "@/lib/store/cart";
 import { formatPrice } from "@/lib/utils";
@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner"; // Assuming sonner is used, or alert
+import { toast } from "sonner";
 import TrustBadges from "@/components/storefront/TrustBadges";
+import { MapPin, Truck, Banknote, Smartphone, CreditCard } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,11 @@ export default function CheckoutPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [settings, setSettings] = useState({ shipping_fee_inside: "70", shipping_fee_outside: "130" });
+    const [settings, setSettings] = useState({ shipping_fee_inside: "60", shipping_fee_outside: "120" });
+    // Zustand persist hydration guard — prevents false "empty cart" on page refresh
+    const [hasHydrated, setHasHydrated] = useState(
+        () => useCartStore.persist?.hasHydrated?.() ?? false
+    );
 
     // Coupon State
     const [couponCode, setCouponCode] = useState("");
@@ -53,16 +58,13 @@ export default function CheckoutPage() {
         } catch (e) {
             console.error(e);
         }
+
+        // Mark as hydrated after first render — Zustand has loaded from localStorage by now
+        setHasHydrated(true);
     }, []);
 
     const { data: session, status: sessionStatus } = useSession();
-    
-    // Auth Guard: Redirect to login if not authenticated
-    useEffect(() => {
-        if (sessionStatus === "unauthenticated") {
-            router.replace("/auth/login?callbackUrl=/checkout");
-        }
-    }, [sessionStatus, router]);
+    const isGuest = sessionStatus === "unauthenticated";
 
     const userData = session?.user;
 
@@ -89,6 +91,16 @@ export default function CheckoutPage() {
         shippingArea: "inside"
     });
 
+    // Wait for Zustand to hydrate from localStorage before checking empty cart
+    if (!hasHydrated) {
+        return (
+            <div className="container mx-auto px-4 py-20 flex flex-col items-center justify-center gap-4">
+                <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-gray-500">Loading your cart...</p>
+            </div>
+        );
+    }
+
     if (items.length === 0) {
         return (
             <div className="container mx-auto px-4 py-20 text-center">
@@ -99,13 +111,18 @@ export default function CheckoutPage() {
     }
 
     const shippingCost = formData.shippingArea === "inside"
-        ? (Number(settings.shipping_fee_inside) || 70)
-        : (Number(settings.shipping_fee_outside) || 130);
+        ? (Number(settings.shipping_fee_inside) || 60)
+        : (Number(settings.shipping_fee_outside) || 120);
 
     // Recalculate totals
     const subtotal = getCartTotal();
     const discount = appliedCoupon ? appliedCoupon.discountAmount : 0;
     const total = subtotal - discount + shippingCost;
+
+    // Pre-order logic
+    const preOrderItems = items.filter(i => i.product.isPreOrder);
+    const advanceAmount = preOrderItems.reduce((acc, i) => acc + (100 * i.quantity), 0);
+    const requiresAdvance = advanceAmount > 0;
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -159,6 +176,13 @@ export default function CheckoutPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // If guest, redirect to register page instead of checkout
+        if (isGuest) {
+            router.push("/auth/register?callbackUrl=/checkout");
+            return;
+        }
+
         setLoading(true);
         setError("");
 
@@ -202,7 +226,20 @@ export default function CheckoutPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Page Header */}
+            {/* Guest Prompt Banner */}
+            {isGuest && (
+                <div className="container mx-auto px-4 pt-4">
+                    <div className="flex items-center justify-between gap-4 bg-black text-white rounded-2xl px-5 py-4">
+                        <div>
+                            <p className="font-bold text-sm">দ্রুত অর্ডার করতে অ্যাকাউন্ট খুলুন!</p>
+                            <p className="text-gray-400 text-xs mt-0.5">অর্ডার ট্র্যাক করুন, হিস্ট্রি দেখুন এবং আরও সুবিধা পান।</p>
+                        </div>
+                        <Link href="/auth/register?callbackUrl=/checkout" className="shrink-0 bg-white text-black text-xs font-black px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors">
+                            অ্যাকাউন্ট খুলুন
+                        </Link>
+                    </div>
+                </div>
+            )}
             <div className="bg-white border-b">
                 <div className="container mx-auto px-4 py-5 flex items-center justify-between">
                     <h1 className="text-2xl font-bold tracking-tight">Checkout</h1>
@@ -292,17 +329,73 @@ export default function CheckoutPage() {
                                         />
                                     </div>
 
-                                    <div className="space-y-1.5">
+                                    <div className="space-y-1.5 md:col-span-2">
                                         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Shipping Area</label>
-                                        <select
-                                            name="shippingArea"
-                                            value={formData.shippingArea}
-                                            onChange={handleChange}
-                                            className="w-full h-11 px-3.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black transition-all bg-gray-50 focus:bg-white appearance-none cursor-pointer"
-                                        >
-                                            <option value="inside">Inside Dhaka — {Number(settings.shipping_fee_inside) || 70} BDT</option>
-                                            <option value="outside">Outside Dhaka — {Number(settings.shipping_fee_outside) || 130} BDT</option>
-                                        </select>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {/* Inside Dhaka Card */}
+                                            <label
+                                                className={`relative flex items-center gap-3 p-3.5 border-2 rounded-xl cursor-pointer transition-all ${
+                                                    formData.shippingArea === "inside"
+                                                        ? "border-black bg-black text-white shadow-md"
+                                                        : "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+                                                }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="shippingArea"
+                                                    value="inside"
+                                                    checked={formData.shippingArea === "inside"}
+                                                    onChange={handleChange}
+                                                    className="sr-only"
+                                                />
+                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${formData.shippingArea === "inside" ? "bg-white/20" : "bg-gray-100"}`}>
+                                                    <MapPin className={`w-5 h-5 ${formData.shippingArea === "inside" ? "text-white" : "text-gray-500"}`} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold leading-tight">Inside Dhaka</p>
+                                                    <p className={`text-xs font-semibold mt-0.5 ${formData.shippingArea === "inside" ? "text-gray-300" : "text-gray-400"}`}>
+                                                        ৳{Number(settings.shipping_fee_inside) || 60}
+                                                    </p>
+                                                </div>
+                                                {formData.shippingArea === "inside" && (
+                                                    <div className="absolute top-2 right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                                                        <div className="w-2 h-2 bg-black rounded-full" />
+                                                    </div>
+                                                )}
+                                            </label>
+
+                                            {/* Outside Dhaka Card */}
+                                            <label
+                                                className={`relative flex items-center gap-3 p-3.5 border-2 rounded-xl cursor-pointer transition-all ${
+                                                    formData.shippingArea === "outside"
+                                                        ? "border-black bg-black text-white shadow-md"
+                                                        : "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+                                                }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="shippingArea"
+                                                    value="outside"
+                                                    checked={formData.shippingArea === "outside"}
+                                                    onChange={handleChange}
+                                                    className="sr-only"
+                                                />
+                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${formData.shippingArea === "outside" ? "bg-white/20" : "bg-gray-100"}`}>
+                                                    <Truck className={`w-5 h-5 ${formData.shippingArea === "outside" ? "text-white" : "text-gray-500"}`} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold leading-tight">Outside Dhaka</p>
+                                                    <p className={`text-xs font-semibold mt-0.5 ${formData.shippingArea === "outside" ? "text-gray-300" : "text-gray-400"}`}>
+                                                        ৳{Number(settings.shipping_fee_outside) || 120}
+                                                    </p>
+                                                </div>
+                                                {formData.shippingArea === "outside" && (
+                                                    <div className="absolute top-2 right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                                                        <div className="w-2 h-2 bg-black rounded-full" />
+                                                    </div>
+                                                )}
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </form>
@@ -315,73 +408,81 @@ export default function CheckoutPage() {
                                 <h2 className="text-lg font-bold">Payment Method</h2>
                             </div>
                             <div className="space-y-3">
-                                <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${formData.paymentMethod === "COD" ? "border-black bg-black/[0.03]" : "border-gray-200 hover:border-gray-300"}`}>
-                                    <input
-                                        type="radio"
-                                        name="paymentMethod"
-                                        value="COD"
-                                        form="checkout-form"
-                                        checked={formData.paymentMethod === "COD"}
-                                        onChange={handleChange}
-                                        className="accent-black w-4 h-4"
-                                    />
-                                    <div className="flex items-center gap-3 flex-1">
-                                        <span className="text-2xl">💵</span>
-                                        <div>
-                                            <p className="font-semibold text-sm">Cash on Delivery</p>
-                                            <p className="text-xs text-gray-500">Pay when your order arrives</p>
-                                        </div>
+                                {/* COD */}
+                                <label className={`relative flex items-center gap-3.5 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                                    formData.paymentMethod === "COD" ? "border-black bg-black text-white shadow-md" : "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+                                }`}>
+                                    <input type="radio" name="paymentMethod" value="COD" form="checkout-form" checked={formData.paymentMethod === "COD"} onChange={handleChange} className="sr-only" />
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${formData.paymentMethod === "COD" ? "bg-white/20" : "bg-gray-100"}`}>
+                                        <Banknote className={`w-5 h-5 ${formData.paymentMethod === "COD" ? "text-white" : "text-gray-500"}`} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-sm">Cash on Delivery</p>
+                                        <p className={`text-xs mt-0.5 ${formData.paymentMethod === "COD" ? "text-gray-300" : "text-gray-400"}`}>অর্ডার পৌঁছানোর পর পেমেন্ট</p>
                                     </div>
                                     {formData.paymentMethod === "COD" && (
-                                        <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded-full">Selected</span>
+                                        <div className="absolute top-2 right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                                            <div className="w-2 h-2 bg-black rounded-full" />
+                                        </div>
                                     )}
                                 </label>
 
-                                <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${formData.paymentMethod === "ONLINE" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
-                                    <input
-                                        type="radio"
-                                        name="paymentMethod"
-                                        value="ONLINE"
-                                        form="checkout-form"
-                                        checked={formData.paymentMethod === "ONLINE"}
-                                        onChange={handleChange}
-                                        className="accent-blue-600 w-4 h-4"
-                                    />
-                                    <div className="flex items-center gap-3 flex-1">
-                                        <span className="text-2xl">📱</span>
-                                        <div>
-                                            <p className="font-semibold text-sm">Mobile Banking</p>
-                                            <p className="text-xs text-gray-500">bKash · Nagad · Rocket</p>
-                                        </div>
+                                {/* Mobile Banking */}
+                                <label className={`relative flex items-center gap-3.5 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                                    formData.paymentMethod === "ONLINE" ? "border-black bg-black text-white shadow-md" : "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+                                }`}>
+                                    <input type="radio" name="paymentMethod" value="ONLINE" form="checkout-form" checked={formData.paymentMethod === "ONLINE"} onChange={handleChange} className="sr-only" />
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${formData.paymentMethod === "ONLINE" ? "bg-white/20" : "bg-gray-100"}`}>
+                                        <Smartphone className={`w-5 h-5 ${formData.paymentMethod === "ONLINE" ? "text-white" : "text-gray-500"}`} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-sm">Mobile Banking</p>
+                                        <p className={`text-xs mt-0.5 ${formData.paymentMethod === "ONLINE" ? "text-gray-300" : "text-gray-400"}`}>bKash · Nagad · Rocket</p>
                                     </div>
                                     {formData.paymentMethod === "ONLINE" && (
-                                        <span className="text-xs font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full">Selected</span>
+                                        <div className="absolute top-2 right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                                            <div className="w-2 h-2 bg-black rounded-full" />
+                                        </div>
                                     )}
                                 </label>
 
-                                <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${formData.paymentMethod === "CARD" ? "border-violet-600 bg-violet-50" : "border-gray-200 hover:border-gray-300"}`}>
-                                    <input
-                                        type="radio"
-                                        name="paymentMethod"
-                                        value="CARD"
-                                        form="checkout-form"
-                                        checked={formData.paymentMethod === "CARD"}
-                                        onChange={handleChange}
-                                        className="accent-violet-600 w-4 h-4"
-                                    />
-                                    <div className="flex items-center gap-3 flex-1">
-                                        <span className="text-2xl">💳</span>
-                                        <div>
-                                            <p className="font-semibold text-sm">Card Payment</p>
-                                            <p className="text-xs text-gray-500">Visa · MasterCard · Amex</p>
-                                        </div>
+                                {/* Card */}
+                                <label className={`relative flex items-center gap-3.5 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                                    formData.paymentMethod === "CARD" ? "border-black bg-black text-white shadow-md" : "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+                                }`}>
+                                    <input type="radio" name="paymentMethod" value="CARD" form="checkout-form" checked={formData.paymentMethod === "CARD"} onChange={handleChange} className="sr-only" />
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${formData.paymentMethod === "CARD" ? "bg-white/20" : "bg-gray-100"}`}>
+                                        <CreditCard className={`w-5 h-5 ${formData.paymentMethod === "CARD" ? "text-white" : "text-gray-500"}`} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-sm">Card Payment</p>
+                                        <p className={`text-xs mt-0.5 ${formData.paymentMethod === "CARD" ? "text-gray-300" : "text-gray-400"}`}>Visa · MasterCard · Amex</p>
                                     </div>
                                     {formData.paymentMethod === "CARD" && (
-                                        <span className="text-xs font-bold bg-violet-600 text-white px-2 py-0.5 rounded-full">Selected</span>
+                                        <div className="absolute top-2 right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                                            <div className="w-2 h-2 bg-black rounded-full" />
+                                        </div>
                                     )}
                                 </label>
-
                             </div>
+
+
+                            {requiresAdvance && formData.paymentMethod === "COD" && (
+                                <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                                    <div className="flex gap-3">
+                                        <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center shrink-0">
+                                            <span className="text-lg">ℹ️</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-orange-900">Advance Payment Required</p>
+                                            <p className="text-xs text-orange-700 mt-1 leading-relaxed">
+                                                Your cart contains pre-order items. You need to pay <span className="font-bold">{formatPrice(advanceAmount)}</span> in advance to confirm your order. 
+                                                The remaining <span className="font-bold">{formatPrice(total - advanceAmount)}</span> will be paid on delivery.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {error && (
                                 <div className="mt-4 bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
@@ -390,15 +491,6 @@ export default function CheckoutPage() {
                             )}
                         </div>
 
-                        {/* Mobile: Place Order button */}
-                        <button
-                            type="submit"
-                            form="checkout-form"
-                            disabled={loading}
-                            className="lg:hidden w-full h-14 bg-black text-white font-bold text-base rounded-xl hover:bg-gray-900 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-lg"
-                        >
-                            {loading ? "Processing..." : `Place Order — ${formatPrice(total)}`}
-                        </button>
                     </div>
 
                     {/* ── RIGHT: ORDER SUMMARY ── */}
@@ -464,6 +556,12 @@ export default function CheckoutPage() {
                                                     className="text-[10px] text-red-400 hover:text-red-600 mt-1 transition-colors">
                                                     Remove
                                                 </button>
+                                                
+                                                {item.product.isPreOrder && (
+                                                    <div className="mt-2 text-[9px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100 inline-block uppercase">
+                                                        Pre-Order (৳100 Advance)
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -516,6 +614,19 @@ export default function CheckoutPage() {
                                     <span>Total</span>
                                     <span className="text-lg">{formatPrice(total)}</span>
                                 </div>
+
+                                {requiresAdvance && formData.paymentMethod === "COD" && (
+                                    <div className="pt-2 space-y-1">
+                                        <div className="flex justify-between text-sm text-orange-600 font-bold">
+                                            <span>Pay Now (Advance)</span>
+                                            <span>{formatPrice(advanceAmount)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-[11px] text-gray-500 italic">
+                                            <span>Pay on Delivery</span>
+                                            <span>{formatPrice(total - advanceAmount)}</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Desktop: Place Order */}
@@ -531,7 +642,11 @@ export default function CheckoutPage() {
                                             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
                                             Processing...
                                         </span>
-                                    ) : `Place Order — ${formatPrice(total)}`}
+                                    ) : (
+                                        (requiresAdvance && formData.paymentMethod === "COD")
+                                        ? `Pay Advance ${formatPrice(advanceAmount)} & Order`
+                                        : `Place Order — ${formatPrice(total)}`
+                                    )}
                                 </button>
                                 <p className="text-[11px] text-gray-400 text-center mt-3 flex items-center justify-center gap-1">
                                     🔒 Secure & encrypted checkout

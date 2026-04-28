@@ -1,58 +1,72 @@
-
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q');
+    const query = searchParams.get('q')?.trim();
 
-    if (!query || query.length < 2) {
+    if (!query || query.length < 1) {
         return NextResponse.json({ products: [], categories: [] });
     }
 
     try {
-        // Advanced Multi-word Search Logic
-        const searchTerms = query.split(' ').filter(term => term.trim().length > 0);
+        // Split into individual words for multi-word matching
+        const searchTerms = query.split(/\s+/).filter(t => t.length > 0);
 
-        // Create an array of conditions for EACH search term
-        const searchConditions = searchTerms.map(term => ({
+        // Each word must match in at least one product field
+        const wordConditions = searchTerms.map(term => ({
             OR: [
                 { name: { contains: term } },
+                { shortDesc: { contains: term } },
                 { description: { contains: term } },
-                { category: { name: { contains: term } } }
+                { sku: { contains: term } },
+                { slug: { contains: term } },
+                { category: { name: { contains: term } } },
+                { subcategoryGroup: { name: { contains: term } } },
             ]
         }));
 
-        const products = await prisma.product.findMany({
-            where: {
-                AND: searchConditions, // Must match ALL terms
-                isActive: true
-            },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                price: true,
-                discountPrice: true, // Renamed from salePrice in previous step, checking schema compatibility
-                salePrice: true, // Keeping both for safety if migration didn't fully alias
-                images: true,
-                category: { select: { name: true } }
-            },
-            take: 5
-        });
+        const [products, categories] = await Promise.all([
+            prisma.product.findMany({
+                where: {
+                    AND: [
+                        { isActive: true },
+                        ...wordConditions
+                    ]
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    price: true,
+                    salePrice: true,
+                    discountPrice: true,
+                    images: true,
+                    productImages: {
+                        orderBy: { sortOrder: 'asc' },
+                        take: 1,
+                        select: { url: true }
+                    },
+                    category: { select: { name: true, slug: true } },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 8
+            }),
 
-        const categories = await prisma.category.findMany({
-            where: {
-                name: { contains: query },
-                isActive: true
-            },
-            select: {
-                id: true,
-                name: true,
-                slug: true
-            },
-            take: 3
-        });
+            prisma.category.findMany({
+                where: {
+                    OR: [
+                        { name: { contains: query } },
+                        { slug: { contains: query } },
+                    ],
+                    isActive: true
+                },
+                select: { id: true, name: true, slug: true },
+                take: 4
+            })
+        ]);
 
         return NextResponse.json({ products, categories });
     } catch (error) {

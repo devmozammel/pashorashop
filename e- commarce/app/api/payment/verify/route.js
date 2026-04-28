@@ -14,7 +14,7 @@ export async function GET(req) {
         const baseURL = decrypt(process.env.PAYMENT_BASE_URL);
         const apiKEY = decrypt(process.env.PAYMENT_API_KEY);
 
-        const upRes = await fetch(`${baseURL}/api/verify-payment`, {
+        const upRes = await fetch(`${baseURL}/verify-payment`, {
             method: 'POST',
             headers: {
                 'RT-UDDOKTAPAY-API-KEY': apiKEY,
@@ -30,11 +30,24 @@ export async function GET(req) {
         if (data.status === "COMPLETED" && data.metadata && data.metadata.order_id) {
             const orderId = data.metadata.order_id;
 
-            // Mark order as PAID and clear abnormal flag
+            const order = await prisma.order.findUnique({
+                where: { id: orderId },
+                select: { total: true, advancePayment: true, paymentMethod: true }
+            });
+
+            if (!order) throw new Error("Order not found");
+
+            // Logic to determine if it's partial or full
+            let newStatus = "PAID";
+            if (order.paymentMethod === "COD" && order.advancePayment > 0) {
+                newStatus = "PARTIAL_PAID";
+            }
+
+            // Mark order as PAID/PARTIAL_PAID and clear abnormal flag
             await prisma.order.update({
                 where: { id: orderId },
                 data: {
-                    paymentStatus: "PAID",
+                    paymentStatus: newStatus,
                     isAbnormal: false
                 }
             });

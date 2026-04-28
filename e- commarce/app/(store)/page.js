@@ -75,21 +75,12 @@ export default async function HomePage() {
         }
     }
 
-    // 5. Fetch Categories — prefer showOnHomepage, fallback to any active
+    // 5. Fetch Categories — all active categories for homepage
     let categories = await prisma.category.findMany({
-        where: { showOnHomepage: true, isActive: true },
-        orderBy: { sortOrder: 'asc' },
-        take: 6,
+        where: { isActive: true },
+        orderBy: [{ showOnHomepage: 'desc' }, { sortOrder: 'asc' }],
+        take: 8,
     });
-
-    if (categories.length === 0) {
-        // Fallback: show first 6 active categories even if not marked showOnHomepage
-        categories = await prisma.category.findMany({
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
-            take: 6,
-        });
-    }
 
 
     return (
@@ -97,40 +88,41 @@ export default async function HomePage() {
             {/* ── HERO SECTION ── */}
             <Hero config={config} />
 
-            {/* ── MOBILE CATEGORY SCROLL ── */}
-            <section className="md:hidden pt-4 -mb-8">
-                <div className="flex overflow-x-auto gap-4 px-4 pb-4 no-scrollbar scroll-smooth">
-                    {categories.map((cat) => (
-                        <Link
-                            key={cat.id}
-                            href={`/shop?categoryId=${cat.id}`}
-                            className="flex flex-col items-center gap-2 flex-shrink-0"
-                        >
-                            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary shadow-sm">
-                                <img
-                                    src={cat.image || '/logo.png'}
-                                    alt={cat.name}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                            <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{cat.name}</span>
-                        </Link>
-                    ))}
-                </div>
-            </section>
+            {/* ── CATEGORIES — Mobile scroll + Desktop grid ── */}
+            {categories.length > 0 && (
+                <section className="container px-4">
+                    <h2 className="text-2xl font-bold tracking-tight mb-6">Shop by Category</h2>
 
+                    {/* Mobile: horizontal scroll */}
+                    <div className="flex md:hidden overflow-x-auto gap-4 pb-3 no-scrollbar scroll-smooth -mx-1 px-1">
+                        {categories.map((cat) => (
+                            <Link
+                                key={cat.id}
+                                href={`/shop?categoryId=${cat.id}`}
+                                className="flex flex-col items-center gap-1.5 flex-shrink-0 w-20"
+                            >
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-gray-50">
+                                    {cat.image ? (
+                                        <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                            <span className="text-lg font-black text-gray-400">{cat.name?.charAt(0)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-bold text-gray-700 text-center leading-tight line-clamp-1 w-full">{cat.name}</span>
+                            </Link>
+                        ))}
+                    </div>
 
-            {/* Configurable Sections */}
-
-            {/* Categories (Desktop only or Grid) */}
-            <section className="container px-4 hidden md:block">
-                <h2 className="text-2xl font-bold tracking-tight mb-8">Shop by Category</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {categories.map((cat) => (
-                        <CategoryCard key={cat.id} cat={cat} />
-                    ))}
-                </div>
-            </section>
+                    {/* Desktop: grid */}
+                    <div className="hidden md:grid grid-cols-4 lg:grid-cols-8 gap-4">
+                        {categories.map((cat) => (
+                            <CategoryCard key={cat.id} cat={cat} />
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* Featured */}
             {config?.showFeatured !== false && featuredProducts.length > 0 && (

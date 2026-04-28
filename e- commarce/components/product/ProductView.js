@@ -81,7 +81,7 @@ export default function ProductView({ product }) {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 mb-16 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 mb-16 md:mb-0 pb-28 md:pb-0 items-start">
             {/* Gallery */}
             <div>
                 <ProductImageGallery
@@ -103,7 +103,7 @@ export default function ProductView({ product }) {
             </div>
 
             {/* Mobile Sticky Actions */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t z-40 md:hidden flex items-center gap-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0,0,0,0.08)]">
+            <div className="fixed bottom-[72px] left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t z-[60] md:hidden flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.08)]">
                 <div className="flex flex-col min-w-[30%]">
                     <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Price</span>
                     <span className="font-bold text-lg text-black">
@@ -130,17 +130,10 @@ export default function ProductView({ product }) {
                         onClick={() => {
                             const { addItem } = require("@/lib/store/cart").useCartStore.getState();
                             if (product.variants && product.variants.length > 0 && !selectedVariant) {
+                                toast.info("প্রথমে Size/Color সিলেক্ট করুন");
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                 return;
                             }
-
-                            // Auth Guard: Check session before proceeding to checkout
-                            if (!session) {
-                                toast.error("Please login to complete your purchase");
-                                router.push("/auth/login?callbackUrl=/checkout");
-                                return;
-                            }
-
                             addItem(product, selectedVariant, 1);
                             router.push("/checkout");
                         }}

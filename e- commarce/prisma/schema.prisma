@@ -95,8 +95,17 @@ model Product {
   isFeatured    Boolean   @default(false)
   isNewArrival  Boolean   @default(false)
   isFlashSale   Boolean   @default(false)
+  isPreOrder    Boolean   @default(false)
+  expectedDeliveryText String? @db.Text
   
   paymentMethods String   @default("BOTH") // BOTH, COD, ONLINE
+  
+  affiliateCommissionRate Int @default(0)
+  affiliateCommissionType String @default("PERCENT") // PERCENT, FIXED
+  
+  metaTitle     String?
+  metaDescription String? @db.Text
+  videoUrl      String?
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -225,8 +234,15 @@ model Order {
   
   status          String    @default("PENDING") // PENDING, CONFIRMED, PACKED, SHIPPED, DELIVERED, CANCELLED
   paymentMethod   String    @default("COD")   // COD, ONLINE
-  paymentStatus   String    @default("PENDING") // PAID, PENDING, FAILED
+  paymentStatus   String    @default("PENDING") // PAID, PARTIAL_PAID, PENDING, FAILED
   isAbnormal      Boolean   @default(false)
+  advancePayment  Int       @default(0) // Int
+  
+  courierName     String?   // "eDesh", "Steadfast", "Pathao", etc.
+  trackingNumber  String?   // Tracking ID from courier
+  
+  customerNote    String?   @db.Text
+  adminNote       String?   @db.Text
   
   shippingAddress Json?     // Legacy snapshot backup
   
@@ -531,3 +547,29 @@ model Banner {
   updatedAt DateTime  @updatedAt
 }
 
+model PreOrderRequest {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  details   String   @db.Text
+  imageUrl  String?
+  status    String   @default("PENDING") // PENDING, CONTACTED, REJECTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CostProfile {
+  id              String   @id @default(cuid())
+  name            String   
+  totalBuyingCost Int      
+  quantity        Int
+  shippingCost    Int      @default(0)
+  adSpend         Int      @default(0)
+  packagingCost   Int      @default(0)
+  otherCosts      Int      @default(0)
+  targetMargin    Int      @default(0) 
+  suggestedPrice  Int      @default(0)
+  costPerItem     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

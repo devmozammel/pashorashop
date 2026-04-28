@@ -243,6 +243,25 @@ export default function ProductDetails({
                     </button>
                 </div>
 
+                {product.isPreOrder && (
+                    <div className="mb-4 flex flex-col gap-2">
+                        <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-xl p-3">
+                            <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
+                                <Zap className="w-4 h-4 fill-current" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold text-orange-900">Pre-Order Item</span>
+                                {product.expectedDeliveryText && (
+                                    <span className="text-[11px] text-orange-700 font-medium">{product.expectedDeliveryText}</span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="text-[10px] text-gray-400 bg-gray-50/50 rounded-lg px-3 py-1.5 border border-gray-100 italic">
+                            ৳100 advance payment required. Fully refundable if order cancelled.
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center gap-4 mb-6">
                     <div className="flex items-baseline gap-3">
                         <span className="text-2xl md:text-3xl font-bold text-foreground">
@@ -367,7 +386,7 @@ export default function ProductDetails({
                     className="w-full text-base font-bold bg-green-600 hover:bg-green-700 text-white shadow-sm h-12"
                     onClick={handleBuyNow}
                 >
-                    Buy Now
+                    {product.isPreOrder ? "Pre-Order Now" : "Buy Now"}
                 </Button>
             </div>
 

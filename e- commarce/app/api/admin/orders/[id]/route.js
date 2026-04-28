@@ -59,13 +59,18 @@ export async function PATCH(req, props) {
 
         const { id } = await params;
         const body = await req.json();
-        const { status, note } = body;
+        const { status, note, courierName, trackingNumber, adminNote } = body;
 
         // Start transaction: update order + add history + notify user
         const order = await prisma.$transaction(async (tx) => {
             const updatedOrder = await tx.order.update({
                 where: { id },
-                data: { status }
+                data: { 
+                    status,
+                    ...(courierName !== undefined && { courierName }),
+                    ...(trackingNumber !== undefined && { trackingNumber }),
+                    ...(adminNote !== undefined && { adminNote }),
+                }
             });
 
             if (note || status) {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { Loader2, Plus, Trash, X, Zap, UploadCloud, Image as ImageIcon, Box, Tag, Layers, DollarSign } from "lucide-react";
+import { Loader2, Plus, Trash, X, Zap, UploadCloud, Image as ImageIcon, Box, Tag, Layers, DollarSign, Video, Globe } from "lucide-react";
 import { sanitizeImageUrls } from "@/lib/productImages";
 import ImageUpload from "@/components/admin/ui/ImageUpload";
 import RichTextEditor from "@/components/admin/ui/RichTextEditor";
@@ -29,7 +29,9 @@ export default function ProductForm({ initialData, categories }) {
         isNewArrival: false,
         paymentMethods: "BOTH",
         images: [],
-        variants: []
+        variants: [],
+        isPreOrder: false,
+        expectedDeliveryText: ""
     });
 
     const [imageUrlInput, setImageUrlInput] = useState("");
@@ -44,12 +46,19 @@ export default function ProductForm({ initialData, categories }) {
                 ...initialData,
                 price: Number(initialData.price),
                 salePrice: initialData.salePrice ? Number(initialData.salePrice) : null,
-                stock: Number(initialData.stock),
+                costPrice: Number(initialData.costPrice || 0),
+                stock: Number(initialData.stock || 0),
                 affiliateCommissionRate: Number(initialData.affiliateCommissionRate || 0),
-                categoryId: initialData.categoryId || "",
+                affiliateCommissionType: initialData.affiliateCommissionType || "PERCENT",
+                metaTitle: initialData?.metaTitle || "",
+        metaDescription: initialData?.metaDescription || "",
+        videoUrl: initialData?.videoUrl || "",
+        categoryId: initialData.categoryId || "",
                 subcategoryGroupId: initialData.subcategoryGroupId || "",
                 subcategoryItemId: initialData.subcategoryItemId || "",
                 paymentMethods: initialData.paymentMethods || "BOTH",
+                isPreOrder: initialData.isPreOrder || false,
+                expectedDeliveryText: initialData.expectedDeliveryText || "",
                 images: sanitizeImageUrls(initialData.productImages?.map(i => i.url) || initialData.images || []),
                 variants: (initialData.variants || []).map(v => ({
                     id: v.id,
@@ -463,6 +472,54 @@ export default function ProductForm({ initialData, categories }) {
                             )}
                         </div>
                     </div>
+
+                    {/* SEO & Media Section */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+                            <Video className="w-5 h-5 text-red-500" />
+                            <h3 className="font-bold text-gray-800 text-sm">Media (Video)</h3>
+                        </div>
+                        <div className="p-5">
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Product Video URL</label>
+                            <input 
+                                name="videoUrl" 
+                                value={formData.videoUrl || ""} 
+                                onChange={handleChange} 
+                                placeholder="YouTube link"
+                                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-red-100 focus:border-red-400 outline-none transition-all text-xs"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-blue-500" />
+                            <h3 className="font-bold text-gray-800 text-sm">SEO Settings</h3>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Meta Title</label>
+                                <input 
+                                    name="metaTitle" 
+                                    value={formData.metaTitle || ""} 
+                                    onChange={handleChange} 
+                                    placeholder="Search engine title"
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-xs"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Meta Description</label>
+                                <textarea 
+                                    name="metaDescription" 
+                                    value={formData.metaDescription || ""} 
+                                    onChange={handleChange} 
+                                    rows={3}
+                                    placeholder="Search engine description"
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-xs"
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Right Column - Organization & Status */}
@@ -529,14 +586,38 @@ export default function ProductForm({ initialData, categories }) {
                                     <input type="number" name="salePrice" value={formData.salePrice || ""} onChange={(e) => setFormData(p => ({ ...p, salePrice: e.target.value === "" ? null : parseInt(e.target.value) }))} className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-100 focus:border-amber-500 outline-none text-sm transition-all" />
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5 font-black text-emerald-600">Cost Price (Buying)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2.5 text-gray-400 font-medium font-black text-emerald-600">৳</span>
+                                        <input type="number" name="costPrice" value={formData.costPrice} onChange={handleNumberChange} className="w-full pl-8 pr-3 py-2 bg-emerald-50/30 border border-emerald-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none text-sm transition-all font-bold text-emerald-700" placeholder="আপনি কত দিয়ে কিনলেন?" />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col justify-end pb-1 px-1">
+                                    <p className="text-[10px] text-gray-400 font-medium italic">Profit: {(formData.salePrice || formData.price) - formData.costPrice}৳</p>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-3 pt-2">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Stock</label>
                                     <input type="number" required name="stock" value={formData.stock} onChange={handleNumberChange} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-gray-400 outline-none text-sm font-medium" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5" title="Affiliate Commission">Comm. (%)</label>
-                                    <input type="number" name="affiliateCommissionRate" value={formData.affiliateCommissionRate} onChange={handleNumberChange} min="0" max="100" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-gray-400 outline-none text-sm font-medium" />
+                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5" title="Affiliate Commission">Comm. Amount</label>
+                                    <div className="flex gap-2">
+                                        <input type="number" name="affiliateCommissionRate" value={formData.affiliateCommissionRate} onChange={handleNumberChange} min="0" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-gray-400 outline-none text-sm font-medium" />
+                                        <select 
+                                            name="affiliateCommissionType" 
+                                            value={formData.affiliateCommissionType} 
+                                            onChange={(e) => setFormData(p => ({ ...p, affiliateCommissionType: e.target.value }))}
+                                            className="px-2 py-2 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold outline-none"
+                                        >
+                                            <option value="PERCENT">%</option>
+                                            <option value="FIXED">৳</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -588,6 +669,42 @@ export default function ProductForm({ initialData, categories }) {
                                     <option value="ONLINE">Online Payment Only</option>
                                 </select>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Pre-Order Config Card */}
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-orange-500" />
+                            <h3 className="font-semibold text-gray-800">Pre-Order Config</h3>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <label className="flex items-center justify-between cursor-pointer group">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Is Pre-Order?</span>
+                                    <span className="text-[10px] text-gray-400">Requires ৳100 advance payment</span>
+                                </div>
+                                <div className="relative inline-flex items-center">
+                                    <input type="checkbox" name="isPreOrder" checked={formData.isPreOrder} onChange={handleChange} className="sr-only peer" />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+                                </div>
+                            </label>
+
+                            {formData.isPreOrder && (
+                                <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Expected Delivery Text</label>
+                                    <input 
+                                        name="expectedDeliveryText" 
+                                        value={formData.expectedDeliveryText || ""} 
+                                        onChange={handleChange} 
+                                        placeholder="e.g. Delivery by 25th May"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all text-xs"
+                                    />
+                                    <p className="text-[9px] text-gray-400 mt-2 italic">
+                                        Note: Users must pay ৳100 in advance for pre-orders. If they don't accept delivery, the amount will be refunded.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 

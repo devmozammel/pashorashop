@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import AdminShell from "@/components/admin/AdminShell";
 import { ArrowLeft, Package, User, MapPin, Truck, CreditCard, Clock, MessageSquare, Loader2, Save } from "lucide-react";
 import Link from "next/link";
@@ -12,8 +12,7 @@ const statusOptions = [
 ];
 
 export default function OrderDetailsPage({ params }) {
-    const resolvedParams = use(params);
-    const { id } = resolvedParams;
+    const { id } = params;
     const router = useRouter();
 
     const [order, setOrder] = useState(null);

@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import {
     LayoutDashboard, Settings, Layers, Box, Tag, Image as ImageIcon,
     ShoppingCart, Truck, Users, Activity, FileText, Gift, Star,
-    Monitor, DollarSign, ToggleLeft, BarChart, LogOut, List, TrendingUp, Mail, Ban
+    Monitor, DollarSign, ToggleLeft, BarChart, LogOut, List, TrendingUp, Mail, Ban, Calculator
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
@@ -14,6 +14,7 @@ import { signOut } from "next-auth/react";
 const NAV_ITEMS = [
     { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { title: "Orders", href: "/admin/orders", icon: ShoppingCart },
+    { title: "Pre-Orders", href: "/admin/pre-orders", icon: ShoppingCart },
     { title: "Products", href: "/admin/products", icon: Box },
     { title: "Categories", href: "/admin/categories", icon: Layers },
     { title: "Sub Groups", href: "/admin/subcategory-groups", icon: Layers },
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
     { title: "Contact Msgs", href: "/admin/contact-messages", icon: Mail },
     { title: "Blacklist", href: "/admin/blacklist", icon: Ban },
     { title: "Settings", href: "/admin/settings", icon: Settings },
+    { title: "Calculator", href: "/admin/calculator", icon: Calculator },
     { title: "Features", href: "/admin/features", icon: ToggleLeft },
 
     // Experimental / Toggled Features
@@ -82,7 +84,7 @@ export default function AdminSidebar({ isOpen }) {
             {/* Logo */}
             <div className="h-16 flex items-center justify-center border-b shrink-0">
                 <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                    Fabrilife Admin
+                    Authentic Bazar
                 </span>
             </div>
 

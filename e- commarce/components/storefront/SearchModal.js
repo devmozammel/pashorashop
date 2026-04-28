@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, Loader2, ArrowRight, Layers, TrendingUp } from "lucide-react";
+import { Search, X, Loader2, ArrowRight, Layers, TrendingUp, Tag } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -16,17 +16,27 @@ export default function SearchModal({ isOpen, onClose }) {
 
     useEffect(() => {
         if (isOpen && inputRef.current) {
-            inputRef.current.focus();
+            setTimeout(() => inputRef.current?.focus(), 50);
+        }
+        if (!isOpen) {
+            setQuery("");
+            setResults({ products: [], categories: [] });
         }
     }, [isOpen]);
 
+    // Keyboard close
+    useEffect(() => {
+        const handler = (e) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [onClose]);
+
     useEffect(() => {
         const timer = setTimeout(async () => {
-            if (query.length < 2) {
+            if (query.length < 1) {
                 setResults({ products: [], categories: [] });
                 return;
             }
-
             setLoading(true);
             try {
                 const res = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
@@ -39,64 +49,113 @@ export default function SearchModal({ isOpen, onClose }) {
             } finally {
                 setLoading(false);
             }
-        }, 300);
+        }, 250);
 
         return () => clearTimeout(timer);
     }, [query]);
 
     const handleSubmit = (e) => {
-        e.preventDefault();
+        e?.preventDefault();
         if (query.trim()) {
             router.push(`/shop?q=${encodeURIComponent(query)}`);
             onClose();
         }
     };
 
+    const getProductImage = (product) => {
+        if (product.productImages?.[0]?.url) return product.productImages[0].url;
+        if (Array.isArray(product.images) && product.images[0]) return product.images[0];
+        return null;
+    };
+
+    const getPrice = (product) => {
+        return Number(product.discountPrice ?? product.salePrice ?? product.price ?? 0);
+    };
+
+    const getOriginalPrice = (product) => {
+        if ((product.discountPrice || product.salePrice) && product.price) return product.price;
+        return null;
+    };
+
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-[60] flex items-start justify-center pt-20 px-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
+    const hasResults = results.products.length > 0 || results.categories.length > 0;
+    const showEmpty = query.length >= 1 && !loading && !hasResults;
 
-            <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-top-4 flex flex-col max-h-[80vh]">
-                <form onSubmit={handleSubmit} className="border-b p-4 flex items-center gap-3 bg-white z-10">
-                    <Search className="w-5 h-5 text-gray-400" />
+    return (
+        <div className="fixed inset-0 z-[200] flex items-start justify-center pt-16 px-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+            <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in slide-in-from-top-4 duration-200">
+                
+                {/* Search Input */}
+                <form onSubmit={handleSubmit} className="flex items-center gap-3 px-4 py-3.5 border-b bg-white">
+                    <Search className="w-5 h-5 text-gray-400 shrink-0" />
                     <input
                         ref={inputRef}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search for products, categories..."
-                        className="flex-1 text-lg outline-none placeholder:text-gray-400"
+                        placeholder="পণ্যের নাম, ক্যাটাগরি বা কোড লিখুন..."
+                        className="flex-1 text-base outline-none placeholder:text-gray-400 bg-transparent"
                     />
-                    {loading && <Loader2 className="w-5 h-5 animate-spin text-gray-400" />}
-                    <button type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-                        <X className="w-5 h-5" />
+                    {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-400 shrink-0" />}
+                    {query && !loading && (
+                        <button type="button" onClick={() => setQuery("")} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+                            <X className="w-4 h-4 text-gray-500" />
+                        </button>
+                    )}
+                    <button type="button" onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors ml-1">
+                        <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </form>
 
-                <div className="overflow-y-auto p-4 bg-gray-50 flex-1">
-                    {query.length < 2 && (
-                        <div className="text-center py-8 text-gray-500">
-                            <TrendingUp className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                            <p>Type to search...</p>
+                {/* Results Body */}
+                <div className="overflow-y-auto flex-1">
+                    
+                    {/* Default State */}
+                    {query.length < 1 && (
+                        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                            <Search className="w-10 h-10 mb-3 text-gray-200" />
+                            <p className="text-sm font-medium">যা খুঁজছেন তা লিখুন</p>
+                            <p className="text-xs mt-1 text-gray-300">পণ্যের নাম, ক্যাটাগরি বা কোড</p>
                         </div>
                     )}
 
-                    {(results.categories.length > 0 || results.products.length > 0) && (
-                        <div className="space-y-6">
+                    {/* Loading skeleton */}
+                    {loading && (
+                        <div className="p-4 space-y-3">
+                            {[1,2,3].map(i => (
+                                <div key={i} className="flex items-center gap-3 animate-pulse">
+                                    <div className="w-14 h-14 bg-gray-100 rounded-xl shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-3.5 bg-gray-100 rounded w-3/4" />
+                                        <div className="h-3 bg-gray-100 rounded w-1/3" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Results */}
+                    {!loading && hasResults && (
+                        <div className="divide-y divide-gray-50">
+                            
+                            {/* Categories */}
                             {results.categories.length > 0 && (
-                                <div>
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                        <Layers className="w-3 h-3" /> Categories
-                                    </h3>
+                                <div className="p-4">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                        <Layers className="w-3 h-3" /> ক্যাটাগরি
+                                    </p>
                                     <div className="flex flex-wrap gap-2">
                                         {results.categories.map(cat => (
                                             <Link
                                                 key={cat.id}
                                                 href={`/category/${cat.slug}`}
                                                 onClick={onClose}
-                                                className="px-3 py-1 bg-white border rounded-full text-sm hover:bg-primary hover:text-white hover:border-primary transition-colors"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-black hover:text-white rounded-full text-sm font-medium transition-all"
                                             >
+                                                <Tag className="w-3 h-3" />
                                                 {cat.name}
                                             </Link>
                                         ))}
@@ -104,29 +163,50 @@ export default function SearchModal({ isOpen, onClose }) {
                                 </div>
                             )}
 
+                            {/* Products */}
                             {results.products.length > 0 && (
-                                <div>
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Products</h3>
-                                    <div className="space-y-2">
+                                <div className="p-4">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                        <TrendingUp className="w-3 h-3" /> পণ্য ({results.products.length}টি)
+                                    </p>
+                                    <div className="space-y-1">
                                         {results.products.map(product => {
-                                            const price = Number(product.discountPrice ?? product.salePrice ?? product.price ?? 0);
+                                            const img = getProductImage(product);
+                                            const price = getPrice(product);
+                                            const original = getOriginalPrice(product);
                                             return (
                                                 <Link
                                                     key={product.id}
                                                     href={`/product/${product.slug}`}
                                                     onClick={onClose}
-                                                    className="flex items-center gap-4 p-2 bg-white rounded-lg hover:shadow-md transition-all group border border-transparent hover:border-gray-100"
+                                                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-all group"
                                                 >
-                                                    <div className="relative w-12 h-12 bg-gray-100 rounded-md overflow-hidden shrink-0">
-                                                        {product.images?.[0] && (
-                                                            <Image src={product.images[0]} alt={product.name} fill className="object-cover" />
+                                                    {/* Image */}
+                                                    <div className="relative w-14 h-14 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-gray-100">
+                                                        {img ? (
+                                                            <Image src={img} alt={product.name} fill className="object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                                <Tag className="w-5 h-5" />
+                                                            </div>
                                                         )}
                                                     </div>
+
+                                                    {/* Info */}
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium truncate group-hover:text-primary transition-colors">{product.name}</p>
-                                                        <p className="text-sm text-muted-foreground">{formatCurrency(price)}</p>
+                                                        <p className="font-semibold text-sm text-gray-900 truncate group-hover:text-black">{product.name}</p>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-sm font-bold text-gray-900">{formatCurrency(price)}</span>
+                                                            {original && (
+                                                                <span className="text-xs text-gray-400 line-through">{formatCurrency(original)}</span>
+                                                            )}
+                                                            {product.category && (
+                                                                <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{product.category.name}</span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-primary -translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all" />
+
+                                                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-black -translate-x-1 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all shrink-0" />
                                                 </Link>
                                             );
                                         })}
@@ -136,20 +216,25 @@ export default function SearchModal({ isOpen, onClose }) {
                         </div>
                     )}
 
-                    {query.length >= 2 && results.products.length === 0 && results.categories.length === 0 && !loading && (
-                        <div className="py-8 text-center text-gray-500">
-                            No results found for "{query}"
+                    {/* No Results */}
+                    {showEmpty && (
+                        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                            <Search className="w-10 h-10 mb-3 text-gray-200" />
+                            <p className="text-sm font-medium text-gray-500">"{query}" এর জন্য কোনো পণ্য পাওয়া যায়নি</p>
+                            <p className="text-xs mt-1">অন্য শব্দ দিয়ে সার্চ করুন</p>
                         </div>
                     )}
                 </div>
 
+                {/* Footer: View All */}
                 {results.products.length > 0 && (
-                    <div className="p-3 bg-white border-t">
+                    <div className="border-t bg-gray-50 px-4 py-3">
                         <button
                             onClick={handleSubmit}
-                            className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+                            className="w-full py-2.5 bg-black text-white rounded-xl text-sm font-bold hover:bg-gray-900 transition-colors flex items-center justify-center gap-2"
                         >
-                            View all results for "{query}"
+                            <Search className="w-4 h-4" />
+                            "{query}" এর সব পণ্য দেখুন
                         </button>
                     </div>
                 )}

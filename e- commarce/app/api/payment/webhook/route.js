@@ -16,11 +16,21 @@ export async function POST(req) {
         // data holds the verify response data
         if (data.status === "COMPLETED" && data.metadata && data.metadata.order_id) {
             const orderId = data.metadata.order_id;
+ 
+            const order = await prisma.order.findUnique({
+                where: { id: orderId },
+                select: { advancePayment: true, paymentMethod: true }
+            });
+
+            let newStatus = "PAID";
+            if (order && order.paymentMethod === "COD" && order.advancePayment > 0) {
+                newStatus = "PARTIAL_PAID";
+            }
 
             await prisma.order.update({
                 where: { id: orderId },
                 data: {
-                    paymentStatus: "PAID",
+                    paymentStatus: newStatus,
                     isAbnormal: false
                 }
             });

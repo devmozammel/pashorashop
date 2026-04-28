@@ -51,7 +51,6 @@ export async function POST(req) {
         }
 
         const session = await getServerSession(authOptions);
-        const userId = session?.user?.id;
 
         const body = await req.json();
         const { items, customer, shippingCost, couponCode, affiliateCode } = checkoutSchema.parse(body);
@@ -80,8 +79,20 @@ export async function POST(req) {
         const order = await prisma.$transaction(async (tx) => {
             let calculatedSubtotal = 0;
             let totalAffiliateCommission = 0;
+            let totalAdvanceRequired = 0;
             const orderItemsData = [];
             const stockUpdates = [];
+
+            // --- 🔒 ATOMIC USER VERIFICATION ---
+            let confirmedUserId = null;
+            if (session?.user?.id && session.user.id !== "master-admin") {
+                const userExists = await tx.user.findUnique({ 
+                    where: { id: session.user.id },
+                    select: { id: true } 
+                });
+                if (userExists) confirmedUserId = userExists.id;
+            }
+            // -----------------------------------
 
             // 1. Calculate Subtotal & Validate Stock
             for (const item of items) {
@@ -141,6 +152,10 @@ export async function POST(req) {
                     stockUpdates.push({ type: 'product', id: product.id, quantity: item.quantity });
                 }
 
+                if (product.isPreOrder) {
+                    totalAdvanceRequired += (100 * item.quantity);
+                }
+
                 const itemTotal = unitPrice * item.quantity;
                 calculatedSubtotal += itemTotal;
 
@@ -174,49 +189,62 @@ export async function POST(req) {
                         data: { usedCount: { increment: 1 } }
                     });
                 }
-                // If invalid, we ignore it (or could throw error if strict)
             }
 
             const calculatedTotal = calculatedSubtotal + shippingCost - discountAmount;
 
-            // 3. Create Order
-            const createdOrder = await tx.order.create({
-                data: {
-                    orderNumber: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                    ...(userId ? { user: { connect: { id: userId } } } : {}),
-                    status: "PENDING",
-                    paymentStatus: "PENDING",
-                    total: calculatedTotal > 0 ? calculatedTotal : 0,
-                    subtotal: calculatedSubtotal,
-                    discount: discountAmount,
-                    couponCode: finalCouponCode,
-                    paymentMethod: customer.paymentMethod,
-                    isAbnormal: customer.paymentMethod !== "COD",
-                    deliveryArea: customer.shippingArea,
-                    deliveryFee: shippingCost,
-                    customerName: `${customer.firstName} ${customer.lastName}`.trim(),
-                    phone: customer.phone,
+            // 3. 🛡️ SAFE ORDER CREATION (Double-Protected)
+            const orderData = {
+                orderNumber: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                userId: confirmedUserId, 
+                status: "PENDING",
+                paymentStatus: "PENDING",
+                total: calculatedTotal > 0 ? calculatedTotal : 0,
+                subtotal: calculatedSubtotal,
+                discount: discountAmount,
+                couponCode: finalCouponCode,
+                paymentMethod: customer.paymentMethod,
+                isAbnormal: customer.paymentMethod !== "COD" || totalAdvanceRequired > 0,
+                advancePayment: totalAdvanceRequired,
+                deliveryArea: customer.shippingArea,
+                deliveryFee: shippingCost,
+                customerName: `${customer.firstName} ${customer.lastName}`.trim(),
+                phone: customer.phone,
+                address: customer.address,
+                city: customer.city,
+                shippingAddress: {
                     address: customer.address,
                     city: customer.city,
-                    shippingAddress: {
-                        address: customer.address,
-                        city: customer.city,
-                        firstName: customer.firstName,
-                        lastName: customer.lastName,
-                        phone: customer.phone,
-                        shippingArea: customer.shippingArea
-                    },
-                    items: {
-                        create: orderItemsData
-                    },
-                    history: {
-                        create: {
-                            status: "PENDING",
-                            note: "Order placed by customer"
-                        }
+                    firstName: customer.firstName,
+                    lastName: customer.lastName,
+                    phone: customer.phone,
+                    shippingArea: customer.shippingArea
+                },
+                items: {
+                    create: orderItemsData
+                },
+                history: {
+                    create: {
+                        status: "PENDING",
+                        note: "Order placed by customer"
                     }
                 }
-            });
+            };
+
+            let createdOrder;
+            try {
+                // Attempt 1: With confirmedUserId
+                createdOrder = await tx.order.create({ data: orderData });
+            } catch (createError) {
+                console.warn("First order creation attempt failed, retrying as Guest. Reason:", createError.message);
+                // Attempt 2: Without userId (Absolute Fallback)
+                createdOrder = await tx.order.create({ 
+                    data: { 
+                        ...orderData, 
+                        userId: null // Strip user link to ensure success
+                    } 
+                });
+            }
 
             // 4. Update Stock
             for (const update of stockUpdates) {
@@ -234,8 +262,8 @@ export async function POST(req) {
             }
 
             // 5. Clear User Cart if logged in (Optional but good UX)
-            if (userId) {
-                await tx.cart.deleteMany({ where: { userId } });
+            if (confirmedUserId) {
+                await tx.cart.deleteMany({ where: { userId: confirmedUserId } });
             }
 
             // 5.5 Reward Affiliate if applicable
@@ -276,13 +304,13 @@ export async function POST(req) {
 
         // Get customer email if logged in
         let customerEmail = "customer@authenticbazar.com";
-        if (userId) {
-            const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+        if (confirmedUserId) {
+            const user = await prisma.user.findUnique({ where: { id: confirmedUserId }, select: { email: true } });
             if (user?.email) customerEmail = user.email;
         }
 
         let paymentUrl = null;
-        if (customer.paymentMethod === "ONLINE" || customer.paymentMethod === "CARD") {
+        if (customer.paymentMethod === "ONLINE" || customer.paymentMethod === "CARD" || order.advancePayment > 0) {
             const baseURL = decrypt(process.env.PAYMENT_BASE_URL);
             const apiKEY = decrypt(process.env.PAYMENT_API_KEY);
 
@@ -290,22 +318,25 @@ export async function POST(req) {
             const host = req.headers.get("host");
             const appUrl = `${protocol}://${host}`;
 
+            // If COD but pre-order, pay only advance amount. Else pay full.
+            const paymentAmount = customer.paymentMethod === "COD" ? order.advancePayment : order.total;
+
             const payload = {
                 full_name: order.customerName,
                 email: customerEmail,
-                amount: order.total.toString(),
+                amount: paymentAmount.toString(),
                 metadata: {
                     order_id: order.id,
                     order_number: order.orderNumber,
-                    user_id: userId || 'guest'
+                    user_id: confirmedUserId || 'guest'
                 },
                 redirect_url: `${appUrl}/api/payment/verify`,
-                return_type: 'GET',
+                return_type: 'GET', // Matches documentation success flow
                 cancel_url: `${appUrl}/checkout`,
                 webhook_url: `${appUrl}/api/payment/webhook`
             };
 
-            const upRes = await fetch(`${baseURL}/api/checkout-v2`, {
+            const upRes = await fetch(`${baseURL}/checkout-v2`, {
                 method: 'POST',
                 headers: {
                     'RT-UDDOKTAPAY-API-KEY': apiKEY,
@@ -332,8 +363,8 @@ export async function POST(req) {
 
         // Get customer email if logged in
         if (!customerEmail || customerEmail === "customer@authenticbazar.com") {
-            if (userId) {
-                const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+            if (confirmedUserId) {
+                const user = await prisma.user.findUnique({ where: { id: confirmedUserId }, select: { email: true } });
                 if (user?.email) customerEmail = user.email;
             } else {
                 customerEmail = null;

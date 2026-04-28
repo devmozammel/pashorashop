@@ -55,7 +55,7 @@ export const useCartStore = create(
                         ]
                     });
                 }
-                set({ isOpen: true }); // Open drawer on add
+                // Note: Drawer is NOT auto-opened here — caller decides (openDrawer vs router.push)
             },
 
             removeItem: (uniqueKey) => {
@@ -154,7 +154,7 @@ export const useCartStore = create(
                     removeItem: () => { },
                 };
             }),
-            skipHydration: true,
+            // skipHydration removed — store will auto-hydrate from localStorage on mount
         }
     )
 );

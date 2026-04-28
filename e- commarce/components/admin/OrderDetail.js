@@ -4,13 +4,17 @@
 import { useState } from "react";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+import { Button } from "@/components/admin/ui/FormElements";
 import { useRouter } from "next/navigation";
 import { Truck, ShieldAlert, CheckCircle, Ban, XCircle, UserX } from "lucide-react";
 
 export default function OrderDetail({ order }) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [courierName, setCourierName] = useState(order.courierName || "");
+    const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber || "");
+    const [adminNote, setAdminNote] = useState(order.adminNote || "");
 
     // Parse addresses if they are JSON strings (database quirk handling) or objects
     const shipping = typeof order.shippingAddress === 'string'
@@ -56,6 +60,11 @@ export default function OrderDetail({ order }) {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        <Link href={`/admin/orders/${order.id}/invoice`} target="_blank">
+                            <Button variant="outline" className="bg-white hover:bg-gray-50 border-gray-200">
+                                <Truck className="w-4 h-4 mr-2" /> Print Invoice
+                            </Button>
+                        </Link>
                         <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${order.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
                                 order.status === 'CONFIRMED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                     order.status === 'DELIVERED' ? 'bg-green-50 text-green-700 border-green-200' :
@@ -128,6 +137,40 @@ export default function OrderDetail({ order }) {
             {/* RIGHT COLUMN: Customer, Addresses, Risk, Actions */}
             <div className="space-y-6">
 
+                {/* Shipping Tracking Card */}
+                <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
+                    <h3 className="font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
+                        <Truck className="w-4 h-4 text-blue-500" /> Shipping & Tracking
+                    </h3>
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Courier Name</label>
+                            <input 
+                                value={courierName} 
+                                onChange={(e) => setCourierName(e.target.value)}
+                                placeholder="e.g. eDesh, Steadfast"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:bg-white outline-none transition-all"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Tracking Number</label>
+                            <input 
+                                value={trackingNumber} 
+                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                placeholder="Enter ID"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:bg-white outline-none transition-all"
+                            />
+                        </div>
+                        <Button 
+                            onClick={() => handleAction("UPDATE_TRACKING", { courierName, trackingNumber })}
+                            disabled={isLoading || (!courierName && !trackingNumber)}
+                            className="w-full h-10 text-xs font-bold uppercase tracking-wider"
+                        >
+                            Save Tracking Info
+                        </Button>
+                    </div>
+                </div>
+
                 {/* Actions Card */}
                 <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
                     <h3 className="font-semibold text-gray-900 mb-2">Order Actions</h3>
@@ -190,6 +233,25 @@ export default function OrderDetail({ order }) {
                             <span className="font-medium">{order.customerPhone}</span>
                         </div>
                     </div>
+                </div>
+
+                {/* Admin Notes */}
+                <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
+                    <h3 className="font-semibold text-gray-900 border-b pb-2">Internal Notes</h3>
+                    <textarea 
+                        value={adminNote}
+                        onChange={(e) => setAdminNote(e.target.value)}
+                        placeholder="Add internal notes about this order..."
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:bg-white outline-none transition-all resize-none"
+                        rows={3}
+                    />
+                    <Button 
+                        onClick={() => handleAction("UPDATE_NOTES", { adminNote })}
+                        disabled={isLoading || adminNote === order.adminNote}
+                        className="w-full h-8 text-xs"
+                    >
+                        Save Note
+                    </Button>
                 </div>
 
                 {/* Shipping Address */}

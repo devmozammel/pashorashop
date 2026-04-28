@@ -11,12 +11,10 @@ export async function GET(req) {
         // 1. Total Orders
         const totalOrders = await prisma.order.count();
 
-        // 2. Total Revenue (exclude CANCELLED matching the mock logic)
+        // 2. Total Revenue (Only count DELIVERED orders)
         const revenueAgg = await prisma.order.aggregate({
             where: {
-                status: {
-                    not: 'CANCELLED'
-                }
+                status: 'DELIVERED'
             },
             _sum: {
                 total: true

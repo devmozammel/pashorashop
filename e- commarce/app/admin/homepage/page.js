@@ -188,6 +188,22 @@ export default function HomepageSettingsPage() {
                                             onUploadComplete={url => setConfig({...config, heroProductImage: url})}
                                             value={[config.heroProductImage]}
                                         />
+                                        {config.heroProductImage && (
+                                            <div className="relative mt-4 aspect-square rounded-xl overflow-hidden border bg-gray-50 flex items-center justify-center group/prev">
+                                                <img 
+                                                    src={Array.isArray(config.heroProductImage) ? config.heroProductImage[0] : config.heroProductImage} 
+                                                    className="w-full h-full object-contain" 
+                                                    alt="Promo Preview" 
+                                                />
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setConfig({...config, heroProductImage: ""})}
+                                                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg opacity-0 group-hover/prev:opacity-100 transition-opacity"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -209,11 +225,16 @@ export default function HomepageSettingsPage() {
                                     value={[config.heroImageUrl]}
                                 />
                                 {config.heroImageUrl && (
-                                    <div className="relative aspect-[3/4] rounded-xl overflow-hidden border bg-gray-50 flex items-center justify-center">
-                                        <img src={config.heroImageUrl} className="w-full h-full object-cover" alt="Preview" />
+                                    <div className="relative aspect-[3/4] rounded-xl overflow-hidden border bg-gray-50 flex items-center justify-center group/hero">
+                                        <img 
+                                            src={Array.isArray(config.heroImageUrl) ? config.heroImageUrl[0] : config.heroImageUrl} 
+                                            className="w-full h-full object-cover" 
+                                            alt="Hero Preview" 
+                                        />
                                         <button 
+                                            type="button"
                                             onClick={() => setConfig({...config, heroImageUrl: ""})}
-                                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg"
+                                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg opacity-0 group-hover/hero:opacity-100 transition-opacity"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>

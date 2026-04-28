@@ -8,7 +8,12 @@ import { decrypt } from "./security";
 const transporter = nodemailer.createTransport({
   host: process.env.MAIL_HOST || "smtp.gmail.com",
   port: Number(process.env.MAIL_PORT) || 465,
-  secure: Number(process.env.MAIL_PORT) === 465, 
+  secure: Number(process.env.MAIL_PORT) === 465,
+  pool: true,              // Reuse connections for speed
+  maxConnections: 3,       // Allow parallel sends
+  connectionTimeout: 10000, // 10s timeout
+  greetingTimeout: 8000,
+  socketTimeout: 10000,
   auth: {
     user: process.env.MAIL_USER,
     pass: decrypt(process.env.MAIL_PASS),

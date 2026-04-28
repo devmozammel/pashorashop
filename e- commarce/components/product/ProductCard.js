@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import SafeImage from "@/components/ui/SafeImage";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 import { ShoppingCart } from "lucide-react";
@@ -41,7 +41,7 @@ export default function ProductCard({ product, isFlashSale }) {
         >
             <Link href={`/product/${product.slug}`} className="block relative aspect-[4/5] overflow-hidden bg-secondary/50">
                 {thumbnail ? (
-                    <Image
+                    <SafeImage
                         src={thumbnail}
                         alt={product.name}
                         fill
