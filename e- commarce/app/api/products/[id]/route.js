@@ -48,8 +48,8 @@ export async function PUT(request, { params }) {
                     await tx.productVariant.create({
                         data: {
                             productId: params.id,
-                            name: v.name,
-                            value: v.value,
+                            size: v.size,
+                            color: v.color,
                             priceAdjustment: v.priceAdjustment || 0,
                             stock: parseInt(v.stock || 0),
                             sku: v.sku,
