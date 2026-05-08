@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import Image from "next/image";
+import AdminShell from "@/components/admin/AdminShell";
 
 export const dynamic = 'force-dynamic';
 
@@ -10,12 +11,7 @@ export default async function AdminPreOrdersPage() {
     });
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">Pre-Order & Sourcing Requests</h1>
-                <p className="text-sm text-gray-500 mt-1">Manage product requests submitted by customers.</p>
-            </div>
-
+        <AdminShell title="Pre-Order & Sourcing Requests">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-gray-600">
@@ -75,6 +71,6 @@ export default async function AdminPreOrdersPage() {
                     </table>
                 </div>
             </div>
-        </div>
+        </AdminShell>
     );
 }

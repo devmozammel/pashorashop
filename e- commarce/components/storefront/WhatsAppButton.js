@@ -8,7 +8,7 @@ export default function WhatsAppButton() {
 
     // Default WhatsApp number (will be used if env is not set)
     // Needs to include country code without '+'
-    const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "8801700000000";
+    const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "8801613134043";
     const message = "Hello Authentic Bazar! I need some help.";
 
     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;

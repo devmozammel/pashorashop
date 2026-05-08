@@ -27,7 +27,7 @@ async function main() {
         siteName: "Authentic Bazar",
         currencySymbol: "৳",
         supportEmail: "support@authenticbazar.com",
-        whatsapp: "8801700000000",
+        whatsapp: "8801613134043",
         address: "Dhaka, Bangladesh",
         deliveryFeeInside: 60,
         deliveryFeeOutside: 120,

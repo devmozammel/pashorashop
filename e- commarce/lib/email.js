@@ -196,11 +196,11 @@ export async function sendOrderConfirmationEmail({ order, email }) {
     </div>
 
     <div style="text-align: center;">
-      <a href="${SITE_URL}/account/orders" class="btn">Track My Premium Shipment</a>
+      <a href="${SITE_URL}/my-orders" class="btn">Track My Premium Shipment</a>
     </div>
   `, `Great news ${order.customerName}! Your order ${order.orderNumber} is confirmed.`);
 
-  const text = `Order Confirmed! Hi ${order.customerName}, your order ${order.orderNumber} has been successfully placed. Order Total: ${fmt(order.total)}. View more at ${SITE_URL}/account/orders`;
+  const text = `Order Confirmed! Hi ${order.customerName}, your order ${order.orderNumber} has been successfully placed. Order Total: ${fmt(order.total)}. View more at ${SITE_URL}/my-orders`;
 
   try {
     await transporter.sendMail({
@@ -273,7 +273,7 @@ export async function sendOrderStatusEmail({ order, email, newStatus }) {
        <div style="font-weight:900; font-size:18px; color:#111; margin-top:4px;">${newStatus}</div>
     </div>
     <div style="text-align:center;">
-       <a href="${SITE_URL}/account/orders" class="btn">View Order Details</a>
+       <a href="${SITE_URL}/my-orders" class="btn">View Order Details</a>
     </div>
   `, `Order ${order.orderNumber} is now ${newStatus}.`);
 

@@ -106,7 +106,7 @@ export default function OrderSuccessDisplay({ order }) {
                             Continue Shopping
                         </Button>
                     </Link>
-                    <Link href="/orders">
+                    <Link href="/my-orders">
                         <Button variant="outline" size="lg" className="rounded-full px-12 py-7 text-lg font-semibold border-2 hover:bg-gray-50 flex items-center gap-2 group">
                             View Orders
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
