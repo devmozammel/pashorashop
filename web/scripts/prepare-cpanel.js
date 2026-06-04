@@ -67,12 +67,43 @@ require('./server.js');
 `;
     fs.writeFileSync(path.join(deployDir, 'cpanel-entry.js'), serverJsContent);
 
-    // 7. Copy .env as template
-    const envPath = path.join(rootDir, '.env');
-    if (fs.existsSync(envPath)) {
-        console.log('📄 Copying .env as .env.example...');
-        fs.copyFileSync(envPath, path.join(deployDir, '.env.example'));
-    }
+    // 7. Create a clean .env.example template
+    console.log('📄 Creating .env.example template...');
+    const envExampleContent = `# Database
+DATABASE_URL="mysql://username:password@host:port/database"
+
+# Authentication
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your_nextauth_secret_here"
+
+# Public Site URL
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+
+# Encryption Key
+ENCRYPTION_KEY="your_encryption_key_here"
+
+# Payment Gateway
+PAYMENT_API_KEY="your_payment_api_key_here"
+PAYMENT_BASE_URL="your_payment_base_url_here"
+
+# Email Configuration (SMTP)
+MAIL_HOST="smtp.gmail.com"
+MAIL_PORT=465
+MAIL_USER="your_email@gmail.com"
+MAIL_PASS="your_encrypted_or_raw_mail_password_here"
+ADMIN_PROMO_SECRET="your_admin_promo_secret_here"
+ADMIN_EMAIL="admin@yoursite.com"
+ADMIN_PASSWORD="your_admin_password_here"
+
+# WhatsApp Configuration
+NEXT_PUBLIC_WHATSAPP_NUMBER="880XXXXXXXXXX"
+
+# Cloudinary Config
+CLOUDINARY_CLOUD_NAME="your_cloudinary_cloud_name"
+CLOUDINARY_API_KEY="your_cloudinary_api_key"
+CLOUDINARY_API_SECRET="your_cloudinary_api_secret"
+`;
+    fs.writeFileSync(path.join(deployDir, '.env.example'), envExampleContent);
 
     console.log('✅ Preparation Complete!');
     console.log(`📂 Folder ready at: ${deployDir}`);
