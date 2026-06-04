@@ -22,7 +22,11 @@ function loadEnv() {
 
 async function main() {
     loadEnv();
-    const rawPass = 'liohqhzmrqsqxspe';
+    const rawPass = process.argv[2];
+    if (!rawPass) {
+        console.error('Usage: node generate_mail_pass.js <your_mail_password>');
+        process.exit(1);
+    }
     console.log('Using ENCRYPTION_KEY:', process.env.ENCRYPTION_KEY);
     const encrypted = encrypt(rawPass);
     console.log('--- ENCRYPTED MAIL_PASS ---');
