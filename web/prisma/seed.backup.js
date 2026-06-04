@@ -127,8 +127,8 @@ async function main() {
     console.log(`Seeded ${products.length} products.`);
 
     // 5. Admin User
-    const adminEmail = 'tarunhossain567@gmail.com'
-    const adminPassword = await bcrypt.hash('password123', 10)
+    const adminEmail = 'admin@yoursite.com'
+    const adminPassword = await bcrypt.hash('Admin@12345', 10)
 
     await prisma.user.upsert({
         where: { email: adminEmail },
