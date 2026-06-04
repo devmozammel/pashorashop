@@ -1,7 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const EMAIL = 'tarunhossain587@gmail.com'; // আপনার এডমিন ইমেইল
+const EMAIL = process.argv[2] || 'admin@yoursite.com'; // আপনার এডমিন ইমেইল
 
 async function main() {
     // প্রথমে ইউজার চেক করি
