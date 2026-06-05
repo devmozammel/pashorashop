@@ -20,6 +20,10 @@ export default function AffiliatesPage() {
     const [isLoadingWithdrawals, setIsLoadingWithdrawals] = useState(true);
     const [rejectModal, setRejectModal] = useState(null); // { id, note }
 
+    // Transactions
+    const [transactions, setTransactions] = useState([]);
+    const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
+
     const fetchAffiliates = async () => {
         setIsLoadingAffiliates(true);
         try {
@@ -48,9 +52,24 @@ export default function AffiliatesPage() {
         }
     };
 
+    const fetchTransactions = async () => {
+        setIsLoadingTransactions(true);
+        try {
+            const res = await fetch("/api/admin/affiliates/transactions");
+            const data = await res.json();
+            if (res.ok) setTransactions(data);
+            else toast.error(data.error || "Failed to load transactions");
+        } catch {
+            toast.error("An error occurred");
+        } finally {
+            setIsLoadingTransactions(false);
+        }
+    };
+
     useEffect(() => {
         fetchAffiliates();
         fetchWithdrawals();
+        fetchTransactions();
     }, []);
 
     // Affiliate approve/reject
@@ -153,6 +172,66 @@ export default function AffiliatesPage() {
         },
     ];
 
+    // Transaction columns
+    const transactionColumns = [
+        {
+            header: "Order Info",
+            cell: (row) => (
+                <div>
+                    <p className="font-semibold text-gray-900">{row.order?.orderNumber || "N/A"}</p>
+                    <p className="text-xs text-gray-500">
+                        {row.order?.createdAt ? new Date(row.order.createdAt).toLocaleDateString("bn-BD") : "N/A"}
+                    </p>
+                </div>
+            ),
+        },
+        {
+            header: "Affiliate",
+            cell: (row) => (
+                <div>
+                    <p className="font-semibold text-gray-900">{row.affiliate?.user?.name || "Unknown"}</p>
+                    <p className="text-xs text-gray-500">{row.affiliate?.user?.email || ""}</p>
+                    <p className="text-xs font-mono text-red-600 bg-red-50 px-1.5 py-0.5 rounded w-fit mt-1">Code: {row.affiliate?.code}</p>
+                </div>
+            ),
+        },
+        {
+            header: "Products Sold",
+            cell: (row) => (
+                <div className="space-y-1 max-w-xs">
+                    {row.order?.items?.map((item, idx) => (
+                        <div key={idx} className="text-xs text-gray-700 flex justify-between gap-4 border-b border-gray-50 pb-1 last:border-0">
+                            <span className="truncate font-medium max-w-[150px]" title={item.name}>{item.name}</span>
+                            <span className="text-gray-400 shrink-0">Qty: {item.quantity}</span>
+                        </div>
+                    )) || <span className="text-gray-400">No items</span>}
+                </div>
+            ),
+        },
+        {
+            header: "Order Value",
+            cell: (row) => <span className="font-semibold text-gray-900">{formatPrice(row.order?.total || 0)}</span>,
+        },
+        {
+            header: "Commission",
+            cell: (row) => <span className="font-bold text-green-600">{formatPrice(row.commissionAmount)}</span>,
+        },
+        {
+            header: "Status",
+            cell: (row) => {
+                const statusColors = {
+                    PENDING: "warning",
+                    CONFIRMED: "info",
+                    PACKED: "info",
+                    SHIPPED: "info",
+                    DELIVERED: "success",
+                    CANCELLED: "danger"
+                };
+                return <Badge variant={statusColors[row.order?.status] || "secondary"}>{row.order?.status || "UNKNOWN"}</Badge>;
+            },
+        },
+    ];
+
     // Withdrawal status styling
     const wStatusStyle = { PENDING: "warning", APPROVED: "success", REJECTED: "danger" };
 
@@ -166,6 +245,13 @@ export default function AffiliatesPage() {
                 >
                     <Users className="w-4 h-4" />
                     Affiliates
+                </button>
+                <button
+                    onClick={() => setActiveTab("transactions")}
+                    className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "transactions" ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                    <DollarSign className="w-4 h-4" />
+                    Referral Sales
                 </button>
                 <button
                     onClick={() => setActiveTab("withdrawals")}
@@ -261,6 +347,21 @@ export default function AffiliatesPage() {
                                 ))}
                             </tbody>
                         </table>
+                    )}
+                </div>
+            )}
+
+            {/* Transactions Tab */}
+            {activeTab === "transactions" && (
+                <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                    {isLoadingTransactions ? (
+                        <div className="flex justify-center items-center py-20">
+                            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                        </div>
+                    ) : transactions.length === 0 ? (
+                        <div className="text-center py-10 text-gray-500">কোনো অ্যাফিলিয়েট সেল পাওয়া যায়নি।</div>
+                    ) : (
+                        <DataTable columns={transactionColumns} data={transactions} searchKey="affiliate.code" />
                     )}
                 </div>
             )}
