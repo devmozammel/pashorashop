@@ -9,6 +9,31 @@ import { serializePrisma } from "@/lib/serialize";
 
 export const dynamic = 'force-dynamic';
 
+export async function generateMetadata() {
+    try {
+        const config = await prisma.homepageConfig.findFirst();
+        const siteSettingsRaw = await prisma.siteSetting.findUnique({ where: { key: 'store_settings' } });
+        
+        let siteName = "Authentic Bazar";
+        if (siteSettingsRaw?.value) {
+            try {
+                const parsed = JSON.parse(siteSettingsRaw.value);
+                if (parsed.siteName) siteName = parsed.siteName;
+            } catch (e) {}
+        }
+
+        return {
+            title: `${siteName} | Premium Fashion Store in Bangladesh`,
+            description: config?.heroSubtitle || "Discover premium fashion at Authentic Bazar. We offer a curated collection of authentic, high-quality clothing and accessories.",
+        };
+    } catch (e) {
+        return {
+            title: "Authentic Bazar | Premium Fashion Store in Bangladesh",
+            description: "Discover premium fashion at Authentic Bazar. We offer a curated collection of authentic, high-quality clothing and accessories.",
+        };
+    }
+}
+
 export default async function HomePage() {
     // 1. Fetch Homepage Config
     const config = await prisma.homepageConfig.findFirst();

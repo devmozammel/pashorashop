@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import ProductGrid from "@/components/storefront/ProductGrid";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -20,7 +20,7 @@ export async function generateMetadata(props) {
     if (!category) return { title: "Category Not Found" };
 
     return {
-        title: `${category.name} | Fashion House`,
+        title: `${category.name} | Authentic Bazar`,
         description: `Shop our ${category.name} collection.`,
     };
 }
@@ -78,10 +78,5 @@ export default async function CategoryPage(props) {
         }))
     };
 
-    // Note: Next.js 15 redirect still allows rendering metadata/scripts if handled carefully, 
-    // but usually, it's safer to provide schema in the layout or on the results page.
-    // However, for SEO crawlers that follow 307s, they see the target page.
-    // We will redirect to shop, but keep the category info.
-
-    redirect(`/shop?categoryId=${category.id}`);
+    permanentRedirect(`/shop?categoryId=${category.id}`);
 }

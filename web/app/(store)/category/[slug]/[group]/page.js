@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import ProductGrid from "@/components/storefront/ProductGrid";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -19,7 +19,7 @@ export async function generateMetadata(props) {
     if (!category || !subcategoryGroup) return { title: "Category Not Found" };
 
     return {
-        title: `${subcategoryGroup.name} - ${category.name} | Fashion House`,
+        title: `${subcategoryGroup.name} - ${category.name} | Authentic Bazar`,
         description: `Shop our ${subcategoryGroup.name} collection in ${category.name}.`,
     };
 }
@@ -61,5 +61,5 @@ export default async function SubcategoryGroupPage(props) {
 
     if (!subcategoryGroup) notFound();
 
-    redirect(`/shop?categoryId=${category.id}&subGroupId=${subcategoryGroup.id}`);
+    permanentRedirect(`/shop?categoryId=${category.id}&subGroupId=${subcategoryGroup.id}`);
 }

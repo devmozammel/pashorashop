@@ -84,6 +84,48 @@ export default function RootLayout({ children }) {
         }
     };
 
+    const localBusinessJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "ClothingStore",
+        "name": "Authentic Bazar",
+        "image": `${siteUrl}/logo.png`,
+        "@id": `${siteUrl}/#organization`,
+        "url": siteUrl,
+        "telephone": "+8801613134043",
+        "priceRange": "$$",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Dhaka",
+            "addressLocality": "Dhaka",
+            "addressRegion": "Dhaka",
+            "postalCode": "1200",
+            "addressCountry": "BD"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 23.8103,
+            "longitude": 90.4125
+        },
+        "openingHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"
+            ],
+            "opens": "00:00",
+            "closes": "23:59"
+        },
+        "sameAs": [
+            "https://www.facebook.com/authenticbazar",
+            "https://www.instagram.com/authenticbazar"
+        ]
+    };
+
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={inter.className} suppressHydrationWarning>
@@ -95,6 +137,10 @@ export default function RootLayout({ children }) {
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(searchBoxJsonLd) }}
+                />
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
                 />
                 <AuthProvider>
                     <Suspense fallback={null}>

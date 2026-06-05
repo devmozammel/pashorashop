@@ -1,4 +1,9 @@
 
+export const metadata = {
+    title: "Frequently Asked Questions | Authentic Bazar",
+    description: "Find answers to the most common questions about tracking orders, return policy, delivery times, and payment methods at Authentic Bazar.",
+};
+
 export default function FAQ() {
     const faqs = [
         {
@@ -27,8 +32,25 @@ export default function FAQ() {
         },
     ];
 
+    const faqJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faqs.map(item => ({
+            "@type": "Question",
+            "name": item.q,
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": item.a
+            }
+        }))
+    };
+
     return (
         <div className="container mx-auto px-4 py-12 max-w-3xl">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+            />
             <h1 className="text-3xl font-extrabold mb-3 text-gray-900">Frequently Asked Questions</h1>
             <p className="text-gray-500 mb-10">Find answers to the most common questions about our store.</p>
 

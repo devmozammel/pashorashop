@@ -27,11 +27,11 @@ export default async function sitemap() {
         // 2. Fetch all categories
         const categories = await prisma.category.findMany({
             where: { isActive: true },
-            select: { slug: true, updatedAt: true }
+            select: { id: true, updatedAt: true }
         });
 
         const categoryUrls = categories.map((c) => ({
-            url: `${baseUrl}/category/${c.slug}`,
+            url: `${baseUrl}/shop?categoryId=${c.id}`,
             lastModified: c.updatedAt,
             changeFrequency: 'weekly',
             priority: 0.6,
