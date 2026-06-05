@@ -423,16 +423,6 @@ export default function ProductDetails({
 
                 <div className="space-y-4">
                     <div className="flex items-start gap-4">
-                        <div className="p-2.5 bg-orange-100 text-orange-700 rounded-xl shrink-0">
-                            <RotateCcw className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-gray-900 text-sm">7 Days Easy Return</h4>
-                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">Not completely satisfied? Return the item within 7 days hassle-free.</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start gap-4">
                         <div className="p-2.5 bg-purple-100 text-purple-700 rounded-xl shrink-0">
                             <CheckCircle2 className="w-5 h-5" />
                         </div>

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"; // Use useParams instead
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import { requireUserClient } from "@/lib/userSession";
-import { ArrowLeft, Package, MapPin, CreditCard, Loader2, AlertCircle, CornerDownLeft, X } from "lucide-react";
+import { ArrowLeft, Package, MapPin, CreditCard, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
 
@@ -16,11 +16,6 @@ export default function OrderDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // Return Request State
-    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
-    const [returnReason, setReturnReason] = useState("");
-    const [returnNotes, setReturnNotes] = useState("");
-    const [isReturning, setIsReturning] = useState(false);
 
     useEffect(() => {
         async function fetchOrder() {
@@ -49,40 +44,6 @@ export default function OrderDetailsPage() {
         }
     }, [user, status, id]);
 
-    const handleRequestReturn = async (e) => {
-        e.preventDefault();
-        if (!returnReason) {
-            toast.error("Please select a reason for the return");
-            return;
-        }
-
-        setIsReturning(true);
-        try {
-            const res = await fetch("/api/user/returns", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    orderId: order.id,
-                    reason: returnReason,
-                    notes: returnNotes
-                })
-            });
-
-            const data = await res.json();
-            if (res.ok) {
-                toast.success("Return request submitted successfully");
-                setIsReturnModalOpen(false);
-                // Optionally update local order state to show a return is pending
-                // If you had a returnStatus field on the order, you'd update it here
-            } else {
-                toast.error(data.error || "Failed to submit return request");
-            }
-        } catch (error) {
-            toast.error("An error occurred");
-        } finally {
-            setIsReturning(false);
-        }
-    };
 
     if (status === "loading" || loading) {
         return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>;
@@ -129,16 +90,6 @@ export default function OrderDetailsPage() {
                     </div>
                 </div>
 
-                <div className="p-4 bg-white border-b flex justify-between items-center">
-                    <div>
-                        {/* You could check order.returns array if it was included in the API response */}
-                    </div>
-                    {order.status === "DELIVERED" && (
-                        <Button onClick={() => setIsReturnModalOpen(true)} variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300 gap-2">
-                            <CornerDownLeft className="w-4 h-4" /> Request Return
-                        </Button>
-                    )}
-                </div>
 
                 <div className="p-6 space-y-8">
                     {/* Items */}
@@ -202,58 +153,7 @@ export default function OrderDetailsPage() {
                 </div>
             </div>
 
-            {/* Return Request Modal */}
-            {isReturnModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                                <CornerDownLeft className="w-5 h-5 text-red-500" />
-                                Request a Return
-                            </h3>
-                            <button onClick={() => setIsReturnModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <form onSubmit={handleRequestReturn} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Return *</label>
-                                <select
-                                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                    value={returnReason}
-                                    onChange={(e) => setReturnReason(e.target.value)}
-                                    required
-                                >
-                                    <option value="">Select a reason</option>
-                                    <option value="DEFECTIVE">Product is defective / damaged</option>
-                                    <option value="WRONG_ITEM">Received the wrong item</option>
-                                    <option value="NOT_AS_DESCRIBED">Item not as described</option>
-                                    <option value="CHANGED_MIND">Changed my mind</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
-                                <textarea
-                                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                    rows="3"
-                                    placeholder="Please provide any extra details..."
-                                    value={returnNotes}
-                                    onChange={(e) => setReturnNotes(e.target.value)}
-                                ></textarea>
-                            </div>
-                            <div className="pt-4 flex gap-3 justify-end">
-                                <Button type="button" variant="outline" onClick={() => setIsReturnModalOpen(false)}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={isReturning} className="bg-red-600 hover:bg-red-700 text-white border-transparent">
-                                    {isReturning ? "Submitting..." : "Submit Return Request"}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 }

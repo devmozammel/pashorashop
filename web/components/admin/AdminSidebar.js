@@ -21,7 +21,6 @@ const NAV_ITEMS = [
     { title: "Sub Items", href: "/admin/subcategory-items", icon: Layers },
     { title: "Users", href: "/admin/users", icon: Users },
     { title: "Affiliates", href: "/admin/affiliates", icon: TrendingUp },
-    { title: "Returns", href: "/admin/returns", icon: Box },
     { title: "Reviews", href: "/admin/reviews", icon: Star },
     { title: "Flash Sale", href: "/admin/flash-sale", icon: Gift },
     { title: "Coupons", href: "/admin/coupons", icon: Gift },

@@ -1,0 +1,10 @@
+name = "authentic-bazar"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+# Optional D1 (database লাগলে uncomment করো)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "authentic-bazar-db"
+# database_id = "YOUR_D1_DATABASE_ID"
