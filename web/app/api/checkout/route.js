@@ -293,17 +293,20 @@ export async function POST(req) {
                 }
             }
 
-            // 6. Notify Admin
-            await tx.notification.create({
-                data: {
-                    userId: null,
-                    type: "NEW_ORDER",
-                    message: `New order ${createdOrder.orderNumber} placed by ${createdOrder.customerName}`
-                }
-            });
-
             return createdOrder;
+        }, {
+            maxWait: 10000,
+            timeout: 30000
         });
+
+        // 6. Notify Admin (Non-blocking, outside of transaction to avoid locks)
+        prisma.notification.create({
+            data: {
+                userId: null,
+                type: "NEW_ORDER",
+                message: `New order ${order.orderNumber} placed by ${order.customerName}`
+            }
+        }).catch(err => console.error("Failed to create admin notification:", err));
 
         // Get customer email if logged in
         let customerEmail = "customer@authenticbazar.com";
