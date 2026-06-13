@@ -101,7 +101,7 @@ function RegisterContent() {
         <div className="space-y-8">
             <div className="text-center space-y-2">
                 <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
-                    Join Premium
+                    Create Account
                 </h1>
                 <p className="text-neutral-500 text-sm font-medium">
                     Create an account to start your journey with Authentic Bazar.

@@ -192,7 +192,7 @@ function LoginContent() {
             <div className="pt-2 text-center text-sm">
                 <span className="text-neutral-500">New here? </span>
                 <Link href="/auth/register" className="font-bold text-white hover:underline underline-offset-4 decoration-white/20">
-                    Create a premium account
+                    Create account
                 </Link>
             </div>
         </div>
