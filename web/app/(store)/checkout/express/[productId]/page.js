@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { formatCurrency } from "@/lib/utils/format";
-import { Loader2, Lock } from "lucide-react";
+import { Loader2, Lock, MapPin, Truck, Coins, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ExpressCheckout({ params }) {
@@ -203,16 +203,72 @@ export default function ExpressCheckout({ params }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold mb-1 text-gray-700">Shipping Area</label>
-                                <select
-                                    required
-                                    className="w-full p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 bg-white text-sm"
-                                    value={form.shippingArea}
-                                    onChange={e => setForm({ ...form, shippingArea: e.target.value })}
-                                >
-                                    <option value="inside">Inside Dhaka (৳{Number(settings.shipping_fee_inside) || 70})</option>
-                                    <option value="outside">Outside Dhaka (৳{Number(settings.shipping_fee_outside) || 130})</option>
-                                </select>
+                                <label className="block text-sm font-bold mb-2 text-gray-800">Shipping Area</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {/* Inside Dhaka Card */}
+                                    <label
+                                        className={`relative flex items-center gap-2.5 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 select-none ${
+                                            form.shippingArea === "inside"
+                                                ? "border-black bg-black text-white shadow-md scale-[1.02]"
+                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-gray-700"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="shippingArea"
+                                            value="inside"
+                                            checked={form.shippingArea === "inside"}
+                                            onChange={() => setForm({ ...form, shippingArea: "inside" })}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${form.shippingArea === "inside" ? "bg-white/20" : "bg-gray-100"}`}>
+                                            <MapPin className={`w-4 h-4 ${form.shippingArea === "inside" ? "text-white" : "text-gray-500"}`} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold leading-tight">Inside Dhaka</p>
+                                            <p className={`text-[11px] font-black mt-0.5 ${form.shippingArea === "inside" ? "text-gray-300" : "text-gray-500"}`}>
+                                                ৳{Number(settings.shipping_fee_inside) || 70}
+                                            </p>
+                                        </div>
+                                        {form.shippingArea === "inside" && (
+                                            <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                <div className="w-1.5 h-1.5 bg-black rounded-full" />
+                                            </div>
+                                        )}
+                                    </label>
+
+                                    {/* Outside Dhaka Card */}
+                                    <label
+                                        className={`relative flex items-center gap-2.5 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 select-none ${
+                                            form.shippingArea === "outside"
+                                                ? "border-black bg-black text-white shadow-md scale-[1.02]"
+                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-gray-700"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="shippingArea"
+                                            value="outside"
+                                            checked={form.shippingArea === "outside"}
+                                            onChange={() => setForm({ ...form, shippingArea: "outside" })}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${form.shippingArea === "outside" ? "bg-white/20" : "bg-gray-100"}`}>
+                                            <Truck className={`w-4 h-4 ${form.shippingArea === "outside" ? "text-white" : "text-gray-500"}`} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold leading-tight">Outside Dhaka</p>
+                                            <p className={`text-[11px] font-black mt-0.5 ${form.shippingArea === "outside" ? "text-gray-300" : "text-gray-500"}`}>
+                                                ৳{Number(settings.shipping_fee_outside) || 130}
+                                            </p>
+                                        </div>
+                                        {form.shippingArea === "outside" && (
+                                            <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                <div className="w-1.5 h-1.5 bg-black rounded-full" />
+                                            </div>
+                                        )}
+                                    </label>
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold mb-1 text-gray-700">Full Address</label>
@@ -238,29 +294,66 @@ export default function ExpressCheckout({ params }) {
                             </div>
 
                             <div className="pt-4 border-t">
-                                <h3 className="font-bold text-sm text-gray-900 mb-3">Payment Method</h3>
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer bg-gray-50 hover:bg-white transition-all text-sm font-semibold">
+                                <label className="block text-sm font-bold mb-2 text-gray-800">Payment Method</label>
+                                <div className="grid grid-cols-1 gap-2.5">
+                                    {/* Cash on Delivery */}
+                                    <label
+                                        className={`relative flex items-center gap-3 p-3.5 border-2 rounded-xl cursor-pointer transition-all duration-200 select-none ${
+                                            form.paymentMethod === 'COD'
+                                                ? "border-black bg-black text-white shadow-md scale-[1.01]"
+                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-gray-700"
+                                        }`}
+                                    >
                                         <input
                                             type="radio"
                                             name="paymentMethod"
                                             value="COD"
                                             checked={form.paymentMethod === 'COD'}
                                             onChange={() => setForm({ ...form, paymentMethod: 'COD' })}
-                                            className="w-4 h-4 text-black focus:ring-black border-gray-300"
+                                            className="sr-only"
                                         />
-                                        <span>Cash on Delivery (হাতে পেয়ে টাকা পরিশোধ)</span>
+                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${form.paymentMethod === 'COD' ? "bg-white/20" : "bg-gray-100"}`}>
+                                            <Coins className={`w-5 h-5 ${form.paymentMethod === 'COD' ? "text-white" : "text-gray-600"}`} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold leading-tight">Cash on Delivery</p>
+                                            <p className={`text-xs mt-0.5 ${form.paymentMethod === 'COD' ? "text-gray-300" : "text-gray-500"}`}>হাতে পেয়ে টাকা পরিশোধ (৳১০০% নিরাপদ)</p>
+                                        </div>
+                                        {form.paymentMethod === 'COD' && (
+                                            <div className="absolute top-3 right-3 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                <div className="w-2 h-2 bg-black rounded-full" />
+                                            </div>
+                                        )}
                                     </label>
-                                    <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer bg-gray-50 hover:bg-white transition-all text-sm font-semibold">
+
+                                    {/* Online Payment */}
+                                    <label
+                                        className={`relative flex items-center gap-3 p-3.5 border-2 rounded-xl cursor-pointer transition-all duration-200 select-none ${
+                                            form.paymentMethod === 'ONLINE'
+                                                ? "border-black bg-black text-white shadow-md scale-[1.01]"
+                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-gray-700"
+                                        }`}
+                                    >
                                         <input
                                             type="radio"
                                             name="paymentMethod"
                                             value="ONLINE"
                                             checked={form.paymentMethod === 'ONLINE'}
                                             onChange={() => setForm({ ...form, paymentMethod: 'ONLINE' })}
-                                            className="w-4 h-4 text-black focus:ring-black border-gray-300"
+                                            className="sr-only"
                                         />
-                                        <span>Online Payment (bKash, Nagad, Rocket, Cards)</span>
+                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${form.paymentMethod === 'ONLINE' ? "bg-white/20" : "bg-gray-100"}`}>
+                                            <CreditCard className={`w-5 h-5 ${form.paymentMethod === 'ONLINE' ? "text-white" : "text-gray-600"}`} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold leading-tight">Online Payment</p>
+                                            <p className={`text-xs mt-0.5 ${form.paymentMethod === 'ONLINE' ? "text-gray-300" : "text-gray-500"}`}>bKash, Nagad, Rocket, Cards (মার্কেট সেরা ডিসকাউন্ট)</p>
+                                        </div>
+                                        {form.paymentMethod === 'ONLINE' && (
+                                            <div className="absolute top-3 right-3 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                <div className="w-2 h-2 bg-black rounded-full" />
+                                            </div>
+                                        )}
                                     </label>
                                 </div>
                             </div>
