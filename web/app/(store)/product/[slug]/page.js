@@ -126,7 +126,7 @@ export default async function ProductPage(props) {
     // Prepare images using shared helper (filters empty/null URLs, fallback to legacy JSON)
     product.displayImages = getProductDisplayImages(product);
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://authenticbazar.com";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
 
     // JSON-LD Structured Data for Google
     const jsonLd = {

@@ -53,7 +53,7 @@ export async function POST(req) {
             },
         });
 
-        const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://authenticbazar.com").replace(/\/$/, "");
+        const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop").replace(/\/$/, "");
         const resetUrl = `${siteUrl}/auth/reset-password?token=${unhashedToken}`;
 
         // Send Email using unified utility

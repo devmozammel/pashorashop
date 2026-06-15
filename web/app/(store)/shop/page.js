@@ -44,7 +44,7 @@ export default async function ShopPage(props) {
                 take: 20
             });
 
-            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://authenticbazar.com";
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
 
             itemListJsonLd = {
                 "@context": "https://schema.org",

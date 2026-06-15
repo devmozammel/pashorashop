@@ -309,7 +309,7 @@ export async function POST(req) {
         }).catch(err => console.error("Failed to create admin notification:", err));
 
         // Get customer email if logged in
-        let customerEmail = "customer@authenticbazar.com";
+        let customerEmail = "customer@authenticbazar.shop";
         if (confirmedUserId) {
             const user = await prisma.user.findUnique({ where: { id: confirmedUserId }, select: { email: true } });
             if (user?.email) customerEmail = user.email;
@@ -368,7 +368,7 @@ export async function POST(req) {
         });
 
         // Get customer email if logged in
-        if (!customerEmail || customerEmail === "customer@authenticbazar.com") {
+        if (!customerEmail || customerEmail === "customer@authenticbazar.shop") {
             if (confirmedUserId) {
                 const user = await prisma.user.findUnique({ where: { id: confirmedUserId }, select: { email: true } });
                 if (user?.email) customerEmail = user.email;
@@ -379,7 +379,7 @@ export async function POST(req) {
 
         // Fire emails in parallel, don't await — order response comes first
         Promise.allSettled([
-            customerEmail !== "customer@authenticbazar.com" ? sendOrderConfirmationEmail({ order: fullOrder, email: customerEmail }) : Promise.resolve(),
+            customerEmail !== "customer@authenticbazar.shop" ? sendOrderConfirmationEmail({ order: fullOrder, email: customerEmail }) : Promise.resolve(),
             sendAdminNewOrderAlert({ order: fullOrder }),
         ]).catch(() => { });
 

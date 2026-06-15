@@ -22,7 +22,7 @@ const transporter = nodemailer.createTransport({
 
 const FROM = process.env.EMAIL_FROM || "Authentic Bazar <authenticbazarshop@gmail.com>";
 const SITE = "Authentic Bazar";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://authenticbazar.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
 
 // ── Master CSS & Layout Parts
 const COLORS = {

@@ -5,7 +5,7 @@ import { formatPrice } from "@/lib/utils";
 
 export default function InvoicePage({ params }) {
     const [order, setOrder] = useState(null);
-    const [settings, setSettings] = useState({ siteName: "Authentic Bazar", address: "Dhaka, Bangladesh", supportEmail: "support@authenticbazar.com" });
+    const [settings, setSettings] = useState({ siteName: "Authentic Bazar", address: "Dhaka, Bangladesh", supportEmail: "support@authenticbazar.shop" });
 
     useEffect(() => {
         if (params.id) {

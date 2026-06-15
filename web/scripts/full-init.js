@@ -26,7 +26,7 @@ async function main() {
     const DEFAULT_SETTINGS = {
         siteName: "Authentic Bazar",
         currencySymbol: "৳",
-        supportEmail: "support@authenticbazar.com",
+        supportEmail: "support@authenticbazar.shop",
         whatsapp: "8801613134043",
         address: "Dhaka, Bangladesh",
         deliveryFeeInside: 60,

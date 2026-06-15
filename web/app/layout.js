@@ -15,7 +15,7 @@ import ScrollToTop from "@/components/ui/ScrollToTop";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://authenticbazar.com"),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop"),
     title: {
         default: "Authentic Bazar | Premium Fashion Store in Bangladesh",
         template: "%s | Authentic Bazar"
@@ -55,7 +55,7 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://authenticbazar.com";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
 
     const orgJsonLd = {
         "@context": "https://schema.org",

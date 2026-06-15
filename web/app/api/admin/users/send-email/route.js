@@ -58,7 +58,7 @@ export async function POST(req) {
         const emailPromises = emails.map(async (email) => {
             try {
                 await transporter.sendMail({
-                    from: process.env.EMAIL_FROM || '"Authentic Bazar" <noreply@authenticbazar.com>',
+                    from: process.env.EMAIL_FROM || '"Authentic Bazar" <noreply@authenticbazar.shop>',
                     to: email,
                     subject: subject,
                     html: message,
