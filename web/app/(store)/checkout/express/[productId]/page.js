@@ -13,6 +13,10 @@ export default function ExpressCheckout({ params }) {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [settings, setSettings] = useState({
+        shipping_fee_inside: "70",
+        shipping_fee_outside: "130"
+    });
 
     // Checkout Form State
     const [form, setForm] = useState({
@@ -25,20 +29,30 @@ export default function ExpressCheckout({ params }) {
     });
 
     useEffect(() => {
-        // Fetch product details from the specific API endpoint
-        async function fetchProduct() {
+        // Fetch product details and site settings in parallel
+        async function loadData() {
             try {
-                const res = await fetch(`/api/products/${productId}`);
-                if (!res.ok) throw new Error("Failed to fetch product");
-                const data = await res.json();
-                setProduct(data);
-                setLoading(false);
+                const [productRes, settingsRes] = await Promise.all([
+                    fetch(`/api/products/${productId}`),
+                    fetch("/api/settings")
+                ]);
+
+                if (productRes.ok) {
+                    const productData = await productRes.json();
+                    setProduct(productData);
+                }
+
+                if (settingsRes.ok) {
+                    const settingsData = await settingsRes.json();
+                    setSettings(settingsData);
+                }
             } catch (e) {
-                console.error(e);
+                console.error("Failed to load express checkout data:", e);
+            } finally {
                 setLoading(false);
             }
         }
-        fetchProduct();
+        loadData();
     }, [productId]);
 
     const handleSubmit = async (e) => {
@@ -46,7 +60,9 @@ export default function ExpressCheckout({ params }) {
         setSubmitting(true);
 
         const finalPrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
-        const shippingCost = form.shippingArea === "inside" ? 60 : 120;
+        const shippingCost = form.shippingArea === "inside"
+            ? (Number(settings.shipping_fee_inside) || 70)
+            : (Number(settings.shipping_fee_outside) || 130);
 
         // Split name into firstName and lastName as required by /api/checkout
         const nameParts = form.name.trim().split(" ");
@@ -111,7 +127,9 @@ export default function ExpressCheckout({ params }) {
     if (!product) return <div className="p-8 text-center text-red-500">Product not found</div>;
 
     const finalPrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
-    const shippingCost = form.shippingArea === "inside" ? 60 : 120;
+    const shippingCost = form.shippingArea === "inside"
+        ? (Number(settings.shipping_fee_inside) || 70)
+        : (Number(settings.shipping_fee_outside) || 130);
     const orderTotal = finalPrice + shippingCost;
 
     return (
@@ -192,8 +210,8 @@ export default function ExpressCheckout({ params }) {
                                     value={form.shippingArea}
                                     onChange={e => setForm({ ...form, shippingArea: e.target.value })}
                                 >
-                                    <option value="inside">Inside Dhaka (৳60)</option>
-                                    <option value="outside">Outside Dhaka (৳120)</option>
+                                    <option value="inside">Inside Dhaka (৳{Number(settings.shipping_fee_inside) || 70})</option>
+                                    <option value="outside">Outside Dhaka (৳{Number(settings.shipping_fee_outside) || 130})</option>
                                 </select>
                             </div>
                             <div>

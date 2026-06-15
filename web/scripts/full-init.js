@@ -29,8 +29,8 @@ async function main() {
         supportEmail: "support@authenticbazar.shop",
         whatsapp: "8801613134043",
         address: "Dhaka, Bangladesh",
-        deliveryFeeInside: 60,
-        deliveryFeeOutside: 120,
+        deliveryFeeInside: 70,
+        deliveryFeeOutside: 130,
         free_shipping_threshold: 2000,
         enable_topbar: "true",
         enable_sticky_header: "true"

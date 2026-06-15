@@ -20,7 +20,7 @@ export default function CheckoutPage() {
     const [loading, setLoading] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [error, setError] = useState("");
-    const [settings, setSettings] = useState({ shipping_fee_inside: "60", shipping_fee_outside: "120" });
+    const [settings, setSettings] = useState({ shipping_fee_inside: "70", shipping_fee_outside: "130" });
     // Zustand persist hydration guard — prevents false "empty cart" on page refresh
     const [hasHydrated, setHasHydrated] = useState(
         () => useCartStore.persist?.hasHydrated?.() ?? false
@@ -112,8 +112,8 @@ export default function CheckoutPage() {
     }
 
     const shippingCost = formData.shippingArea === "inside"
-        ? (Number(settings.shipping_fee_inside) || 60)
-        : (Number(settings.shipping_fee_outside) || 120);
+        ? (Number(settings.shipping_fee_inside) || 70)
+        : (Number(settings.shipping_fee_outside) || 130);
 
     // Recalculate totals
     const subtotal = getCartTotal();
@@ -359,7 +359,7 @@ export default function CheckoutPage() {
                                                 <div className="min-w-0">
                                                     <p className="text-xs font-bold leading-tight">Inside Dhaka</p>
                                                     <p className={`text-xs font-semibold mt-0.5 ${formData.shippingArea === "inside" ? "text-gray-300" : "text-gray-400"}`}>
-                                                        ৳{Number(settings.shipping_fee_inside) || 60}
+                                                    ৳{Number(settings.shipping_fee_inside) || 70}
                                                     </p>
                                                 </div>
                                                 {formData.shippingArea === "inside" && (
@@ -391,7 +391,7 @@ export default function CheckoutPage() {
                                                 <div className="min-w-0">
                                                     <p className="text-xs font-bold leading-tight">Outside Dhaka</p>
                                                     <p className={`text-xs font-semibold mt-0.5 ${formData.shippingArea === "outside" ? "text-gray-300" : "text-gray-400"}`}>
-                                                        ৳{Number(settings.shipping_fee_outside) || 120}
+                                                        ৳{Number(settings.shipping_fee_outside) || 130}
                                                     </p>
                                                 </div>
                                                 {formData.shippingArea === "outside" && (
