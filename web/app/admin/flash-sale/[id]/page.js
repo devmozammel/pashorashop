@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import AdminShell from "@/components/admin/AdminShell";
 import { ArrowLeft, Plus, Trash2, Loader2, Save, XCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
@@ -9,8 +9,7 @@ import AddProductModal from "@/components/admin/flash-sale/AddProductModal";
 import { useRouter } from "next/navigation";
 
 export default function FlashSaleDetailsPage({ params }) {
-    const resolvedParams = use(params);
-    const { id } = resolvedParams;
+    const { id } = params;
     const router = useRouter();
 
     const [sale, setSale] = useState(null);

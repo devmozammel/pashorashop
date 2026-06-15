@@ -1,14 +1,14 @@
 
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { formatCurrency } from "@/lib/utils/format";
 import { Loader2, Lock, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ExpressCheckout({ params }) {
-    const { productId } = use(params);
+    const { productId } = params;
     const router = useRouter();
 
     const [product, setProduct] = useState(null);
@@ -49,10 +49,10 @@ export default function ExpressCheckout({ params }) {
 
                 // Temporary fix: Fetch from the landing page API if we knew the slug? No.
                 // Let's just use the product list API and filter client side for now.
-                const res = await fetch('/api/products');
+                const res = await fetch(`/api/products/${productId}`);
+                if (!res.ok) throw new Error("Failed to fetch product");
                 const data = await res.json();
-                const found = data.products.find(p => p.id === productId);
-                setProduct(found);
+                setProduct(data);
                 setLoading(false);
             } catch (e) {
                 console.error(e);
@@ -127,7 +127,11 @@ export default function ExpressCheckout({ params }) {
                         <h2 className="font-semibold mb-4 text-lg">Order Summary</h2>
                         <div className="flex gap-4 mb-4 pb-4 border-b">
                             <div className="relative w-20 h-20 bg-gray-100 rounded-md overflow-hidden">
-                                {product.images?.[0] && <Image src={product.images[0]} alt={product.name} fill className="object-cover" />}
+                                {(product.images?.[0] || product.productImages?.[0]?.url) ? (
+                                    <Image src={product.images?.[0] || product.productImages[0].url} alt={product.name} fill className="object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-300">📦</div>
+                                )}
                             </div>
                             <div className="flex-1">
                                 <h3 className="font-medium text-sm line-clamp-2">{product.name}</h3>

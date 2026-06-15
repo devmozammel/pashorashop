@@ -8,6 +8,7 @@ export async function GET(request, { params }) {
             where: { id: params.id },
             include: {
                 category: true,
+                productImages: { orderBy: { sortOrder: 'asc' } },
                 variants: {
                     include: { images: true }
                 }
