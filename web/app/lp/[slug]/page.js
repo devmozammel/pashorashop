@@ -102,7 +102,7 @@ export default async function LandingPage({ params }) {
                         </p>
                     )}
 
-                    {page.countdownEnd && <LandingPageClient countdownEnd={page.countdownEnd} />}
+                    {page.countdownEnd && <LandingPageClient countdownEnd={page.countdownEnd.toISOString()} />}
 
                     <Link
                         href={primaryProduct ? `/checkout/express/${primaryProduct.id}` : "/shop"}
