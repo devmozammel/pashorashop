@@ -1,10 +1,9 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { formatCurrency } from "@/lib/utils/format";
-import { Loader2, Lock, ArrowRight } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ExpressCheckout({ params }) {
@@ -21,34 +20,14 @@ export default function ExpressCheckout({ params }) {
         phone: "",
         address: "",
         city: "",
-        paymentMethod: "COD"
+        shippingArea: "inside", // 'inside' or 'outside'
+        paymentMethod: "COD"   // 'COD' or 'ONLINE'
     });
 
     useEffect(() => {
-        // Fetch product details
-        // We can reuse the public product API if it supports ID, or create a specific one
-        // Let's assume /api/products returns list, maybe filter?
-        // Better: Use the database directly via server component?
-        // Since this is client component, we need an API.
-        // Let's use the public product details API if available or mock it for now with the list.
-        // Actually, we have /api/products, let's fetch all and find (not efficient but works for MVP)
-        // OR better: create a simple API endpoint for single product by ID.
-        // Or assume productId is actually slug? The route says [id].
-
-        // Let's implement a quick fetcher
+        // Fetch product details from the specific API endpoint
         async function fetchProduct() {
             try {
-                // Fetching all products to find one is bad practice but quick for demo
-                // Ideally: GET /api/products/[id]
-                // We have /api/products?query=...
-                // Let's try to fetch /api/admin/landing-pages/product-details/[id] ? No.
-                // Let's look at existing APIs. 
-                // We have /app/api/products/route.js. We can add [id].
-                // For now, let's mock fetch or use the one we just made for landing pages?
-                // Let's assume we can fetch data. 
-
-                // Temporary fix: Fetch from the landing page API if we knew the slug? No.
-                // Let's just use the product list API and filter client side for now.
                 const res = await fetch(`/api/products/${productId}`);
                 if (!res.ok) throw new Error("Failed to fetch product");
                 const data = await res.json();
@@ -66,29 +45,42 @@ export default function ExpressCheckout({ params }) {
         e.preventDefault();
         setSubmitting(true);
 
+        const finalPrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
+        const shippingCost = form.shippingArea === "inside" ? 60 : 120;
+
+        // Split name into firstName and lastName as required by /api/checkout
+        const nameParts = form.name.trim().split(" ");
+        const firstName = nameParts[0] || "Customer";
+        const lastName = nameParts.slice(1).join(" ") || " ";
+
         try {
-            // Create Order
-            // Use existing /api/orders endpoint
-            // Payload needs: items: [{productId, quantity: 1, price}], shippingAddress, paymentMethod
+            // Create Order payload compliant with /api/checkout schema
             const orderData = {
                 items: [{
-                    productId: product.id,
+                    product: {
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        salePrice: product.salePrice
+                    },
                     quantity: 1,
-                    price: product.price, // Server should validate this!
-                    name: product.name
+                    price: finalPrice
                 }],
-                shippingAddress: {
-                    name: form.name,
+                customer: {
+                    firstName,
+                    lastName,
                     phone: form.phone,
-                    street: form.address,
+                    address: form.address,
                     city: form.city,
-                    country: "Bangladesh"
+                    shippingArea: form.shippingArea,
+                    paymentMethod: form.paymentMethod
                 },
-                paymentMethod: form.paymentMethod,
-                total: product.price // Simplified
+                shippingCost,
+                couponCode: null,
+                affiliateCode: null
             };
 
-            const res = await fetch('/api/orders', {
+            const res = await fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData)
@@ -96,119 +88,161 @@ export default function ExpressCheckout({ params }) {
 
             if (res.ok) {
                 const data = await res.json();
-                // Redirect to success
-                router.push(`/order-confirmation/${data.orderNumber}`);
-                // We need to make sure this page exists or use a generic one
+                
+                // If the payment method was ONLINE, redirect to UddoktaPay
+                if (data.paymentUrl) {
+                    window.location.href = data.paymentUrl;
+                } else {
+                    router.push(`/order-success/${data.orderId}`);
+                }
             } else {
-                alert("Failed to place order. Please try again.");
+                const errData = await res.json();
+                alert(errData.error || "Failed to place order. Please try again.");
             }
         } catch (error) {
             console.error(error);
-            alert("An error occurred.");
+            alert("An error occurred. Please try again.");
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
+    if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-gray-400 w-8 h-8" /></div>;
     if (!product) return <div className="p-8 text-center text-red-500">Product not found</div>;
 
+    const finalPrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
+    const shippingCost = form.shippingArea === "inside" ? 60 : 120;
+    const orderTotal = finalPrice + shippingCost;
+
     return (
-        <div className="min-h-screen bg-gray-50 py-12">
+        <div className="min-h-screen bg-gray-50 py-12 font-sans">
             <div className="container mx-auto px-4 max-w-3xl">
                 <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold">Express Checkout</h1>
-                    <p className="text-gray-500">Complete your purchase in seconds</p>
+                    <h1 className="text-3xl font-black text-gray-900">Express Checkout</h1>
+                    <p className="text-gray-500 mt-1">Complete your purchase in seconds</p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-8">
                     {/* Order Summary */}
-                    <div className="bg-white p-6 rounded-xl border shadow-sm h-fit">
-                        <h2 className="font-semibold mb-4 text-lg">Order Summary</h2>
-                        <div className="flex gap-4 mb-4 pb-4 border-b">
-                            <div className="relative w-20 h-20 bg-gray-100 rounded-md overflow-hidden">
+                    <div className="bg-white p-6 rounded-2xl border shadow-sm h-fit space-y-4">
+                        <h2 className="font-bold text-lg text-gray-900 border-b pb-2">Order Summary</h2>
+                        <div className="flex gap-4 pb-4 border-b">
+                            <div className="relative w-20 h-20 bg-gray-100 rounded-xl overflow-hidden border">
                                 {(product.images?.[0] || product.productImages?.[0]?.url) ? (
                                     <Image src={product.images?.[0] || product.productImages[0].url} alt={product.name} fill className="object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-gray-300">📦</div>
                                 )}
                             </div>
-                            <div className="flex-1">
-                                <h3 className="font-medium text-sm line-clamp-2">{product.name}</h3>
-                                <p className="text-gray-500 text-sm">Qty: 1</p>
-                                <p className="font-bold text-primary mt-1">{formatCurrency(product.price)}</p>
+                            <div className="flex-1 space-y-1">
+                                <h3 className="font-bold text-sm text-gray-900 line-clamp-2 leading-snug">{product.name}</h3>
+                                <p className="text-gray-500 text-xs font-semibold">Qty: 1</p>
+                                <p className="font-black text-red-600 text-sm">{formatCurrency(finalPrice)}</p>
                             </div>
                         </div>
-                        <div className="flex justify-between font-bold text-lg pt-2">
+                        
+                        <div className="space-y-2 text-sm border-b pb-4">
+                            <div className="flex justify-between text-gray-600">
+                                <span>Subtotal</span>
+                                <span className="font-semibold">{formatCurrency(finalPrice)}</span>
+                            </div>
+                            <div className="flex justify-between text-gray-600">
+                                <span>Delivery Fee</span>
+                                <span className="font-semibold">{formatCurrency(shippingCost)}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between font-black text-lg pt-2 text-gray-900">
                             <span>Total</span>
-                            <span>{formatCurrency(product.price)}</span>
+                            <span className="text-red-600">{formatCurrency(orderTotal)}</span>
                         </div>
                     </div>
 
                     {/* Form */}
-                    <div className="bg-white p-6 rounded-xl border shadow-sm">
-                        <h2 className="font-semibold mb-4 text-lg">Shipping Details</h2>
+                    <div className="bg-white p-6 rounded-2xl border shadow-sm">
+                        <h2 className="font-bold text-lg text-gray-900 border-b pb-2 mb-4">Shipping Details</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1">Full Name</label>
+                                <label className="block text-sm font-semibold mb-1 text-gray-700">Full Name</label>
                                 <input
                                     required
-                                    className="w-full p-2 border rounded-lg"
+                                    type="text"
+                                    placeholder="আপনার নাম লিখুন"
+                                    className="w-full p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
                                     value={form.name}
                                     onChange={e => setForm({ ...form, name: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Phone Number</label>
+                                <label className="block text-sm font-semibold mb-1 text-gray-700">Phone Number</label>
                                 <input
                                     required
                                     type="tel"
-                                    className="w-full p-2 border rounded-lg"
+                                    placeholder="১১ ডিজিটের মোবাইল নম্বর"
+                                    className="w-full p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
                                     value={form.phone}
                                     onChange={e => setForm({ ...form, phone: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Address</label>
+                                <label className="block text-sm font-semibold mb-1 text-gray-700">Shipping Area</label>
+                                <select
+                                    required
+                                    className="w-full p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 bg-white text-sm"
+                                    value={form.shippingArea}
+                                    onChange={e => setForm({ ...form, shippingArea: e.target.value })}
+                                >
+                                    <option value="inside">Inside Dhaka (৳60)</option>
+                                    <option value="outside">Outside Dhaka (৳120)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold mb-1 text-gray-700">Full Address</label>
                                 <textarea
                                     required
-                                    className="w-full p-2 border rounded-lg"
+                                    placeholder="আপনার বিস্তারিত ঠিকানা লিখুন"
+                                    className="w-full p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
                                     rows="2"
                                     value={form.address}
                                     onChange={e => setForm({ ...form, address: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">City</label>
+                                <label className="block text-sm font-semibold mb-1 text-gray-700">City / District</label>
                                 <input
                                     required
-                                    className="w-full p-2 border rounded-lg"
+                                    type="text"
+                                    placeholder="শহর বা জেলা"
+                                    className="w-full p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
                                     value={form.city}
                                     onChange={e => setForm({ ...form, city: e.target.value })}
                                 />
                             </div>
 
                             <div className="pt-4 border-t">
-                                <h3 className="font-semibold mb-3">Payment Method</h3>
+                                <h3 className="font-bold text-sm text-gray-900 mb-3">Payment Method</h3>
                                 <div className="space-y-2">
-                                    <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer bg-gray-50 hover:bg-white transition-colors">
+                                    <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer bg-gray-50 hover:bg-white transition-all text-sm font-semibold">
                                         <input
                                             type="radio"
-                                            name="payment"
+                                            name="paymentMethod"
                                             value="COD"
                                             checked={form.paymentMethod === 'COD'}
                                             onChange={() => setForm({ ...form, paymentMethod: 'COD' })}
+                                            className="w-4 h-4 text-black focus:ring-black border-gray-300"
                                         />
-                                        <span>Cash on Delivery</span>
+                                        <span>Cash on Delivery (হাতে পেয়ে টাকা পরিশোধ)</span>
                                     </label>
-                                    <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer bg-gray-50 hover:bg-white transition-colors opacity-60">
+                                    <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer bg-gray-50 hover:bg-white transition-all text-sm font-semibold">
                                         <input
                                             type="radio"
-                                            name="payment"
-                                            value="BKASH"
-                                            disabled
+                                            name="paymentMethod"
+                                            value="ONLINE"
+                                            checked={form.paymentMethod === 'ONLINE'}
+                                            onChange={() => setForm({ ...form, paymentMethod: 'ONLINE' })}
+                                            className="w-4 h-4 text-black focus:ring-black border-gray-300"
                                         />
-                                        <span>bKash (Coming Soon)</span>
+                                        <span>Online Payment (bKash, Nagad, Rocket, Cards)</span>
                                     </label>
                                 </div>
                             </div>
@@ -216,10 +250,10 @@ export default function ExpressCheckout({ params }) {
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full bg-primary text-primary-foreground h-12 rounded-xl font-bold text-lg mt-6 shadow-lg shadow-primary/20 hover:opacity-90 flex items-center justify-center gap-2"
+                                className="w-full bg-black text-white h-12 rounded-xl font-black text-lg mt-6 hover:bg-black/90 transition-all flex items-center justify-center gap-2 shadow-lg"
                             >
                                 {submitting ? <Loader2 className="animate-spin" /> : <Lock className="w-4 h-4" />}
-                                Place Order {formatCurrency(product.price)}
+                                Place Order — {formatCurrency(orderTotal)}
                             </button>
                         </form>
                     </div>
