@@ -58,6 +58,41 @@ export default async function LandingPage({ params }) {
     const primaryProduct = page.products?.[0]?.product;
     const allProducts = page.products?.map((p) => p.product).filter(Boolean) || [];
 
+    // Apply active Flash Sale pricing dynamically
+    const now = new Date();
+    try {
+        const activeFlashSaleItems = await prisma.flashSaleItem.findMany({
+            where: {
+                productId: { in: allProducts.map((p) => p.id) },
+                isActive: true,
+                flashSale: {
+                    isActive: true,
+                    startsAt: { lte: now },
+                    endsAt: { gte: now }
+                }
+            }
+        });
+
+        const flashSalePriceMap = {};
+        activeFlashSaleItems.forEach((item) => {
+            flashSalePriceMap[item.productId] = item.salePrice;
+        });
+
+        if (primaryProduct && flashSalePriceMap[primaryProduct.id]) {
+            primaryProduct.salePrice = flashSalePriceMap[primaryProduct.id];
+            primaryProduct.discountPrice = flashSalePriceMap[primaryProduct.id];
+        }
+
+        allProducts.forEach((p) => {
+            if (flashSalePriceMap[p.id]) {
+                p.salePrice = flashSalePriceMap[p.id];
+                p.discountPrice = flashSalePriceMap[p.id];
+            }
+        });
+    } catch (fsError) {
+        console.error("[LP Page] Flash sale pricing fetch failed:", fsError.message);
+    }
+
     const heroImg =
         page.heroImageUrl ||
         primaryProduct?.productImages?.[0]?.url ||

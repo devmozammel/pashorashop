@@ -15,6 +15,26 @@ export async function GET(request, { params }) {
             },
         });
         if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+
+        // Check for active Flash Sale pricing
+        const now = new Date();
+        const activeFlashSaleItem = await prisma.flashSaleItem.findFirst({
+            where: {
+                productId: product.id,
+                isActive: true,
+                flashSale: {
+                    isActive: true,
+                    startsAt: { lte: now },
+                    endsAt: { gte: now }
+                }
+            }
+        });
+
+        if (activeFlashSaleItem) {
+            product.salePrice = activeFlashSaleItem.salePrice;
+            product.discountPrice = activeFlashSaleItem.salePrice;
+        }
+
         return NextResponse.json(product);
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
