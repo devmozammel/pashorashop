@@ -6,6 +6,7 @@ import DataTable from "@/components/admin/ui/DataTable";
 import { Button, Input } from "@/components/admin/ui/FormElements";
 import { Plus, Trash, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 export default function LandingPages() {
     const [pages, setPages] = useState([]);
@@ -87,7 +88,12 @@ export default function LandingPages() {
         {
             header: "Actions",
             cell: (row) => (
-                <Button size="sm" variant="ghost" className="text-red-600" onClick={() => handleDelete(row.id)}><Trash className="w-4 h-4" /></Button>
+                <div className="flex items-center gap-2">
+                    <Link href={`/admin/landing-pages/${row.id}`} className="inline-flex items-center justify-center bg-black hover:bg-black/90 text-white text-xs font-bold px-3 py-1.5 rounded transition-all">
+                        Edit
+                    </Link>
+                    <Button size="sm" variant="ghost" className="text-red-600" onClick={() => handleDelete(row.id)}><Trash className="w-4 h-4" /></Button>
+                </div>
             )
         }
     ];
