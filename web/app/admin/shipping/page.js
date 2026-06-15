@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ShippingPage() {
-    const [settings, setSettings] = useState({ deliveryFeeInside: 60, deliveryFeeOutside: 120 });
+    const [settings, setSettings] = useState({ deliveryFeeInside: 70, deliveryFeeOutside: 130 });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -18,8 +18,8 @@ export default function ShippingPage() {
                 const data = await res.json();
                 if (data.ok) {
                     setSettings({
-                        deliveryFeeInside: data.data.deliveryFeeInside ?? 60,
-                        deliveryFeeOutside: data.data.deliveryFeeOutside ?? 120,
+                        deliveryFeeInside: data.data.deliveryFeeInside ?? 70,
+                        deliveryFeeOutside: data.data.deliveryFeeOutside ?? 130,
                     });
                 } else {
                     toast.error("Failed to load shipping settings");

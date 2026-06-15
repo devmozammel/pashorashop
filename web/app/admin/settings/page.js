@@ -9,7 +9,7 @@ import { toast } from "sonner";
 export default function SettingsPage() {
     const [settings, setSettings] = useState({
         siteName: "", currencySymbol: "", supportEmail: "", whatsapp: "", address: "",
-        deliveryFeeInside: 60, deliveryFeeOutside: 120,
+        deliveryFeeInside: 70, deliveryFeeOutside: 130,
         facebookPixelId: "", facebookConversionToken: "",
         maintenanceMode: false,
     });

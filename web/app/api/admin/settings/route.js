@@ -10,8 +10,8 @@ const DEFAULT_SETTINGS = {
     whatsapp: "",
     address: "",
     // Shipping
-    deliveryFeeInside: 60,
-    deliveryFeeOutside: 120,
+    deliveryFeeInside: 70,
+    deliveryFeeOutside: 130,
     // Tracking & Analytics
     facebookPixelId: "",
     facebookConversionToken: "",
@@ -64,8 +64,8 @@ export async function POST(req) {
             address: body.address ?? currentSettings.address ?? "",
 
             // Shipping
-            deliveryFeeInside: body.deliveryFeeInside !== undefined ? Number(body.deliveryFeeInside) : (currentSettings.deliveryFeeInside ?? 60),
-            deliveryFeeOutside: body.deliveryFeeOutside !== undefined ? Number(body.deliveryFeeOutside) : (currentSettings.deliveryFeeOutside ?? 120),
+            deliveryFeeInside: body.deliveryFeeInside !== undefined ? Number(body.deliveryFeeInside) : (currentSettings.deliveryFeeInside ?? 70),
+            deliveryFeeOutside: body.deliveryFeeOutside !== undefined ? Number(body.deliveryFeeOutside) : (currentSettings.deliveryFeeOutside ?? 130),
             // Tracking
             facebookPixelId: body.facebookPixelId ?? currentSettings.facebookPixelId ?? "",
             facebookConversionToken: body.facebookConversionToken ?? currentSettings.facebookConversionToken ?? "",
