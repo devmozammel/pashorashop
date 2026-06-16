@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { ShoppingCart, Heart, Share2, Minus, Plus, Truck, ShieldCheck, RotateCcw, Award, CheckCircle2 } from "lucide-react";
+import { ShoppingCart, Heart, Share2, Minus, Plus, Truck, ShieldCheck, RotateCcw, Award, CheckCircle2, Zap } from "lucide-react";
 import { useCartStore } from "@/lib/store/cart";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
