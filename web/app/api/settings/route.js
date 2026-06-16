@@ -16,17 +16,28 @@ export async function GET(req) {
             return acc;
         }, {});
 
-        // Also expose shipping fees from the store_settings JSON blob
-        // so that checkout page can read them as shipping_fee_inside / shipping_fee_outside
+        // Expose shipping fees and sanitize sensitive data from the store_settings JSON blob
         if (settingsMap.store_settings) {
             try {
                 const parsed = JSON.parse(settingsMap.store_settings);
+                
+                // Expose shipping fees directly for checkout calculation
                 if (parsed.deliveryFeeInside !== undefined) {
                     settingsMap.shipping_fee_inside = String(parsed.deliveryFeeInside);
                 }
                 if (parsed.deliveryFeeOutside !== undefined) {
                     settingsMap.shipping_fee_outside = String(parsed.deliveryFeeOutside);
                 }
+
+                // Strip sensitive credentials to prevent exposing secrets publicly
+                delete parsed.facebookConversionToken;
+                delete parsed.sslcommerzStoreId;
+                delete parsed.sslcommerzStorePassword;
+                delete parsed.steadfastApiKey;
+                delete parsed.steadfastSecretKey;
+
+                // Re-serialize the sanitized settings back
+                settingsMap.store_settings = JSON.stringify(parsed);
             } catch (_) { }
         }
 
