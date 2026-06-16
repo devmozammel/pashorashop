@@ -8,6 +8,7 @@ import ConfettiEffect from "./ConfettiEffect";
 
 import { useEffect } from "react";
 import { useCartStore } from "@/lib/store/cart";
+import * as fpixel from "@/lib/fpixel";
 
 export default function OrderSuccessDisplay({ order }) {
     const clearCart = useCartStore(state => state.clearCart);
@@ -15,7 +16,19 @@ export default function OrderSuccessDisplay({ order }) {
     useEffect(() => {
         // Clear cart when success page is reached
         clearCart();
-    }, [clearCart]);
+
+        // Track Facebook Pixel Purchase event
+        try {
+            fpixel.event("Purchase", {
+                value: Number(order.total),
+                currency: "BDT",
+                content_type: "product",
+                content_ids: [order.id]
+            }, order.orderNumber);
+        } catch (e) {
+            console.error("Facebook Pixel Purchase error:", e);
+        }
+    }, [clearCart, order]);
 
     const containerVariants = {
         hidden: { opacity: 0, y: 30 },

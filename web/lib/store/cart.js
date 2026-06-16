@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import * as fpixel from '@/lib/fpixel';
 
 export const useCartStore = create(
     persist(
@@ -55,6 +56,19 @@ export const useCartStore = create(
                         ]
                     });
                 }
+
+                try {
+                    fpixel.event('AddToCart', {
+                        content_ids: [product.id],
+                        content_type: 'product',
+                        content_name: product.name,
+                        value: Number(unitPrice * quantity),
+                        currency: 'BDT'
+                    });
+                } catch (e) {
+                    console.error("Facebook Pixel AddToCart error:", e);
+                }
+
                 // Note: Drawer is NOT auto-opened here — caller decides (openDrawer vs router.push)
             },
 

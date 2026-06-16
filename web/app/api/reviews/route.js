@@ -33,7 +33,7 @@ export async function POST(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { productId, rating, comment } = await req.json();
+        const { productId, rating, comment, images } = await req.json();
 
         // 1. Verify Purchase (Optional requirement but good for "verified")
         // Check if user has a DELIVERED order containing this product
@@ -62,6 +62,7 @@ export async function POST(req) {
                 productId,
                 rating: parseInt(rating),
                 comment,
+                images: images || null,
                 isVerified: !!hasPurchased, // Mark verified if purchased
                 isApproved: true // Auto-approve or false if moderation needed
             }

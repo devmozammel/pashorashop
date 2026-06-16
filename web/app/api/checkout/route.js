@@ -39,7 +39,7 @@ const checkoutSchema = z.object({
     shippingCost: z.number().int(),
     couponCode: z.string().optional().nullable(),
     affiliateCode: z.string().optional().nullable(),
-    // total: z.number().int(), // User total is ignored for security, we recalculate
+    draftId: z.string().optional().nullable(),
 });
 
 export async function POST(req) {
@@ -53,7 +53,7 @@ export async function POST(req) {
         const session = await getServerSession(authOptions);
 
         const body = await req.json();
-        const { items, customer, shippingCost, couponCode, affiliateCode } = checkoutSchema.parse(body);
+        const { items, customer, shippingCost, couponCode, affiliateCode, draftId } = checkoutSchema.parse(body);
 
         // --- SECURITY CHECK: Blacklist ---
         const blacklisted = await prisma.blacklist.findFirst({
@@ -383,9 +383,80 @@ export async function POST(req) {
             sendAdminNewOrderAlert({ order: fullOrder }),
         ]).catch(() => { });
 
+        // Delete the draft abandoned checkout if it exists
+        if (draftId) {
+            prisma.abandonedCheckout.delete({ where: { id: draftId } }).catch(() => {});
+        }
+
+        // ── Facebook Conversions API (CAPI) Purchase Event
+        const triggerCAPI = async () => {
+            try {
+                const setting = await prisma.siteSetting.findUnique({
+                    where: { key: "store_settings" }
+                });
+                if (!setting) return;
+
+                const storeSettings = JSON.parse(setting.value);
+                const pixelId = storeSettings.facebookPixelId;
+                const token = storeSettings.facebookConversionToken;
+
+                if (!pixelId || !token) return;
+
+                const crypto = await import("crypto");
+                const sha256 = (text) => {
+                    if (!text) return "";
+                    return crypto.createHash("sha256").update(String(text).trim().toLowerCase()).digest("hex");
+                };
+
+                const cleanPhone = customer.phone.replace(/\D/g, "");
+                let formattedPhone = cleanPhone;
+                if (cleanPhone.startsWith("0")) {
+                    formattedPhone = "88" + cleanPhone;
+                } else if (cleanPhone.startsWith("1") && cleanPhone.length === 10) {
+                    formattedPhone = "880" + cleanPhone;
+                }
+
+                const payload = {
+                    data: [
+                        {
+                            event_name: "Purchase",
+                            event_time: Math.floor(Date.now() / 1000),
+                            event_source: "web",
+                            action_source: "website",
+                            event_id: order.orderNumber,
+                            user_data: {
+                                client_ip_address: ip,
+                                client_user_agent: req.headers.get("user-agent") || "",
+                                ph: [sha256(formattedPhone)],
+                                fn: [sha256(customer.firstName)],
+                                ln: [sha256(customer.lastName)]
+                            },
+                            custom_data: {
+                                value: Number(order.total),
+                                currency: "BDT",
+                                content_type: "product",
+                                content_ids: orderItemsData.map(item => item.productId)
+                            }
+                        }
+                    ]
+                };
+
+                await fetch(`https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${token}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error("Facebook Conversions API error:", err);
+            }
+        };
+
+        triggerCAPI().catch(() => {});
+
         return NextResponse.json({
             success: true,
             orderId: order.id,
+            orderNumber: order.orderNumber,
             paymentUrl: paymentUrl
         });
 

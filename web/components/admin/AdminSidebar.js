@@ -15,6 +15,7 @@ const NAV_ITEMS = [
     { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { title: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { title: "Pre-Orders", href: "/admin/pre-orders", icon: ShoppingCart },
+    { title: "Abandoned Carts", href: "/admin/abandoned-carts", icon: ShoppingCart },
     { title: "Products", href: "/admin/products", icon: Box },
     { title: "Categories", href: "/admin/categories", icon: Layers },
     { title: "Sub Groups", href: "/admin/subcategory-groups", icon: Layers },

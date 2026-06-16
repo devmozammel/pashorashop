@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import TrustBadges from "@/components/storefront/TrustBadges";
 import { MapPin, Truck, Banknote, Smartphone, CreditCard } from "lucide-react";
+import * as fpixel from "@/lib/fpixel";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,23 @@ export default function CheckoutPage() {
         setHasHydrated(true);
     }, []);
 
+    // Track Facebook Pixel InitiateCheckout event
+    useEffect(() => {
+        if (hasHydrated && items.length > 0) {
+            try {
+                fpixel.event("InitiateCheckout", {
+                    content_ids: items.map(i => i.product.id),
+                    content_type: "product",
+                    value: Number(getCartTotal()),
+                    currency: "BDT",
+                    num_items: items.reduce((acc, i) => acc + i.quantity, 0)
+                });
+            } catch (e) {
+                console.error("Facebook Pixel InitiateCheckout error:", e);
+            }
+        }
+    }, [hasHydrated, items]);
+
     const { data: session, status: sessionStatus } = useSession();
     const isGuest = sessionStatus === "unauthenticated";
 
@@ -91,6 +109,49 @@ export default function CheckoutPage() {
         paymentMethod: "COD",
         shippingArea: "inside"
     });
+
+    // Draft Checkout Auto-Save (Abandoned Cart Recovery)
+    useEffect(() => {
+        if (!formData.phone || (!formData.firstName && !formData.lastName)) return;
+
+        let draftId = localStorage.getItem("draft_checkout_id");
+        if (!draftId) {
+            draftId = `draft-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem("draft_checkout_id", draftId);
+        }
+
+        const debounceTimer = setTimeout(async () => {
+            try {
+                const draftPayload = {
+                    id: draftId,
+                    name: `${formData.firstName} ${formData.lastName}`.trim(),
+                    phone: formData.phone,
+                    address: formData.address,
+                    city: formData.city || (formData.shippingArea === "inside" ? "Dhaka" : "Outside Dhaka"),
+                    items: items.map(item => ({
+                        productId: item.product.id,
+                        variantId: item.variant?.id || null,
+                        name: item.product.name,
+                        quantity: item.quantity,
+                        price: item.product.salePrice || item.product.price
+                    })),
+                    total: getCartTotal() + (formData.shippingArea === "inside" 
+                        ? Number(settings.shipping_fee_inside || "70") 
+                        : Number(settings.shipping_fee_outside || "130"))
+                };
+
+                await fetch("/api/checkout/draft", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(draftPayload)
+                });
+            } catch (err) {
+                console.error("Failed to save checkout draft", err);
+            }
+        }, 1500);
+
+        return () => clearTimeout(debounceTimer);
+    }, [formData.phone, formData.firstName, formData.lastName, formData.address, formData.city, formData.shippingArea, items, settings]);
 
     // Wait for Zustand to hydrate from localStorage before checking empty cart
     if (!hasHydrated) {
@@ -185,6 +246,7 @@ export default function CheckoutPage() {
         setError("");
 
         try {
+            const draftId = localStorage.getItem("draft_checkout_id");
             const res = await fetch("/api/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -192,9 +254,9 @@ export default function CheckoutPage() {
                     items,
                     customer: formData,
                     shippingCost,
-                    couponCode: appliedCoupon ? appliedCoupon.code : null, // Pass coupon code
-                    affiliateCode: affiliateCode, // Pass affiliate tracking code
-                    // total // Server recalculates, but we can pass if needed for validation (not strictly used by my updated backend)
+                    couponCode: appliedCoupon ? appliedCoupon.code : null,
+                    affiliateCode: affiliateCode,
+                    draftId: draftId || null
                 })
             });
 
@@ -209,6 +271,8 @@ export default function CheckoutPage() {
             if (!data.paymentUrl) {
                 clearCart();
             }
+            // Clear draft checkout ID on success
+            localStorage.removeItem("draft_checkout_id");
 
             // Clear local coupon state
             setAppliedCoupon(null);

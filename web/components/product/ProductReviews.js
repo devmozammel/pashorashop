@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, MessageSquare, Loader2 } from "lucide-react";
+import { Star, MessageSquare, Loader2, Camera, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,10 @@ export default function ProductReviews({ productId }) {
     // Form state
     const [rating, setRating] = useState(5);
     const [comment, setComment] = useState("");
+    const [images, setImages] = useState([]);
+    const [uploading, setUploading] = useState(false);
     const [showForm, setShowForm] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     useEffect(() => {
         fetchReviews();
@@ -34,6 +37,55 @@ export default function ProductReviews({ productId }) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleImageChange = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        setUploading(true);
+        const uploadedUrls = [...images];
+
+        for (const file of files) {
+            if (uploadedUrls.length >= 5) {
+                toast.error("You can upload a maximum of 5 images");
+                break;
+            }
+
+            if (!file.type.startsWith("image/")) {
+                toast.error(`${file.name} is not an image`);
+                continue;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error(`${file.name} is larger than 5MB`);
+                continue;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const res = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok && data.url) {
+                    uploadedUrls.push(data.url);
+                } else {
+                    toast.error(data.error || `Failed to upload ${file.name}`);
+                }
+            } catch (err) {
+                console.error(err);
+                toast.error(`Error uploading ${file.name}`);
+            }
+        }
+        setImages(uploadedUrls);
+        setUploading(false);
+    };
+
+    const handleRemoveImage = (index) => {
+        setImages(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e) => {
@@ -58,7 +110,8 @@ export default function ProductReviews({ productId }) {
                 body: JSON.stringify({
                     productId,
                     rating,
-                    comment
+                    comment,
+                    images
                 })
             });
 
@@ -70,6 +123,7 @@ export default function ProductReviews({ productId }) {
                 toast.success("Review submitted successfully");
                 setComment("");
                 setRating(5);
+                setImages([]);
                 setShowForm(false);
                 // Fetch reviews again to show the new one
                 fetchReviews();
@@ -159,6 +213,44 @@ export default function ProductReviews({ productId }) {
                                 />
                             </div>
 
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium mb-2">Add Photos (Optional, max 5)</label>
+                                <div className="flex flex-wrap gap-2 items-center">
+                                    {images.map((url, idx) => (
+                                        <div key={idx} className="relative w-20 h-20 border rounded-lg overflow-hidden">
+                                            <img src={url} alt="Preview" className="w-full h-full object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveImage(idx)}
+                                                className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {images.length < 5 && (
+                                        <label className="w-20 h-20 border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors bg-white">
+                                            {uploading ? (
+                                                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                                            ) : (
+                                                <>
+                                                    <Camera className="w-6 h-6 text-gray-400" />
+                                                    <span className="text-[10px] text-gray-500 mt-1">Upload</span>
+                                                </>
+                                            )}
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept="image/*"
+                                                onChange={handleImageChange}
+                                                disabled={uploading}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            </div>
+
                             <button
                                 type="submit"
                                 disabled={submitting}
@@ -207,12 +299,41 @@ export default function ProductReviews({ productId }) {
                                     <p className="text-gray-700 text-sm mt-3 leading-relaxed">
                                         {review.comment}
                                     </p>
+                                    {review.images && (
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            {(typeof review.images === "string" ? JSON.parse(review.images) : review.images).map((url, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    onClick={() => setSelectedImage(url)}
+                                                    className="w-20 h-20 border rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                                >
+                                                    <img src={url} alt={`Review photo ${idx + 1}`} className="w-full h-full object-cover" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         )}
                     </div>
                 </div>
             </div>
+            {selectedImage && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 cursor-zoom-out"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-lg">
+                        <img src={selectedImage} alt="Full screen preview" className="max-w-full max-h-[90vh] object-contain" />
+                        <button
+                            onClick={() => setSelectedImage(null)}
+                            className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors cursor-pointer"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

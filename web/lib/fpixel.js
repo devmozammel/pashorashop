@@ -8,8 +8,12 @@ export const pageview = () => {
 };
 
 // https://developers.facebook.com/docs/facebook-pixel/advanced/
-export const event = (name, options = {}) => {
+export const event = (name, options = {}, eventID = null) => {
     if (typeof window.fbq !== 'undefined') {
-        window.fbq('track', name, options);
+        if (eventID) {
+            window.fbq('track', name, options, { eventID });
+        } else {
+            window.fbq('track', name, options);
+        }
     }
 };

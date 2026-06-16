@@ -561,3 +561,15 @@ model CostProfile {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+model AbandonedCheckout {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  address   String?
+  city      String?
+  items     Json     // [{productId, variantId, name, quantity, price}]
+  total     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
