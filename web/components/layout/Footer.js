@@ -55,9 +55,10 @@ export default async function Footer() {
                         </ul>
                     </div>
                 </div>
-                <div className="mt-10 border-t pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
-                    <p>© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
-                    <div className="flex items-center gap-5">
+                <div className="mt-10 border-t pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground relative">
+                    <p className="order-2 md:order-1">© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
+                    
+                    <div className="flex items-center justify-center gap-6 order-1 md:order-2 md:absolute md:left-1/2 md:-translate-x-1/2">
                         <a href="https://www.facebook.com/share/1D2rWcKMQo/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-600 transition-colors" aria-label="Facebook">
                             <Facebook className="h-5.5 w-5.5" />
                         </a>
