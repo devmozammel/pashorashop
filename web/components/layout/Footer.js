@@ -1,4 +1,4 @@
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Facebook, Instagram } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
@@ -28,6 +28,19 @@ export default async function Footer() {
                         <p className="text-sm text-gray-500">
                             Your premium destination for fashion and style. Quality meets elegance.
                         </p>
+                        <div className="flex items-center gap-4 pt-2">
+                            <a href="https://www.facebook.com/share/1D2rWcKMQo/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-600 transition-colors" aria-label="Facebook">
+                                <Facebook className="h-5 w-5" />
+                            </a>
+                            <a href="https://www.instagram.com/authentic_bazar_shop?igsh=MWxzOXo5d2J3N3Jlbg==" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-600 transition-colors" aria-label="Instagram">
+                                <Instagram className="h-5 w-5" />
+                            </a>
+                            <a href="https://tiktok.com/@authenticbazar.shop" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-black transition-colors" aria-label="TikTok">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className="h-5 w-5 fill-current">
+                                    <path d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31c8.89,0,17.14.82,25.83,2.44v86.28a82.86,82.86,0,1,0-43,84.14,79.88,79.88,0,0,0,53.86-81.5V0h86.77a102.77,102.77,0,0,0,101.44,101.44v86.77A211,211,0,0,1,448,209.91Z"/>
+                                </svg>
+                            </a>
+                        </div>
                     </div>
                     <div>
                         <h3 className="font-semibold mb-4">Shop</h3>
