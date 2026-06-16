@@ -14,22 +14,28 @@ export async function generateMetadata() {
         const config = await prisma.homepageConfig.findFirst();
         const siteSettingsRaw = await prisma.siteSetting.findUnique({ where: { key: 'store_settings' } });
         
-        let siteName = "Authentic Bazar";
+        let siteName = "Authentic Bazar Shop";
         if (siteSettingsRaw?.value) {
             try {
                 const parsed = JSON.parse(siteSettingsRaw.value);
-                if (parsed.siteName) siteName = parsed.siteName;
+                if (parsed.siteName) {
+                    siteName = parsed.siteName.toLowerCase().includes("shop") ? parsed.siteName : `${parsed.siteName} Shop`;
+                }
             } catch (e) {}
         }
 
         return {
-            title: `${siteName} | Premium Fashion Store in Bangladesh`,
-            description: config?.heroSubtitle || "Discover premium fashion at Authentic Bazar. We offer a curated collection of authentic, high-quality clothing and accessories.",
+            title: {
+                absolute: siteName
+            },
+            description: "Discover premium fashion at Authentic Bazar. We offer a curated collection of authentic, high-quality clothing and accessories for men and women in Bangladesh.",
         };
     } catch (e) {
         return {
-            title: "Authentic Bazar | Premium Fashion Store in Bangladesh",
-            description: "Discover premium fashion at Authentic Bazar. We offer a curated collection of authentic, high-quality clothing and accessories.",
+            title: {
+                absolute: "Authentic Bazar Shop"
+            },
+            description: "Discover premium fashion at Authentic Bazar. We offer a curated collection of authentic, high-quality clothing and accessories for men and women in Bangladesh.",
         };
     }
 }

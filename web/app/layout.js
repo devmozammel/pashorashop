@@ -16,6 +16,9 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop"),
+    alternates: {
+        canonical: "./",
+    },
     title: {
         default: "Authentic Bazar | Premium Fashion Store in Bangladesh",
         template: "%s | Authentic Bazar"
