@@ -316,6 +316,7 @@ model LandingPage {
   countdownEnd DateTime?
   discountCode String?
   showTestimonials Boolean @default(false)
+  testimonialsJson String? @db.Text
   
   products LandingPageProduct[]
   

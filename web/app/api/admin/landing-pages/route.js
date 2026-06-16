@@ -45,6 +45,7 @@ export async function POST(req) {
             countdownEnd,
             discountCode,
             showTestimonials,
+            testimonialsJson
         } = body;
 
         if (!title || !slug) {
@@ -65,6 +66,7 @@ export async function POST(req) {
                 countdownEnd: countdownEnd ? new Date(countdownEnd) : null,
                 discountCode: discountCode || null,
                 showTestimonials: showTestimonials ?? false,
+                testimonialsJson: testimonialsJson || null,
             }
         });
 

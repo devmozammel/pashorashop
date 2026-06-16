@@ -52,7 +52,8 @@ export async function PUT(req, props) {
             ctaText,
             countdownEnd,
             discountCode,
-            showTestimonials
+            showTestimonials,
+            testimonialsJson
         } = body;
 
         // Update landing page
@@ -71,6 +72,7 @@ export async function PUT(req, props) {
                 countdownEnd: countdownEnd ? new Date(countdownEnd) : null,
                 discountCode: discountCode || null,
                 showTestimonials: showTestimonials ?? false,
+                testimonialsJson: testimonialsJson || null,
             }
         });
 

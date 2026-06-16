@@ -13,6 +13,7 @@ export default function EditLandingPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [productsList, setProductsList] = useState([]);
+    const [testimonials, setTestimonials] = useState([]);
     const [formData, setFormData] = useState({
         title: "",
         slug: "",
@@ -66,6 +67,16 @@ export default function EditLandingPage() {
                     productId: data.products?.[0]?.productId || "",
                     isActive: data.isActive ?? true,
                 });
+
+                let parsedTestimonials = [];
+                try {
+                    if (data.testimonialsJson) {
+                        parsedTestimonials = JSON.parse(data.testimonialsJson);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse testimonialsJson", e);
+                }
+                setTestimonials(parsedTestimonials);
             }
 
             if (productsRes.ok) {
@@ -91,10 +102,14 @@ export default function EditLandingPage() {
         e.preventDefault();
         setSaving(true);
         try {
+            const payload = {
+                ...formData,
+                testimonialsJson: JSON.stringify(testimonials)
+            };
             const res = await fetch(`/api/admin/landing-pages/${params.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) throw new Error("Failed to save");
@@ -221,6 +236,86 @@ export default function EditLandingPage() {
                         </div>
                     </div>
                 </div>
+
+                {formData.showTestimonials && (
+                    <div className="space-y-4 border-t pt-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900">Customer Testimonials (রিভিউ সমূহ)</h3>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setTestimonials(prev => [...prev, { name: "", text: "", rating: 5 }])}
+                            >
+                                + Add Testimonial
+                            </Button>
+                        </div>
+                        
+                        {testimonials.length === 0 ? (
+                            <p className="text-sm text-gray-500 italic">No testimonials added. Realistic default reviews will be shown on the landing page.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                {testimonials.map((item, index) => (
+                                    <div key={index} className="border p-4 rounded-lg bg-gray-50/50 space-y-3 relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setTestimonials(prev => prev.filter((_, idx) => idx !== index))}
+                                            className="absolute top-2 right-2 text-red-600 hover:text-red-800 text-xs font-bold"
+                                        >
+                                            Remove
+                                        </button>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div className="flex flex-col gap-1 md:col-span-2">
+                                                <label className="text-xs font-semibold text-gray-600">Customer Name (নাম)</label>
+                                                <input
+                                                    type="text"
+                                                    value={item.name}
+                                                    required
+                                                    placeholder="e.g. তানজিম আহমেদ"
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        setTestimonials(prev => prev.map((t, idx) => idx === index ? { ...t, name: val } : t));
+                                                    }}
+                                                    className="p-2 border rounded bg-white text-sm"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs font-semibold text-gray-600">Rating (রেটিং)</label>
+                                                <select
+                                                    value={item.rating}
+                                                    onChange={e => {
+                                                        const val = parseInt(e.target.value);
+                                                        setTestimonials(prev => prev.map((t, idx) => idx === index ? { ...t, rating: val } : t));
+                                                    }}
+                                                    className="p-2 border rounded bg-white text-sm"
+                                                >
+                                                    {[5, 4, 3, 2, 1].map(r => (
+                                                        <option key={r} value={r}>{"★".repeat(r) + "☆".repeat(5 - r)}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-xs font-semibold text-gray-600">Review Text (রিভিউ বিস্তারিত)</label>
+                                            <textarea
+                                                value={item.text}
+                                                required
+                                                rows={2}
+                                                placeholder="রিভিউ বিস্তারিত লিখুন..."
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setTestimonials(prev => prev.map((t, idx) => idx === index ? { ...t, text: val } : t));
+                                                }}
+                                                className="p-2 border rounded bg-white text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="pt-4 flex justify-end">
                     <Button type="submit" disabled={saving}>

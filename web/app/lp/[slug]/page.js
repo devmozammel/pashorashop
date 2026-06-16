@@ -5,12 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import LandingPageClient from "./LandingPageClient";
+import LandingPageGallery from "./LandingPageGallery";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
     try {
-        const { slug } = await params;
+        let { slug } = await params;
+        if (slug) slug = slug.replace(/\.+$/, "");
         const page = await prisma.landingPage.findUnique({ where: { slug } });
         if (!page) return { title: "Not Found" };
         return {
@@ -26,7 +28,8 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function LandingPage({ params }) {
-    const { slug } = await params;
+    let { slug } = await params;
+    if (slug) slug = slug.replace(/\.+$/, "");
 
     let page = null;
     try {
@@ -99,6 +102,24 @@ export default async function LandingPage({ params }) {
         (Array.isArray(primaryProduct?.images) ? primaryProduct.images[0] : null) ||
         null;
 
+    const defaultTestimonials = [
+        { name: "তানজিম আহমেদ", text: "জার্সির ফেব্রিকটা অসাধারণ, প্লেয়ার ফিট সাইজটা একদম পারফেক্ট হয়েছে। ডেলিভারিও খুব দ্রুত পেয়েছি।", rating: 5 },
+        { name: "জাহিদুল হাসান", text: "অরিজিনাল কালার ও নিখুঁত এমব্রয়ডারি লোগো। ৩-স্টার ব্যাজটাও দেখতে গর্জিয়াস লাগে।", rating: 5 },
+        { name: "রাফসান ইসলাম", text: "যেমনটা ছবিতে দেখেছি ঠিক তেমনটাই পেয়েছি। প্রাইজ অনুযায়ী কোয়ালিটি বেশ ভালো।", rating: 5 },
+    ];
+
+    let testimonials = defaultTestimonials;
+    if (page.testimonialsJson) {
+        try {
+            const parsed = JSON.parse(page.testimonialsJson);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                testimonials = parsed;
+            }
+        } catch (err) {
+            console.error("[LP Page] Error parsing testimonialsJson:", err);
+        }
+    }
+
     return (
         <div className="min-h-screen bg-white font-sans">
 
@@ -159,29 +180,14 @@ export default async function LandingPage({ params }) {
                 <section className="py-16 bg-gray-50 border-b">
                     <div className="max-w-5xl mx-auto px-4">
                         <div className="grid md:grid-cols-2 gap-10 items-center">
-                            <div className="space-y-3">
-                                <div className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white border">
-                                    {heroImg || primaryProduct.productImages?.[0]?.url ? (
-                                        <Image
-                                            src={heroImg || primaryProduct.productImages[0].url}
-                                            alt={primaryProduct.name}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">📦</div>
-                                    )}
-                                </div>
-                                {primaryProduct.productImages?.length > 1 && (
-                                    <div className="flex gap-2">
-                                        {primaryProduct.productImages.slice(1, 4).map((img, i) => (
-                                            <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200">
-                                                <Image src={img.url} alt="" fill className="object-cover" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            <LandingPageGallery 
+                                images={
+                                    primaryProduct.productImages?.map((img) => img.url).filter(Boolean).length > 0
+                                        ? primaryProduct.productImages.map((img) => img.url).filter(Boolean)
+                                        : (heroImg ? [heroImg] : [])
+                                } 
+                                productName={primaryProduct.name} 
+                            />
 
                             <div className="space-y-5">
                                 <h2 className="text-3xl font-black text-gray-900">{primaryProduct.name}</h2>
@@ -290,13 +296,11 @@ export default async function LandingPage({ params }) {
                     <div className="max-w-3xl mx-auto px-4 text-center">
                         <h2 className="text-2xl font-black text-gray-900 mb-10">কাস্টমারদের রিভিউ</h2>
                         <div className="grid md:grid-cols-3 gap-6">
-                            {[
-                                { name: "রাহেলা বেগম", text: "অনেক সুন্দর পণ্য, সময়মতো ডেলিভারি পেয়েছি!", rating: 5 },
-                                { name: "করিম সাহেব", text: "দুর্দান্ত কোয়ালিটি, আবার অর্ডার করব।", rating: 5 },
-                                { name: "শাহিনুর রহমান", text: "দাম এবং মান অনুযায়ী খুবই ভালো।", rating: 5 },
-                            ].map((review, i) => (
-                                <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border text-left">
-                                    <div className="flex text-yellow-400 mb-2 text-sm">{"★".repeat(review.rating)}</div>
+                            {testimonials.map((review, i) => (
+                                <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border text-left animate-fade-in">
+                                    <div className="flex text-yellow-400 mb-2 text-sm">
+                                        {"★".repeat(Math.min(5, Math.max(1, review.rating || 5)))}
+                                    </div>
                                     <p className="text-gray-700 text-sm leading-relaxed mb-3">"{review.text}"</p>
                                     <p className="text-gray-500 text-xs font-semibold">— {review.name}</p>
                                 </div>

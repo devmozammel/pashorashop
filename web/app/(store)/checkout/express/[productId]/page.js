@@ -18,6 +18,39 @@ export default function ExpressCheckout({ params }) {
         shipping_fee_outside: "130"
     });
 
+    const [selections, setSelections] = useState({});
+
+    const getOptionsMap = (product) => {
+        const optionsMap = {};
+        if (product && product.variants && product.variants.length > 0) {
+            product.variants.forEach(v => {
+                if (v.size) {
+                    if (!optionsMap["Size"]) optionsMap["Size"] = new Set();
+                    optionsMap["Size"].add(v.size);
+                }
+                if (v.color) {
+                    if (!optionsMap["Color"]) optionsMap["Color"] = new Set();
+                    optionsMap["Color"].add(v.color);
+                }
+            });
+        }
+        return optionsMap;
+    };
+
+    const optionsMap = getOptionsMap(product);
+    const optionKeys = Object.keys(optionsMap);
+
+    const getSelectedVariant = () => {
+        if (!product || !product.variants || product.variants.length === 0) return null;
+        return product.variants.find(v => {
+            if (optionsMap["Size"] && v.size !== selections["Size"]) return false;
+            if (optionsMap["Color"] && v.color !== selections["Color"]) return false;
+            return true;
+        });
+    };
+
+    const selectedVariant = getSelectedVariant();
+
     // Checkout Form State
     const [form, setForm] = useState({
         name: "",
@@ -59,7 +92,18 @@ export default function ExpressCheckout({ params }) {
         e.preventDefault();
         setSubmitting(true);
 
-        const finalPrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
+        if (optionKeys.length > 0) {
+            const missing = optionKeys.filter(key => !selections[key]);
+            if (missing.length > 0) {
+                alert(`দয়া করে ${missing.join(", ")} সিলেক্ট করুন (Please select ${missing.join(", ")})`);
+                setSubmitting(false);
+                return;
+            }
+        }
+
+        const basePrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
+        const priceAdjustment = selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0;
+        const finalPrice = basePrice + priceAdjustment;
         const shippingCost = form.shippingArea === "inside"
             ? (Number(settings.shipping_fee_inside) || 70)
             : (Number(settings.shipping_fee_outside) || 130);
@@ -79,6 +123,13 @@ export default function ExpressCheckout({ params }) {
                         price: product.price,
                         salePrice: product.salePrice
                     },
+                    variant: selectedVariant ? {
+                        id: selectedVariant.id,
+                        size: selectedVariant.size,
+                        color: selectedVariant.color,
+                        priceAdjustment: selectedVariant.priceAdjustment,
+                        stock: selectedVariant.stock
+                    } : null,
                     quantity: 1,
                     price: finalPrice
                 }],
@@ -126,7 +177,9 @@ export default function ExpressCheckout({ params }) {
     if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-gray-400 w-8 h-8" /></div>;
     if (!product) return <div className="p-8 text-center text-red-500">Product not found</div>;
 
-    const finalPrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
+    const basePrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
+    const priceAdjustment = selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0;
+    const finalPrice = basePrice + priceAdjustment;
     const shippingCost = form.shippingArea === "inside"
         ? (Number(settings.shipping_fee_inside) || 70)
         : (Number(settings.shipping_fee_outside) || 130);
@@ -180,6 +233,35 @@ export default function ExpressCheckout({ params }) {
                     <div className="bg-white p-6 rounded-2xl border shadow-sm">
                         <h2 className="font-bold text-lg text-gray-900 border-b pb-2 mb-4">Shipping Details</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {optionKeys.length > 0 && (
+                                <div className="space-y-3 pb-4 border-b">
+                                    <h3 className="font-bold text-sm text-gray-800">সাইজ সিলেক্ট করুন (Select Size)</h3>
+                                    {optionKeys.map(key => (
+                                        <div key={key} className="space-y-2">
+                                            <div className="flex justify-between items-center text-xs font-semibold text-gray-600">
+                                                <span>{key === "Size" ? "সাইজ" : key === "Color" ? "কালার" : key}</span>
+                                                <span className="text-black font-bold">{selections[key]}</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {Array.from(optionsMap[key]).map(val => (
+                                                    <button
+                                                        key={val}
+                                                        type="button"
+                                                        onClick={() => setSelections(prev => ({ ...prev, [key]: val }))}
+                                                        className={`px-4 py-2.5 text-xs font-bold rounded-lg border-2 transition-all ${
+                                                            selections[key] === val
+                                                                ? "border-black bg-black text-white shadow-md"
+                                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-gray-700"
+                                                        }`}
+                                                    >
+                                                        {val}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-semibold mb-1 text-gray-700">Full Name</label>
                                 <input
