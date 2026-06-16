@@ -20,6 +20,9 @@ const DEFAULT_SETTINGS = {
     sslcommerzStorePassword: "",
     // Advanced
     maintenanceMode: false,
+    // Steadfast Courier
+    steadfastApiKey: "",
+    steadfastSecretKey: "",
 };
 
 
@@ -74,6 +77,9 @@ export async function POST(req) {
             sslcommerzStorePassword: body.sslcommerzStorePassword ?? currentSettings.sslcommerzStorePassword ?? "",
             // Advanced
             maintenanceMode: body.maintenanceMode !== undefined ? Boolean(body.maintenanceMode) : (currentSettings.maintenanceMode ?? false),
+            // Steadfast Courier
+            steadfastApiKey: body.steadfastApiKey ?? currentSettings.steadfastApiKey ?? "",
+            steadfastSecretKey: body.steadfastSecretKey ?? currentSettings.steadfastSecretKey ?? "",
         };
 
         const setting = await prisma.siteSetting.upsert({

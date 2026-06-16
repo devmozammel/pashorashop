@@ -7,7 +7,12 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ShippingPage() {
-    const [settings, setSettings] = useState({ deliveryFeeInside: 70, deliveryFeeOutside: 130 });
+    const [settings, setSettings] = useState({
+        deliveryFeeInside: 70,
+        deliveryFeeOutside: 130,
+        steadfastApiKey: "",
+        steadfastSecretKey: ""
+    });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -20,6 +25,8 @@ export default function ShippingPage() {
                     setSettings({
                         deliveryFeeInside: data.data.deliveryFeeInside ?? 70,
                         deliveryFeeOutside: data.data.deliveryFeeOutside ?? 130,
+                        steadfastApiKey: data.data.steadfastApiKey ?? "",
+                        steadfastSecretKey: data.data.steadfastSecretKey ?? "",
                     });
                 } else {
                     toast.error("Failed to load shipping settings");
@@ -47,6 +54,8 @@ export default function ShippingPage() {
                 setSettings({
                     deliveryFeeInside: data.data.deliveryFeeInside,
                     deliveryFeeOutside: data.data.deliveryFeeOutside,
+                    steadfastApiKey: data.data.steadfastApiKey ?? "",
+                    steadfastSecretKey: data.data.steadfastSecretKey ?? "",
                 });
             } else {
                 toast.error(data.message || "Save failed");
@@ -69,23 +78,54 @@ export default function ShippingPage() {
     return (
         <AdminShell title="Shipping Configuration">
             <div className="bg-white p-6 rounded-xl border shadow-sm max-w-2xl space-y-6">
-                <p className="text-sm text-gray-500">
-                    These fees are applied at checkout based on the customer's delivery area.
-                </p>
-                <Input
-                    label="Inside Dhaka Fee (BDT)"
-                    type="number"
-                    min="0"
-                    value={settings.deliveryFeeInside}
-                    onChange={e => setSettings({ ...settings, deliveryFeeInside: Number(e.target.value) })}
-                />
-                <Input
-                    label="Outside Dhaka Fee (BDT)"
-                    type="number"
-                    min="0"
-                    value={settings.deliveryFeeOutside}
-                    onChange={e => setSettings({ ...settings, deliveryFeeOutside: Number(e.target.value) })}
-                />
+                <div>
+                    <h3 className="text-base font-bold text-gray-900 mb-2">Delivery Fees</h3>
+                    <p className="text-sm text-gray-500 mb-4">
+                        These fees are applied at checkout based on the customer's delivery area.
+                    </p>
+                    <div className="space-y-4">
+                        <Input
+                            label="Inside Dhaka Fee (BDT)"
+                            type="number"
+                            min="0"
+                            value={settings.deliveryFeeInside}
+                            onChange={e => setSettings({ ...settings, deliveryFeeInside: Number(e.target.value) })}
+                        />
+                        <Input
+                            label="Outside Dhaka Fee (BDT)"
+                            type="number"
+                            min="0"
+                            value={settings.deliveryFeeOutside}
+                            onChange={e => setSettings({ ...settings, deliveryFeeOutside: Number(e.target.value) })}
+                        />
+                    </div>
+                </div>
+
+                <hr className="border-gray-200" />
+
+                <div>
+                    <h3 className="text-base font-bold text-gray-900 mb-2">Steadfast Courier Integration</h3>
+                    <p className="text-sm text-gray-500 mb-4">
+                        Configure your Steadfast credentials to allow booking orders directly from order details.
+                    </p>
+                    <div className="space-y-4">
+                        <Input
+                            label="API Key"
+                            type="text"
+                            placeholder="e.g. ggstmv0g9qbyplpueeyptlre4w6b..."
+                            value={settings.steadfastApiKey}
+                            onChange={e => setSettings({ ...settings, steadfastApiKey: e.target.value })}
+                        />
+                        <Input
+                            label="Secret Key"
+                            type="password"
+                            placeholder="e.g. ca6bc3ltmy68nybeaw96mup"
+                            value={settings.steadfastSecretKey}
+                            onChange={e => setSettings({ ...settings, steadfastSecretKey: e.target.value })}
+                        />
+                    </div>
+                </div>
+
                 <Button onClick={handleSave} disabled={isSaving}>
                     {isSaving ? "Saving..." : "Save Settings"}
                 </Button>

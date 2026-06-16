@@ -20,6 +20,7 @@ export default function OrderDetailsPage({ params }) {
     const [statusLoading, setStatusLoading] = useState(false);
     const [note, setNote] = useState("");
     const [noteLoading, setNoteLoading] = useState(false);
+    const [dispatchLoading, setDispatchLoading] = useState(false);
 
     useEffect(() => {
         fetchOrder();
@@ -40,6 +41,27 @@ export default function OrderDetailsPage({ params }) {
             toast.error("Failed to load order");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleSteadfastDispatch = async () => {
+        if (!confirm("Are you sure you want to book/dispatch this order with Steadfast Courier?")) return;
+        setDispatchLoading(true);
+        try {
+            const res = await fetch(`/api/admin/orders/${id}/steadfast`, {
+                method: "POST"
+            });
+            const data = await res.json();
+            if (data.ok) {
+                toast.success("Order successfully booked with Steadfast Courier!");
+                fetchOrder();
+            } else {
+                toast.error(data.message || "Failed to book with Steadfast");
+            }
+        } catch (error) {
+            toast.error("An error occurred during dispatch");
+        } finally {
+            setDispatchLoading(false);
         }
     };
 
@@ -267,6 +289,60 @@ export default function OrderDetailsPage({ params }) {
                                     {order.isAbnormal ? "Move to Regular Orders" : "Mark as Abnormal Order"}
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Courier Dispatch Card */}
+                        <div className="bg-white rounded-xl shadow-sm border p-6">
+                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <Truck className="w-4 h-4 text-gray-500" />
+                                Courier & Dispatch
+                            </h3>
+
+                            {order.trackingNumber ? (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-500">Courier:</span>
+                                        <span className="font-semibold text-gray-800">{order.courierName || "Unspecified"}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-500">Tracking Code:</span>
+                                        <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                                            {order.trackingNumber}
+                                        </span>
+                                    </div>
+                                    {order.courierName?.toLowerCase() === "steadfast" && (
+                                        <a
+                                            href={`https://steadfast.com.bd/t/${order.trackingNumber}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full inline-block text-center bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs py-2 rounded font-bold transition"
+                                        >
+                                            Track on Steadfast
+                                        </a>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <p className="text-xs text-gray-500">
+                                        Book this order directly to Steadfast Courier. The status will automatically update to SHIPPED.
+                                    </p>
+                                    <button
+                                        onClick={handleSteadfastDispatch}
+                                        disabled={dispatchLoading || order.status === "CANCELLED"}
+                                        className="w-full flex items-center justify-center gap-2 bg-green-600 text-white text-xs py-2.5 rounded font-bold hover:bg-green-700 disabled:opacity-50 transition"
+                                    >
+                                        {dispatchLoading ? (
+                                            <>
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Dispatching...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Truck className="w-3.5 h-3.5" /> Send to Steadfast Courier
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="bg-white rounded-xl shadow-sm border p-6">
