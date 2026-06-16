@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 
 export default function Logo({ className, variant = "header" }) {
     const isFooter = variant === "footer";
+    const isWhite = variant === "white" || variant === "drawer";
 
     return (
         <div className={cn("flex items-center gap-1.5 md:gap-2 transition-opacity hover:opacity-90", className)}>
@@ -15,8 +16,8 @@ export default function Logo({ className, variant = "header" }) {
                 priority
             />
             <span className={cn(
-                "font-bold text-gray-900 tracking-tight whitespace-nowrap",
-                isFooter ? "text-2xl text-white" : "text-[15px] sm:text-lg"
+                "font-bold tracking-tight whitespace-nowrap",
+                isFooter ? "text-2xl text-white" : isWhite ? "text-[15px] sm:text-lg text-white" : "text-[15px] sm:text-lg text-gray-900"
             )}>
                 Authentic Bazar
             </span>

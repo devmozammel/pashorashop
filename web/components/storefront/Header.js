@@ -165,7 +165,7 @@ export default function Header({ settings }) {
                             {/* Drawer Header */}
                             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-black">
                                 <Link href="/" onClick={() => setMobileMenuOpen(false)}>
-                                    <Logo />
+                                    <Logo variant="white" />
                                 </Link>
                                 <button
                                     onClick={() => setMobileMenuOpen(false)}
