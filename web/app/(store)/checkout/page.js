@@ -202,7 +202,12 @@ export default function CheckoutPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     code: couponCode,
-                    total: subtotal // Send subtotal as 'total' param required by API
+                    total: subtotal,
+                    items: items.map(i => ({
+                        productId: i.product.id,
+                        quantity: i.quantity,
+                        price: i.price
+                    }))
                 })
             });
 
@@ -229,6 +234,44 @@ export default function CheckoutPage() {
             setCouponLoading(false);
         }
     };
+
+    // Automatically re-validate coupon when cart items or subtotal change
+    useEffect(() => {
+        if (appliedCoupon) {
+            const revalidateCoupon = async () => {
+                try {
+                    const res = await fetch("/api/coupons/verify", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            code: appliedCoupon.code,
+                            total: subtotal,
+                            items: items.map(i => ({
+                                productId: i.product.id,
+                                quantity: i.quantity,
+                                price: i.price
+                            }))
+                        })
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.valid) {
+                        setAppliedCoupon({
+                            code: data.code,
+                            discountAmount: data.discountAmount,
+                            type: data.type
+                        });
+                    } else {
+                        setAppliedCoupon(null);
+                        setCouponMessage(data.message || "Coupon is no longer valid");
+                        toast.error(data.message || "Coupon is no longer valid");
+                    }
+                } catch (err) {
+                    console.error("Failed to re-validate coupon:", err);
+                }
+            };
+            revalidateCoupon();
+        }
+    }, [items, subtotal]);
 
     const handleRemoveCoupon = () => {
         setAppliedCoupon(null);

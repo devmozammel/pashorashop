@@ -1,10 +1,10 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 
-export async function validateCoupon(code, orderTotal) {
+export async function validateCoupon(code, orderTotal, items = [], userId = null) {
     if (!code) return { valid: false, error: "Code required" };
 
     const coupon = await prisma.coupon.findUnique({
-        where: { code }
+        where: { code: code.toUpperCase() }
     });
 
     if (!coupon) return { valid: false, error: "Invalid coupon code" };
@@ -14,22 +14,54 @@ export async function validateCoupon(code, orderTotal) {
     if (coupon.startsAt && now < coupon.startsAt) return { valid: false, error: "Coupon not yet active" };
     if (coupon.endsAt && now > coupon.endsAt) return { valid: false, error: "Coupon expired" };
 
-    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return { valid: false, error: "Coupon usage limit reached" };
+    if (coupon.maxUsage && coupon.usedCount >= coupon.maxUsage) return { valid: false, error: "Coupon usage limit reached" };
 
-    if (coupon.minOrder && orderTotal < coupon.minOrder) {
-        return { valid: false, error: `Minimum order amount is ${coupon.minOrder}` };
+    if (coupon.minOrderAmount && orderTotal < coupon.minOrderAmount) {
+        return { valid: false, error: `Minimum order amount of ৳${coupon.minOrderAmount} required` };
     }
 
-    // Calculate discount
+    // User-specific validation
+    if (coupon.userId) {
+        if (!userId) {
+            return { valid: false, error: "Please log in to use this coupon" };
+        }
+        if (userId !== coupon.userId) {
+            return { valid: false, error: "This coupon is only valid for a specific user" };
+        }
+    }
+
+    // Product-specific validation & discount calculation
     let discountAmount = 0;
-    if (coupon.type === "PERCENTAGE") {
-        discountAmount = Math.floor((orderTotal * coupon.discount) / 100); // User asked for floor
-    } else {
-        discountAmount = coupon.discount; // Fixed amount
-    }
+    if (coupon.productId) {
+        // Filter items in the cart that match the coupon's productId
+        const productItems = items.filter(item => 
+            item.productId === coupon.productId || 
+            item.product?.id === coupon.productId
+        );
 
-    // Ensure discount doesn't exceed total
-    if (discountAmount > orderTotal) discountAmount = orderTotal;
+        if (productItems.length === 0) {
+            return { valid: false, error: "This coupon is not valid for the products in your cart" };
+        }
+
+        // Calculate the subtotal of the specific product in the cart
+        const productSubtotal = productItems.reduce((sum, item) => {
+            const itemPrice = item.price || item.unitPrice || (item.product?.salePrice ?? item.product?.price) || 0;
+            return sum + (itemPrice * item.quantity);
+        }, 0);
+
+        if (coupon.discountType === "PERCENT") {
+            discountAmount = Math.floor((productSubtotal * coupon.discountValue) / 100);
+        } else {
+            discountAmount = Math.min(coupon.discountValue, productSubtotal);
+        }
+    } else {
+        // General coupon applies to the entire order subtotal
+        if (coupon.discountType === "PERCENT") {
+            discountAmount = Math.floor((orderTotal * coupon.discountValue) / 100);
+        } else {
+            discountAmount = Math.min(coupon.discountValue, orderTotal);
+        }
+    }
 
     return {
         valid: true,

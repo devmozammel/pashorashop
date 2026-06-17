@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { validateCoupon } from "@/lib/coupon";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(request) {
     try {
-        const { code, total } = await request.json(); // total is required for minOrder check
+        const { code, total, items } = await request.json(); // total is required for minOrder check
 
-        const result = await validateCoupon(code, total || 0);
+        const session = await getServerSession(authOptions);
+        const userId = session?.user?.id || null;
+
+        const result = await validateCoupon(code, total || 0, items || [], userId);
 
         if (!result.valid) {
             return NextResponse.json({

@@ -181,7 +181,7 @@ export async function POST(req) {
             let finalCouponCode = null;
 
             if (couponCode) {
-                const couponResult = await validateCoupon(couponCode, calculatedSubtotal);
+                const couponResult = await validateCoupon(couponCode, calculatedSubtotal, items, confirmedUserId);
                 if (couponResult.valid) {
                     discountAmount = couponResult.discountAmount;
                     finalCouponCode = couponCode;

@@ -55,6 +55,7 @@ model User {
   reviews       Review[]
   cart          Cart?
   affiliateProfile AffiliateProfile?
+  coupons       Coupon[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -118,6 +119,7 @@ model Product {
   reviews       Review[]
   cartItems     CartItem[]
   flashSaleItems FlashSaleItem[]
+  coupons       Coupon[]
 }
 
 model ProductVariant {
@@ -364,6 +366,10 @@ model Coupon {
   startsAt       DateTime?
   endsAt         DateTime?
   isActive       Boolean   @default(true)
+  productId      String?
+  product        Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }

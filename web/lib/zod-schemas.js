@@ -10,6 +10,8 @@ export const couponSchema = z.object({
     startsAt: z.string().nullable().optional(), // Expect ISO string
     endsAt: z.string().nullable().optional(),   // Expect ISO string
     isActive: z.boolean().default(true),
+    productId: z.string().nullable().optional(),
+    userId: z.string().nullable().optional(),
 });
 
 // --- Flash Sale ---

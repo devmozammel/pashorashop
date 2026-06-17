@@ -34,6 +34,8 @@ export async function POST(req) {
                 startsAt: data.startsAt ? new Date(data.startsAt) : null,
                 endsAt: data.endsAt ? new Date(data.endsAt) : null,
                 isActive: data.isActive,
+                productId: data.productId || null,
+                userId: data.userId || null,
             },
         });
 

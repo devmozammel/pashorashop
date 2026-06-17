@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 async function main() {
     const product = await prisma.product.findUnique({
-        where: { id: "cmqdhx6xz0002oew5hrcm8cv3" },
+        where: { id: "cmqi5v23g000214bqh0w1uiiz" },
         include: {
             productImages: true,
             variants: true

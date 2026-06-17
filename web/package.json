@@ -26,6 +26,7 @@
     "nextjs-toploader": "^3.9.17",
     "nodemailer": "^6.9.7",
     "papaparse": "^5.5.3",
+    "pdf-parse": "^2.4.5",
     "prisma": "^5.10.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

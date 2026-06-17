@@ -237,6 +237,22 @@ export default async function LandingPage({ params }) {
                 </section>
             )}
 
+            {/* ── PRODUCT DETAILS/DESCRIPTION SECTION ── */}
+            {primaryProduct && primaryProduct.description && (
+                <section className="py-16 bg-white border-t border-b">
+                    <div className="max-w-3xl mx-auto px-4">
+                        <h2 className="text-2xl md:text-3xl font-black text-center text-gray-900 mb-8 relative pb-3">
+                            পণ্যটির বিস্তারিত বিবরণ
+                            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-red-600 rounded"></span>
+                        </h2>
+                        <div 
+                            className="prose prose-sm md:prose-base max-w-none text-gray-800 leading-relaxed space-y-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+                            dangerouslySetInnerHTML={{ __html: primaryProduct.description }}
+                        />
+                    </div>
+                </section>
+            )}
+
             {/* ── ALL PRODUCTS GRID ── */}
             {allProducts.length > 1 && (
                 <section className="py-16 bg-white">
