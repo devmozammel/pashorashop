@@ -20,6 +20,9 @@ export async function generateMetadata(props) {
             shortDesc: true,
             description: true,
             price: true,
+            metaTitle: true,
+            metaDescription: true,
+            metaKeywords: true,
             images: true,
             productImages: {
                 orderBy: { sortOrder: 'asc' },
@@ -30,12 +33,15 @@ export async function generateMetadata(props) {
 
     if (!product) return {};
 
-    const description = product.shortDesc || product.description?.substring(0, 160) || `Buy ${product.name} at Authentic Bazar`;
+    const title = product.metaTitle || `${product.name} | Authentic Bazar`;
+    const description = product.metaDescription || product.shortDesc || product.description?.substring(0, 160) || `Buy ${product.name} at Authentic Bazar`;
     const image = product.productImages[0]?.url || (typeof product.images === 'string' ? JSON.parse(product.images)[0] : product.images?.[0]) || "/logo.png";
+    const keywords = product.metaKeywords || "";
 
     return {
-        title: `${product.name} | Authentic Bazar`,
+        title: title,
         description: description,
+        keywords: keywords,
         alternates: {
             canonical: `/product/${slug}`,
         },

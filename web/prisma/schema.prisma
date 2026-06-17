@@ -106,6 +106,7 @@ model Product {
   
   metaTitle     String?
   metaDescription String? @db.Text
+  metaKeywords    String? @db.Text
   videoUrl      String?
   
   createdAt     DateTime  @default(now())

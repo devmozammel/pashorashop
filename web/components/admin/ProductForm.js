@@ -31,7 +31,11 @@ export default function ProductForm({ initialData, categories }) {
         images: [],
         variants: [],
         isPreOrder: false,
-        expectedDeliveryText: ""
+        expectedDeliveryText: "",
+        metaTitle: "",
+        metaDescription: "",
+        metaKeywords: "",
+        videoUrl: ""
     });
 
     const [imageUrlInput, setImageUrlInput] = useState("");
@@ -51,9 +55,10 @@ export default function ProductForm({ initialData, categories }) {
                 affiliateCommissionRate: Number(initialData.affiliateCommissionRate || 0),
                 affiliateCommissionType: initialData.affiliateCommissionType || "PERCENT",
                 metaTitle: initialData?.metaTitle || "",
-        metaDescription: initialData?.metaDescription || "",
-        videoUrl: initialData?.videoUrl || "",
-        categoryId: initialData.categoryId || "",
+                metaDescription: initialData?.metaDescription || "",
+                metaKeywords: initialData?.metaKeywords || "",
+                videoUrl: initialData?.videoUrl || "",
+                categoryId: initialData.categoryId || "",
                 subcategoryGroupId: initialData.subcategoryGroupId || "",
                 subcategoryItemId: initialData.subcategoryItemId || "",
                 paymentMethods: initialData.paymentMethods || "BOTH",
@@ -515,6 +520,16 @@ export default function ProductForm({ initialData, categories }) {
                                     onChange={handleChange} 
                                     rows={3}
                                     placeholder="Search engine description"
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-xs"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Meta Keywords</label>
+                                <input 
+                                    name="metaKeywords" 
+                                    value={formData.metaKeywords || ""} 
+                                    onChange={handleChange} 
+                                    placeholder="Search engine keywords (comma-separated)"
                                     className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all text-xs"
                                 />
                             </div>
