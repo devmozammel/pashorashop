@@ -245,10 +245,12 @@ export default async function LandingPage({ params }) {
                             পণ্যটির বিস্তারিত বিবরণ
                             <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-red-600 rounded"></span>
                         </h2>
-                        <div 
-                            className="prose prose-sm md:prose-base max-w-none text-gray-800 leading-relaxed space-y-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
-                            dangerouslySetInnerHTML={{ __html: primaryProduct.description }}
-                        />
+                        <div className="w-full overflow-hidden break-words">
+                            <div 
+                                className="prose prose-sm md:prose-base max-w-none text-gray-800 leading-relaxed space-y-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 break-words overflow-x-auto"
+                                dangerouslySetInnerHTML={{ __html: primaryProduct.description }}
+                            />
+                        </div>
                     </div>
                 </section>
             )}

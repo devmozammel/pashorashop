@@ -296,7 +296,7 @@ export default function ProductReviews({ productId }) {
                                             {new Date(review.createdAt).toLocaleDateString()}
                                         </div>
                                     </div>
-                                    <p className="text-gray-700 text-sm mt-3 leading-relaxed">
+                                    <p className="text-gray-700 text-sm mt-3 leading-relaxed break-words">
                                         {review.comment}
                                     </p>
                                     {review.images && (

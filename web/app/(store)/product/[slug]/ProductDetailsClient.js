@@ -181,7 +181,9 @@ export default function ProductDetailsClient({ product }) {
                     {/* Description */}
                     <div className="mt-8 prose prose-sm max-w-none text-muted-foreground">
                         <h3 className="text-foreground font-semibold mb-2">Description</h3>
-                        <p className="whitespace-pre-line">{product.description}</p>
+                        <div className="w-full overflow-hidden break-words">
+                            <p className="whitespace-pre-line break-words overflow-x-auto">{product.description}</p>
+                        </div>
                     </div>
                 </div>
             </div>
