@@ -9,6 +9,7 @@ import ConfettiEffect from "./ConfettiEffect";
 import { useEffect } from "react";
 import { useCartStore } from "@/lib/store/cart";
 import * as fpixel from "@/lib/fpixel";
+import * as ttpixel from "@/lib/ttpixel";
 
 export default function OrderSuccessDisplay({ order }) {
     const clearCart = useCartStore(state => state.clearCart);
@@ -27,6 +28,24 @@ export default function OrderSuccessDisplay({ order }) {
             }, order.orderNumber);
         } catch (e) {
             console.error("Facebook Pixel Purchase error:", e);
+        }
+
+        // Track TikTok Pixel CompletePayment event
+        try {
+            ttpixel.event("CompletePayment", {
+                value: Number(order.total),
+                currency: "BDT",
+                content_type: "product",
+                contents: order.items ? order.items.map(item => ({
+                    content_id: item.productId,
+                    content_type: "product",
+                    content_name: item.name,
+                    quantity: item.quantity,
+                    price: Number(item.unitPrice)
+                })) : []
+            });
+        } catch (e) {
+            console.error("TikTok Pixel CompletePayment error:", e);
         }
     }, [clearCart, order]);
 

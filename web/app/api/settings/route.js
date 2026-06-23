@@ -9,35 +9,39 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req) {
     try {
-        const settings = await prisma.siteSetting.findMany();
-        // Convert array to object for easier consumption { key: value }
+        const settings = await prisma.siteSetting.findMany({
+            where: {
+                isPublic: true // Only return settings marked as public
+            }
+        });
+
         const settingsMap = settings.reduce((acc, curr) => {
             acc[curr.key] = curr.value;
             return acc;
         }, {});
 
-        // Expose shipping fees and sanitize sensitive data from the store_settings JSON blob
+        // Expose shipping fees but strip ALL sensitive credentials from store_settings
         if (settingsMap.store_settings) {
             try {
                 const parsed = JSON.parse(settingsMap.store_settings);
-                
-                // Expose shipping fees directly for checkout calculation
-                if (parsed.deliveryFeeInside !== undefined) {
-                    settingsMap.shipping_fee_inside = String(parsed.deliveryFeeInside);
-                }
-                if (parsed.deliveryFeeOutside !== undefined) {
-                    settingsMap.shipping_fee_outside = String(parsed.deliveryFeeOutside);
-                }
 
-                // Strip sensitive credentials to prevent exposing secrets publicly
-                delete parsed.facebookConversionToken;
-                delete parsed.sslcommerzStoreId;
-                delete parsed.sslcommerzStorePassword;
-                delete parsed.steadfastApiKey;
-                delete parsed.steadfastSecretKey;
+                // Expose only the safe public fields
+                settingsMap.shipping_fee_inside  = String(parsed.deliveryFeeInside  ?? 70);
+                settingsMap.shipping_fee_outside = String(parsed.deliveryFeeOutside ?? 130);
 
-                // Re-serialize the sanitized settings back
-                settingsMap.store_settings = JSON.stringify(parsed);
+                // Build a safe public store_settings (whitelist approach)
+                const safeStoreSettings = {
+                    storeName:        parsed.storeName,
+                    storeEmail:       parsed.storeEmail,
+                    storePhone:       parsed.storePhone,
+                    storeAddress:     parsed.storeAddress,
+                    deliveryFeeInside:  parsed.deliveryFeeInside,
+                    deliveryFeeOutside: parsed.deliveryFeeOutside,
+                    currency:         parsed.currency,
+                    facebookPixelId:  parsed.facebookPixelId,
+                    tiktokPixelId:    parsed.tiktokPixelId,
+                };
+                settingsMap.store_settings = JSON.stringify(safeStoreSettings);
             } catch (_) { }
         }
 
@@ -46,6 +50,7 @@ export async function GET(req) {
         return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 });
     }
 }
+
 
 
 export async function POST(req) {

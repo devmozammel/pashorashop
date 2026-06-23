@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function TrackingPage() {
-    const [config, setConfig] = useState({ facebookPixelId: "", facebookConversionToken: "" });
+    const [config, setConfig] = useState({ facebookPixelId: "", facebookConversionToken: "", tiktokPixelId: "" });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -20,6 +20,7 @@ export default function TrackingPage() {
                     setConfig({
                         facebookPixelId: data.data.facebookPixelId || "",
                         facebookConversionToken: data.data.facebookConversionToken || "",
+                        tiktokPixelId: data.data.tiktokPixelId || "",
                     });
                 } else {
                     toast.error("Failed to load tracking settings");
@@ -82,6 +83,20 @@ export default function TrackingPage() {
                     onChange={e => setConfig({ ...config, facebookConversionToken: e.target.value })}
                     placeholder="Your server-side API token"
                 />
+                
+                <hr className="border-t my-6" />
+                
+                <h3 className="font-bold text-lg">TikTok Pixel</h3>
+                <p className="text-sm text-gray-500">
+                    Enter your TikTok Pixel ID to track visitors and conversions.
+                </p>
+                <Input
+                    label="TikTok Pixel ID"
+                    value={config.tiktokPixelId}
+                    onChange={e => setConfig({ ...config, tiktokPixelId: e.target.value })}
+                    placeholder="e.g. CQS1234567890"
+                />
+                
                 <Button onClick={handleSave} disabled={isSaving}>
                     {isSaving ? "Saving..." : "Save Configuration"}
                 </Button>

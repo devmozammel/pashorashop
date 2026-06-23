@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import TrustBadges from "@/components/storefront/TrustBadges";
 import { MapPin, Truck, Banknote, Smartphone, CreditCard } from "lucide-react";
 import * as fpixel from "@/lib/fpixel";
+import * as ttpixel from "@/lib/ttpixel";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +79,22 @@ export default function CheckoutPage() {
                 });
             } catch (e) {
                 console.error("Facebook Pixel InitiateCheckout error:", e);
+            }
+
+            try {
+                ttpixel.event("InitiateCheckout", {
+                    contents: items.map(i => ({
+                        content_id: i.product.id,
+                        content_type: "product",
+                        content_name: i.product.name,
+                        quantity: i.quantity,
+                        price: Number(i.price)
+                    })),
+                    value: Number(getCartTotal()),
+                    currency: "BDT"
+                });
+            } catch (e) {
+                console.error("TikTok Pixel InitiateCheckout error:", e);
             }
         }
     }, [hasHydrated, items]);

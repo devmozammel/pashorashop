@@ -3,8 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/providers/AuthProvider";
 import { Toaster } from "sonner";
-// import StoreLayoutWrapper from "@/components/layout/StoreLayoutWrapper";
 import FacebookPixel from "@/components/analytics/FacebookPixel";
+import TikTokPixel from "@/components/analytics/TikTokPixel";
 import AffiliateTracker from "@/components/analytics/AffiliateTracker";
 import WhatsAppButton from "@/components/storefront/WhatsAppButton";
 import Script from "next/script";
@@ -151,6 +151,7 @@ export default function RootLayout({ children }) {
                 <AuthProvider>
                     <Suspense fallback={null}>
                         <FacebookPixel />
+                        <TikTokPixel />
                         <AffiliateTracker />
                     </Suspense>
 

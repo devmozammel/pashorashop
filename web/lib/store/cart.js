@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as fpixel from '@/lib/fpixel';
+import * as ttpixel from '@/lib/ttpixel';
 
 export const useCartStore = create(
     persist(
@@ -67,6 +68,24 @@ export const useCartStore = create(
                     });
                 } catch (e) {
                     console.error("Facebook Pixel AddToCart error:", e);
+                }
+
+                try {
+                    ttpixel.event('AddToCart', {
+                        contents: [
+                            {
+                                content_id: product.id,
+                                content_type: 'product',
+                                content_name: product.name,
+                                quantity: quantity,
+                                price: Number(unitPrice)
+                            }
+                        ],
+                        value: Number(unitPrice * quantity),
+                        currency: 'BDT'
+                    });
+                } catch (e) {
+                    console.error("TikTok Pixel AddToCart error:", e);
                 }
 
                 // Note: Drawer is NOT auto-opened here — caller decides (openDrawer vs router.push)
