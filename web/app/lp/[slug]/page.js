@@ -61,12 +61,53 @@ export default async function LandingPage({ params }) {
     const primaryProduct = page.products?.[0]?.product;
     const allProducts = page.products?.map((p) => p.product).filter(Boolean) || [];
 
+    // Fetch similar products dynamically based on category
+    let similarProducts = [];
+    if (primaryProduct) {
+        try {
+            const excludeIds = allProducts.map((p) => p.id).filter(Boolean);
+            similarProducts = await prisma.product.findMany({
+                where: {
+                    isActive: true,
+                    id: { notIn: excludeIds },
+                    categoryId: primaryProduct.categoryId || undefined,
+                },
+                take: 4,
+                include: {
+                    productImages: { orderBy: { sortOrder: "asc" }, take: 1 },
+                },
+            });
+
+            if (similarProducts.length < 4) {
+                const alreadyFetchedIds = [...excludeIds, ...similarProducts.map((p) => p.id)];
+                const extraProducts = await prisma.product.findMany({
+                    where: {
+                        isActive: true,
+                        id: { notIn: alreadyFetchedIds },
+                    },
+                    take: 4 - similarProducts.length,
+                    include: {
+                        productImages: { orderBy: { sortOrder: "asc" }, take: 1 },
+                    },
+                });
+                similarProducts = [...similarProducts, ...extraProducts];
+            }
+        } catch (simError) {
+            console.error("[LP Page] Similar products fetch failed:", simError.message);
+        }
+    }
+
     // Apply active Flash Sale pricing dynamically
     const now = new Date();
     try {
+        const productIdsToCheck = [
+            ...allProducts.map((p) => p.id),
+            ...similarProducts.map((p) => p.id)
+        ].filter(Boolean);
+
         const activeFlashSaleItems = await prisma.flashSaleItem.findMany({
             where: {
-                productId: { in: allProducts.map((p) => p.id) },
+                productId: { in: productIdsToCheck },
                 isActive: true,
                 flashSale: {
                     isActive: true,
@@ -87,6 +128,13 @@ export default async function LandingPage({ params }) {
         }
 
         allProducts.forEach((p) => {
+            if (flashSalePriceMap[p.id]) {
+                p.salePrice = flashSalePriceMap[p.id];
+                p.discountPrice = flashSalePriceMap[p.id];
+            }
+        });
+
+        similarProducts.forEach((p) => {
             if (flashSalePriceMap[p.id]) {
                 p.salePrice = flashSalePriceMap[p.id];
                 p.discountPrice = flashSalePriceMap[p.id];
@@ -299,6 +347,71 @@ export default async function LandingPage({ params }) {
                                                     {formatPrice(product.price)}
                                                 </p>
                                             )}
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* ── SIMILAR PRODUCTS ── */}
+            {similarProducts && similarProducts.length > 0 && (
+                <section className="py-16 bg-gray-50 border-t border-b">
+                    <div className="max-w-5xl mx-auto px-4">
+                        <h2 className="text-2xl font-black text-center text-gray-900 mb-10 relative pb-3">
+                            সম্পর্কিত অন্যান্য পণ্য
+                            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-red-600 rounded"></span>
+                        </h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                            {similarProducts.map((product) => {
+                                if (!product) return null;
+                                const img =
+                                    product.productImages?.[0]?.url ||
+                                    (Array.isArray(product.images) ? product.images[0] : null);
+                                return (
+                                    <Link
+                                        key={product.id}
+                                        href={`/checkout/express/${product.id}`}
+                                        className="group border rounded-2xl overflow-hidden hover:shadow-lg transition-all bg-white flex flex-col justify-between"
+                                    >
+                                        <div>
+                                            <div className="relative aspect-square bg-gray-100">
+                                                {img ? (
+                                                    <Image
+                                                        src={img}
+                                                        alt={product.name}
+                                                        fill
+                                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">📦</div>
+                                                )}
+                                                {product.salePrice && (
+                                                    <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                                        SALE
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="p-3">
+                                                <p className="font-bold text-sm text-gray-900 line-clamp-2">{product.name}</p>
+                                            </div>
+                                        </div>
+                                        <div className="p-3 pt-0">
+                                            <div className="flex items-baseline gap-2 mt-1">
+                                                <span className="text-red-600 font-black text-base">
+                                                    {formatPrice(product.salePrice ?? product.price)}
+                                                </span>
+                                                {product.salePrice && (
+                                                    <span className="text-xs text-gray-400 line-through">
+                                                        {formatPrice(product.price)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <button className="w-full bg-red-600 text-white text-xs font-bold py-2 rounded-lg mt-3 group-hover:bg-red-700 transition-colors">
+                                                অর্ডার করুন
+                                            </button>
                                         </div>
                                     </Link>
                                 );
