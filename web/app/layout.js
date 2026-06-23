@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import FacebookPixel from "@/components/analytics/FacebookPixel";
 import TikTokPixel from "@/components/analytics/TikTokPixel";
 import AffiliateTracker from "@/components/analytics/AffiliateTracker";
+import { prisma } from "@/lib/prisma";
 import WhatsAppButton from "@/components/storefront/WhatsAppButton";
 import Script from "next/script";
 import { Suspense } from "react";
@@ -57,8 +58,23 @@ export const viewport = {
     maximumScale: 1,
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
+
+    let facebookPixelId = "";
+    let tiktokPixelId = "";
+    try {
+        const setting = await prisma.siteSetting.findUnique({
+            where: { key: "store_settings" }
+        });
+        if (setting) {
+            const parsed = JSON.parse(setting.value);
+            facebookPixelId = parsed.facebookPixelId || "";
+            tiktokPixelId = parsed.tiktokPixelId || "";
+        }
+    } catch (e) {
+        console.error("Error reading pixel IDs in RootLayout:", e);
+    }
 
     const orgJsonLd = {
         "@context": "https://schema.org",
@@ -150,8 +166,8 @@ export default function RootLayout({ children }) {
                 />
                 <AuthProvider>
                     <Suspense fallback={null}>
-                        <FacebookPixel />
-                        <TikTokPixel />
+                        <FacebookPixel id={facebookPixelId} />
+                        <TikTokPixel id={tiktokPixelId} />
                         <AffiliateTracker />
                     </Suspense>
 

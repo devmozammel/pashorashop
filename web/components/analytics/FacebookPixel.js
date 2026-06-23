@@ -1,38 +1,21 @@
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import * as fpixel from "@/lib/fpixel";
 
-export default function FacebookPixel() {
+export default function FacebookPixel({ id }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const [pixelId, setPixelId] = useState(fpixel.FB_PIXEL_ID || "");
 
-    // Fetch pixel ID from DB settings (set via Admin → Tracking)
     useEffect(() => {
-        if (!pixelId) {
-            fetch("/api/settings")
-                .then(r => r.json())
-                .then(data => {
-                    if (data.store_settings) {
-                        try {
-                            const s = JSON.parse(data.store_settings);
-                            if (s.facebookPixelId) setPixelId(s.facebookPixelId);
-                        } catch (_) { }
-                    }
-                })
-                .catch(() => { });
+        if (id) {
+            fpixel.pageview();
         }
-    }, []);
+    }, [pathname, searchParams, id]);
 
-    useEffect(() => {
-        fpixel.pageview();
-    }, [pathname, searchParams]);
-
-    if (!pixelId) return null;
+    if (!id) return null;
 
     return (
         <>
@@ -49,7 +32,7 @@ export default function FacebookPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${pixelId}');
+            fbq('init', '${id}');
           `,
                 }}
             />

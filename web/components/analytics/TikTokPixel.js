@@ -1,37 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import * as ttpixel from "@/lib/ttpixel";
 
-export default function TikTokPixel() {
+export default function TikTokPixel({ id }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const [pixelId, setPixelId] = useState(ttpixel.TT_PIXEL_ID || "");
 
-    // Fetch pixel ID from DB settings (set via Admin → Tracking)
     useEffect(() => {
-        if (!pixelId) {
-            fetch("/api/settings")
-                .then(r => r.json())
-                .then(data => {
-                    if (data.store_settings) {
-                        try {
-                            const s = JSON.parse(data.store_settings);
-                            if (s.tiktokPixelId) setPixelId(s.tiktokPixelId);
-                        } catch (_) { }
-                    }
-                })
-                .catch(() => { });
+        if (id) {
+            ttpixel.pageview();
         }
-    }, []);
+    }, [pathname, searchParams, id]);
 
-    useEffect(() => {
-        ttpixel.pageview();
-    }, [pathname, searchParams]);
-
-    if (!pixelId) return null;
+    if (!id) return null;
 
     return (
         <>
@@ -78,7 +62,7 @@ export default function TikTokPixel() {
                 var a = d.getElementsByTagName("script")[0];
                 a.parentNode.insertBefore(o, a)
               };
-              ttq.load('${pixelId}');
+              ttq.load('${id}');
               ttq.page();
             }(window, document, 'ttq');
           `,
