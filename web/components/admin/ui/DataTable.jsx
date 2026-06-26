@@ -5,9 +5,28 @@ import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function DataTable({ columns, data, searchKey = "name", onSearch, onSelectionChange }) {
     const [searchTerm, setSearchTerm] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [selectedIds, setSelectedIds] = useState(new Set());
     const itemsPerPage = 10;
+
+    const storageKey = typeof window !== "undefined"
+        ? `datatable_page_${window.location.pathname}_${searchKey}`
+        : "";
+
+    const [currentPage, setCurrentPage] = useState(() => {
+        if (typeof window !== "undefined") {
+            const saved = sessionStorage.getItem(`datatable_page_${window.location.pathname}_${searchKey}`);
+            return saved ? parseInt(saved, 10) : 1;
+        }
+        return 1;
+    });
+
+    const [selectedIds, setSelectedIds] = useState(new Set());
+
+    // Save page index to session storage when changed
+    useEffect(() => {
+        if (storageKey) {
+            sessionStorage.setItem(storageKey, currentPage);
+        }
+    }, [currentPage, storageKey]);
 
     // Reset selection when data changes entirely (optional, depending on UX desired)
     useEffect(() => {
@@ -25,6 +44,14 @@ export default function DataTable({ columns, data, searchKey = "name", onSearch,
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+    // Adjust page if it exceeds total pages after filter or delete
+    useEffect(() => {
+        if (totalPages > 0 && currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [totalPages, currentPage]);
+
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
@@ -127,21 +154,29 @@ export default function DataTable({ columns, data, searchKey = "name", onSearch,
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-center gap-2 mt-6">
                     <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="p-1 rounded-md border bg-white disabled:opacity-50 hover:bg-gray-50"
+                        className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl disabled:opacity-40 hover:bg-gray-100 transition bg-white"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <span className="text-sm text-gray-600">
-                        Page {currentPage} of {totalPages}
-                    </span>
+                    <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                            <button
+                                key={p}
+                                onClick={() => setCurrentPage(p)}
+                                className={`w-10 h-10 rounded-xl text-sm font-medium transition ${p === currentPage ? "bg-red-600 text-white shadow" : "border border-gray-200 hover:bg-gray-100 text-gray-600 bg-white"}`}
+                            >
+                                {p}
+                            </button>
+                        ))}
+                    </div>
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className="p-1 rounded-md border bg-white disabled:opacity-50 hover:bg-gray-50"
+                        className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl disabled:opacity-40 hover:bg-gray-100 transition bg-white"
                     >
                         <ChevronRight className="h-4 w-4" />
                     </button>

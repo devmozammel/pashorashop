@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import AdminShell from "@/components/admin/AdminShell";
-import { Search, Loader2, Eye, Truck, Package, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Search, Loader2, Eye, Truck, Package, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -29,6 +29,12 @@ function AdminOrdersContent() {
     const status = searchParams.get("status") || "ALL";
     const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1");
+
+    const updatePage = (p) => {
+        const params = new URLSearchParams(searchParams);
+        params.set("page", p);
+        router.push(`${pathname}?${params.toString()}`);
+    };
 
     useEffect(() => {
         fetchOrders();
@@ -169,23 +175,35 @@ function AdminOrdersContent() {
                 </div>
 
                 {/* Pagination */}
-                <div className="p-4 border-t flex justify-center gap-2">
-                    <button
-                        disabled={page <= 1}
-                        onClick={() => router.push(`${pathname}?${new URLSearchParams({ ...searchParams, page: page - 1 }).toString()}`)}
-                        className="px-3 py-1 border rounded disabled:opacity-50"
-                    >
-                        Prev
-                    </button>
-                    <span className="px-3 py-1 text-gray-500">Page {page} of {pagination.pages || 1}</span>
-                    <button
-                        disabled={page >= (pagination.pages || 1)}
-                        onClick={() => router.push(`${pathname}?${new URLSearchParams({ ...searchParams, page: page + 1 }).toString()}`)}
-                        className="px-3 py-1 border rounded disabled:opacity-50"
-                    >
-                        Next
-                    </button>
-                </div>
+                {pagination.pages > 1 && (
+                    <div className="p-4 border-t flex justify-center items-center gap-2">
+                        <button
+                            disabled={page <= 1}
+                            onClick={() => updatePage(page - 1)}
+                            className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl disabled:opacity-40 hover:bg-gray-100 transition bg-white"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => updatePage(p)}
+                                    className={`w-10 h-10 rounded-xl text-sm font-medium transition ${p === page ? "bg-red-600 text-white shadow" : "border border-gray-200 hover:bg-gray-100 text-gray-600 bg-white"}`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            disabled={page >= pagination.pages}
+                            onClick={() => updatePage(page + 1)}
+                            className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl disabled:opacity-40 hover:bg-gray-100 transition bg-white"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
             </div>
         </AdminShell>
     );
