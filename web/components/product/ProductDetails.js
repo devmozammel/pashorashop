@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, getProductDisplayName } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { ShoppingCart, Heart, Share2, Minus, Plus, Truck, ShieldCheck, RotateCcw, Award, CheckCircle2, Zap } from "lucide-react";
 import { useCartStore } from "@/lib/store/cart";
@@ -236,7 +236,7 @@ export default function ProductDetails({
             <div>
                 <div className="flex justify-between items-start">
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4 leading-tight">
-                        {product.name}
+                        {getProductDisplayName(product.name, selectedVariant, product.variants)}
                     </h1>
                     {/* Share Button (Desktop) */}
                     <button onClick={handleShare} className="hidden md:flex p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-colors">

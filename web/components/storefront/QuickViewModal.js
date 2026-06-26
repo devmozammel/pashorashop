@@ -7,6 +7,7 @@ import { X, Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { getProductDisplayName } from "@/lib/utils";
 
 export default function QuickViewModal({ product, isOpen, onClose }) {
     const [selectedVariant, setSelectedVariant] = useState(null);
@@ -14,9 +15,12 @@ export default function QuickViewModal({ product, isOpen, onClose }) {
 
     if (!isOpen || !product) return null;
 
-    const price = Number(product.discountPrice ?? product.salePrice ?? product.price ?? 0);
-    const originalPrice = Number(product.price);
-    const hasDiscount = (product.discountPrice || product.salePrice) && price < originalPrice;
+    const basePrice = Number(product.discountPrice ?? product.salePrice ?? product.price ?? 0);
+    const baseOriginalPrice = Number(product.price);
+    const priceAdjustment = selectedVariant ? Number(selectedVariant.priceAdjustment || 0) : 0;
+    const price = basePrice + priceAdjustment;
+    const originalPrice = baseOriginalPrice + priceAdjustment;
+    const hasDiscount = (product.discountPrice || product.salePrice) && basePrice < baseOriginalPrice;
 
     // Handle variants if any
     const variants = product.variants || [];
@@ -54,7 +58,9 @@ export default function QuickViewModal({ product, isOpen, onClose }) {
                 {/* Info Side */}
                 <div className="p-6 md:p-8 flex flex-col h-full overflow-y-auto bg-white">
                     <div className="mb-auto">
-                        <h2 className="text-2xl font-bold mb-2">{product.name}</h2>
+                        <h2 className="text-2xl font-bold mb-2">
+                            {getProductDisplayName(product.name, selectedVariant, variants)}
+                        </h2>
                         <div className="flex items-baseline gap-3 mb-4">
                             <span className="text-2xl font-bold text-primary">{formatCurrency(price)}</span>
                             {hasDiscount && (

@@ -11,10 +11,70 @@ import { getProductThumbnail } from "@/lib/productImages";
 import { motion } from "framer-motion";
 
 export default function ProductCard({ product, isFlashSale }) {
-    const finalPrice = product.discountPrice ?? product.salePrice ?? product.price;
-    const isSale = finalPrice < product.price;
     const thumbnail = getProductThumbnail(product);
-    const discountPercentage = isSale ? Math.round(((product.price - finalPrice) / product.price) * 100) : 0;
+
+    let displayPriceStr = "";
+    let displayOriginalPriceStr = null;
+    let discountPercent = 0;
+    let isSale = false;
+    let hasRange = false;
+
+    const basePrice = product.discountPrice ?? product.salePrice ?? product.price;
+    const isBaseSale = basePrice < product.price;
+
+    if (product.variants && product.variants.length > 0) {
+        const activeVariants = product.variants.filter(v => v.isActive !== false);
+        if (activeVariants.length > 0) {
+            const variantPrices = activeVariants.map(v => basePrice + (v.priceAdjustment || 0));
+            const variantOriginalPrices = activeVariants.map(v => product.price + (v.priceAdjustment || 0));
+
+            const minPrice = Math.min(...variantPrices);
+            const maxPrice = Math.max(...variantPrices);
+
+            const minOrig = Math.min(...variantOriginalPrices);
+            const maxOrig = Math.max(...variantOriginalPrices);
+
+            if (minPrice === maxPrice) {
+                displayPriceStr = formatPrice(minPrice);
+                if (minPrice < minOrig) {
+                    displayOriginalPriceStr = formatPrice(minOrig);
+                    discountPercent = Math.round(((minOrig - minPrice) / minOrig) * 100);
+                    isSale = true;
+                }
+            } else {
+                displayPriceStr = `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`;
+                hasRange = true;
+                const hasAnyDiscount = activeVariants.some(v => (basePrice + (v.priceAdjustment || 0)) < (product.price + (v.priceAdjustment || 0)));
+                if (hasAnyDiscount) {
+                    isSale = true;
+                    const discountPercentages = activeVariants
+                        .map(v => {
+                            const vp = basePrice + (v.priceAdjustment || 0);
+                            const op = product.price + (v.priceAdjustment || 0);
+                            return op > 0 ? Math.round(((op - vp) / op) * 100) : 0;
+                        })
+                        .filter(pct => pct > 0);
+                    if (discountPercentages.length > 0) {
+                        discountPercent = Math.max(...discountPercentages);
+                    }
+                }
+            }
+        } else {
+            displayPriceStr = formatPrice(basePrice);
+            if (isBaseSale) {
+                displayOriginalPriceStr = formatPrice(product.price);
+                discountPercent = Math.round(((product.price - basePrice) / product.price) * 100);
+                isSale = true;
+            }
+        }
+    } else {
+        displayPriceStr = formatPrice(basePrice);
+        if (isBaseSale) {
+            displayOriginalPriceStr = formatPrice(product.price);
+            discountPercent = Math.round(((product.price - basePrice) / product.price) * 100);
+            isSale = true;
+        }
+    }
 
     const addItem = useCartStore(state => state.addItem);
     const router = useRouter();
@@ -55,9 +115,9 @@ export default function ProductCard({ product, isFlashSale }) {
                 )}
 
                 {/* Sale Badge - Percentage */}
-                {isSale && (
+                {isSale && discountPercent > 0 && (
                     <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-tight rounded shadow-lg z-10 transition-transform group-hover:scale-110">
-                        -{discountPercentage}%
+                        -{discountPercent}%
                     </span>
                 )}
 
@@ -82,15 +142,15 @@ export default function ProductCard({ product, isFlashSale }) {
                 </Link>
                 <div className="flex items-center flex-wrap gap-1.5 mt-auto pt-2 border-t border-border/50">
                     <span className="font-bold text-sm md:text-lg">
-                        {formatPrice(finalPrice)}
+                        {displayPriceStr}
                     </span>
-                    {isSale && (
+                    {isSale && displayOriginalPriceStr && (
                         <>
                             <span className="text-[10px] md:text-xs text-muted-foreground line-through decoration-red-500/50">
-                                {formatPrice(product.price)}
+                                {displayOriginalPriceStr}
                             </span>
                             <span className="text-[10px] font-bold text-red-600">
-                                (-{discountPercentage}%)
+                                (-{discountPercent}%)
                             </span>
                         </>
                     )}
