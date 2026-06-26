@@ -74,7 +74,7 @@ export default function ShopClient() {
             .then(res => res.json())
             .then(data => {
                 setProducts(data.products || []);
-                setMetadata(data.metadata);
+                setMetadata(data.pagination || null);
                 setLoading(false);
             })
             .catch(() => setLoading(false));
