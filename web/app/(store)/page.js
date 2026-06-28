@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { serializePrisma } from "@/lib/serialize";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 120;
 
 export async function generateMetadata() {
     try {
@@ -41,77 +41,85 @@ export async function generateMetadata() {
 }
 
 export default async function HomePage() {
-    // 1. Fetch Homepage Config
-    const config = await prisma.homepageConfig.findFirst();
-
-    // 2. Fetch Featured Products (if enabled)
-    let featuredProducts = [];
-    if (config?.showFeatured !== false) { // Default true
-        const featuredRaw = await prisma.product.findMany({
-            where: { isActive: true, isFeatured: true },
-            take: 8,
-            orderBy: { createdAt: 'desc' },
-            include: { variants: true }
-        });
-        featuredProducts = serializePrisma(featuredRaw);
-    }
-
-    // 3. Fetch New Arrivals (if enabled)
-    let newArrivals = [];
-    if (config?.showNewArrivals !== false) {
-        const newArrivalsRaw = await prisma.product.findMany({
+    // 1. Fetch Homepage Config and Categories in parallel
+    const [config, categories] = await Promise.all([
+        prisma.homepageConfig.findFirst(),
+        prisma.category.findMany({
             where: { isActive: true },
+            orderBy: [{ showOnHomepage: 'desc' }, { sortOrder: 'asc' }],
             take: 8,
-            orderBy: { createdAt: 'desc' },
-            include: { variants: true }
-        });
-        newArrivals = serializePrisma(newArrivalsRaw);
-    }
+        })
+    ]);
 
-    // 4. Fetch Active Flash Sale (if enabled)
+    const showFeatured = config?.showFeatured !== false;
+    const showNewArrivals = config?.showNewArrivals !== false;
+    const showFlashSale = config?.showFlashSale !== false;
+
+    // 2. Prepare parallel promises for conditional DB fetches
+    const featuredPromise = showFeatured
+        ? prisma.product.findMany({
+              where: { isActive: true, isFeatured: true },
+              take: 8,
+              orderBy: { createdAt: 'desc' },
+              include: { variants: true }
+          })
+        : Promise.resolve([]);
+
+    const newArrivalsPromise = showNewArrivals
+        ? prisma.product.findMany({
+              where: { isActive: true },
+              take: 8,
+              orderBy: { createdAt: 'desc' },
+              include: { variants: true }
+          })
+        : Promise.resolve([]);
+
+    const now = new Date();
+    const flashSalePromise = showFlashSale
+        ? prisma.flashSale.findFirst({
+              where: {
+                  isActive: true,
+                  startsAt: { lte: now },
+                  endsAt: { gte: now }
+              },
+              include: {
+                  items: {
+                      where: { isActive: true },
+                      include: {
+                          product: {
+                              include: { variants: true }
+                          }
+                      }
+                  }
+              },
+              orderBy: { endsAt: 'asc' }
+          })
+        : Promise.resolve(null);
+
+    // 3. Execute all conditional fetches concurrently
+    const [featuredRaw, newArrivalsRaw, activeFlashSale] = await Promise.all([
+        featuredPromise,
+        newArrivalsPromise,
+        flashSalePromise
+    ]);
+
+    // 4. Serialize data
+    const featuredProducts = serializePrisma(featuredRaw);
+    const newArrivals = serializePrisma(newArrivalsRaw);
+
     let flashSale = null;
     let flashSaleProducts = [];
-    if (config?.showFlashSale !== false) {
-        const now = new Date();
-        const activeFlashSale = await prisma.flashSale.findFirst({
-            where: {
-                isActive: true,
-                startsAt: { lte: now },
-                endsAt: { gte: now }
-            },
-            include: {
-                items: {
-                    where: { isActive: true },
-                    include: {
-                        product: {
-                            include: { variants: true }
-                        }
-                    }
-                }
-            },
-            orderBy: { endsAt: 'asc' } // Get the one ending soonest? or just first
+    if (activeFlashSale) {
+        flashSale = serializePrisma(activeFlashSale);
+        flashSaleProducts = activeFlashSale.items.map(item => {
+            const p = serializePrisma(item.product);
+            return {
+                ...p,
+                salePrice: item.salePrice,
+                discountPrice: item.salePrice
+            };
         });
-
-        if (activeFlashSale) {
-            flashSale = serializePrisma(activeFlashSale);
-            // Map items to products with salePrice override
-            flashSaleProducts = activeFlashSale.items.map(item => {
-                const p = serializePrisma(item.product);
-                return {
-                    ...p,
-                    salePrice: item.salePrice, // Override with flash sale price
-                    discountPrice: item.salePrice // Ensure UI shows this as current price
-                };
-            });
-        }
     }
-
-    // 5. Fetch Categories — all active categories for homepage
-    let categories = await prisma.category.findMany({
-        where: { isActive: true },
-        orderBy: [{ showOnHomepage: 'desc' }, { sortOrder: 'asc' }],
-        take: 8,
-    });
 
 
     return (

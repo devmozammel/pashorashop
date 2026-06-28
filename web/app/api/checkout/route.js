@@ -36,7 +36,7 @@ const checkoutSchema = z.object({
         shippingArea: z.enum(["inside", "outside"]),
         paymentMethod: z.enum(["COD", "ONLINE", "CARD"]),
     }),
-    shippingCost: z.number().int(),
+    shippingCost: z.number().int().nonnegative(),
     couponCode: z.string().optional().nullable(),
     affiliateCode: z.string().optional().nullable(),
     draftId: z.string().optional().nullable(),
@@ -71,10 +71,28 @@ export async function POST(req) {
             }, { status: 403 });
         }
         // ---------------------------------
-        // Assuming: inside=60, outside=120 (hardcoded for now or fetch from settings)
-        // Ideally fetch from DB settings
-        // For now, trust the UI sent cost OR strictly enforce. 
-        // Let's rely on server calculation if possible, or just accept for now but validate broadly.
+
+        // --- 🔒 SERVER-SIDE SHIPPING COST VALIDATION ---
+        // Fetch delivery fees from DB settings (never trust client-supplied cost)
+        const shippingSettingRow = await prisma.siteSetting.findUnique({
+            where: { key: "store_settings" }
+        });
+        const shippingSettings = shippingSettingRow ? JSON.parse(shippingSettingRow.value) : {};
+        const insideFee  = Number(shippingSettings.deliveryFeeInside  ?? 70);
+        const outsideFee = Number(shippingSettings.deliveryFeeOutside ?? 130);
+
+        const expectedShippingCost = customer.shippingArea === "inside" ? insideFee : outsideFee;
+
+        // Allow ±0 tolerance only (strict match)
+        if (shippingCost !== expectedShippingCost) {
+            console.warn(`[Checkout] Shipping cost mismatch — client sent: ${shippingCost}, expected: ${expectedShippingCost}`);
+            return NextResponse.json({
+                error: `Invalid shipping cost. Expected ৳${expectedShippingCost} for your area.`
+            }, { status: 400 });
+        }
+        // Use the validated server-calculated cost from here on
+        const validatedShippingCost = expectedShippingCost;
+        // -------------------------------------------
 
         // --- 🔒 ATOMIC USER VERIFICATION ---
         let confirmedUserId = null;
@@ -164,7 +182,13 @@ export async function POST(req) {
 
                 // Calculate product-specific affiliate commission
                 const commissionRate = product.affiliateCommissionRate || 0;
-                totalAffiliateCommission += Math.floor((itemTotal * commissionRate) / 100);
+                const commissionType = product.affiliateCommissionType || "PERCENT";
+                if (commissionType === "FIXED") {
+                    totalAffiliateCommission += commissionRate * item.quantity;
+                } else {
+                    // PERCENT (default)
+                    totalAffiliateCommission += Math.floor((itemTotal * commissionRate) / 100);
+                }
 
                 orderItemsData.push({
                     productId: product.id,
@@ -181,7 +205,7 @@ export async function POST(req) {
             let finalCouponCode = null;
 
             if (couponCode) {
-                const couponResult = await validateCoupon(couponCode, calculatedSubtotal, items, confirmedUserId);
+                const couponResult = await validateCoupon(couponCode, calculatedSubtotal, orderItemsData, confirmedUserId);
                 if (couponResult.valid) {
                     discountAmount = couponResult.discountAmount;
                     finalCouponCode = couponCode;
@@ -194,7 +218,7 @@ export async function POST(req) {
                 }
             }
 
-            const calculatedTotal = calculatedSubtotal + shippingCost - discountAmount;
+            const calculatedTotal = calculatedSubtotal + validatedShippingCost - discountAmount;
 
             // 3. 🛡️ SAFE ORDER CREATION (Double-Protected)
             const orderData = {
@@ -210,7 +234,7 @@ export async function POST(req) {
                 isAbnormal: customer.paymentMethod !== "COD" || totalAdvanceRequired > 0,
                 advancePayment: totalAdvanceRequired,
                 deliveryArea: customer.shippingArea,
-                deliveryFee: shippingCost,
+                deliveryFee: validatedShippingCost,
                 customerName: `${customer.firstName} ${customer.lastName}`.trim(),
                 phone: customer.phone,
                 address: customer.address,

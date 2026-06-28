@@ -15,6 +15,39 @@ export async function PATCH(req, props) {
         // Allowed fields to update
         const { role, name, phone } = body;
 
+        // Role validation
+        if (role && !["USER", "ADMIN"].includes(role)) {
+            return NextResponse.json({ ok: false, message: "Invalid role specified" }, { status: 400 });
+        }
+
+        // Prevent self-role update
+        if (role && id === admin.user.id) {
+            return NextResponse.json({ ok: false, message: "You cannot update your own role" }, { status: 400 });
+        }
+
+        // Get the current user details
+        const targetUser = await prisma.user.findUnique({
+            where: { id },
+            select: { role: true }
+        });
+
+        if (!targetUser) {
+            return NextResponse.json({ ok: false, message: "User not found" }, { status: 404 });
+        }
+
+        // Prevent lockout: verify at least one other admin exists if demoting
+        if (role && targetUser.role === "ADMIN" && role !== "ADMIN") {
+            const otherAdminsCount = await prisma.user.count({
+                where: {
+                    role: "ADMIN",
+                    id: { not: id }
+                }
+            });
+            if (otherAdminsCount === 0) {
+                return NextResponse.json({ ok: false, message: "Cannot demote the last remaining administrator" }, { status: 400 });
+            }
+        }
+
         const user = await prisma.user.update({
             where: { id },
             data: {

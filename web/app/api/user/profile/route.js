@@ -29,12 +29,29 @@ export async function PATCH(req) {
 
         const { name, phone } = await req.json();
 
+        // --- 🔒 INPUT VALIDATION & SANITIZATION ---
+        const nameStr = name !== undefined ? String(name).trim() : undefined;
+        const phoneStr = phone !== undefined ? String(phone).trim() : undefined;
+
+        if (nameStr !== undefined) {
+            if (nameStr.length < 2 || nameStr.length > 100) {
+                return NextResponse.json({ error: "Name must be between 2 and 100 characters." }, { status: 400 });
+            }
+        }
+
+        if (phoneStr !== undefined && phoneStr !== "") {
+            const digits = phoneStr.replace(/\D/g, "");
+            if (digits.length < 10 || digits.length > 15) {
+                return NextResponse.json({ error: "Phone number must be between 10 and 15 digits." }, { status: 400 });
+            }
+        }
+
         // Update User
         const user = await prisma.user.update({
             where: { id: session.user.id },
             data: {
-                name: name || undefined,
-                phone: phone || undefined
+                name: nameStr || undefined,
+                phone: phoneStr || undefined
             }
         });
 

@@ -33,6 +33,10 @@ export async function PATCH(req, { params }) {
         }
 
         if (action === "APPROVE") {
+            // Guard: ensure pendingEarnings won't go negative
+            if (withdrawRequest.affiliate.pendingEarnings < withdrawRequest.amount) {
+                return NextResponse.json({ error: "Affiliate does not have sufficient pending earnings" }, { status: 400 });
+            }
             // Deduct from pendingEarnings, update request status
             await prisma.$transaction([
                 prisma.affiliateProfile.update({

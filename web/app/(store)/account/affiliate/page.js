@@ -42,7 +42,6 @@ export default function AffiliatePage() {
             router.push("/auth/login");
         } else if (status === "authenticated") {
             fetchProfile();
-            fetchWithdrawals();
         }
     }, [status, router]);
 
@@ -51,24 +50,16 @@ export default function AffiliatePage() {
             const res = await fetch("/api/user/affiliate");
             if (res.ok) {
                 const data = await res.json();
-                if (data.enrolled) setProfile(data.profile);
+                if (data.enrolled) {
+                    setProfile(data.profile);
+                    // Use withdrawals from profile to avoid extra API call
+                    setWithdrawals(data.profile.withdrawRequests || []);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch affiliate profile");
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const fetchWithdrawals = async () => {
-        try {
-            const res = await fetch("/api/user/affiliate/withdraw");
-            if (res.ok) {
-                const data = await res.json();
-                setWithdrawals(data);
-            }
-        } catch (error) {
-            // ignore — user may not be an affiliate yet
         }
     };
 
@@ -109,7 +100,7 @@ export default function AffiliatePage() {
                 toast.success("Withdrawal request submitted! Admin will review it.");
                 setShowModal(false);
                 setWithdrawForm({ amount: "", paymentMethod: "bKash", paymentNumber: "" });
-                fetchWithdrawals();
+                fetchProfile(); // Single call refreshes both profile and withdrawals
             } else {
                 toast.error(data.error || "Failed to submit request");
             }
@@ -304,14 +295,29 @@ export default function AffiliatePage() {
                         <tbody className="divide-y">
                             {profile.transactions.map((tx) => (
                                 <tr key={tx.id} className="hover:bg-gray-50/50">
-                                    <td className="px-6 py-4 font-mono">{tx.orderId.substring(0, 8)}...</td>
+                                    <td className="px-6 py-4">
+                                        <p className="font-mono text-sm font-semibold">{tx.order?.orderNumber || tx.orderId.substring(0, 8) + "..."}</p>
+                                        {tx.order?.status && (
+                                            <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide
+                                                ${tx.order.status === "DELIVERED" ? "bg-green-100 text-green-700" :
+                                                tx.order.status === "CANCELLED" ? "bg-red-100 text-red-600" :
+                                                "bg-blue-50 text-blue-600"}`}>
+                                                {tx.order.status}
+                                            </span>
+                                        )}
+                                    </td>
                                     <td className="px-6 py-4 font-medium text-green-600">+{formatPrice(tx.commissionAmount)}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${tx.status === "PENDING" ? "bg-orange-100 text-orange-700" : tx.status === "PAID" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                                            {tx.status}
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                            tx.status === "PENDING" ? "bg-orange-100 text-orange-700" :
+                                            tx.status === "APPROVED" ? "bg-green-100 text-green-700" :
+                                            tx.status === "PAID" ? "bg-blue-100 text-blue-700" :
+                                            "bg-red-100 text-red-700"
+                                        }`}>
+                                            {tx.status === "APPROVED" ? "✓ Confirmed" : tx.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4 text-gray-500">{new Date(tx.createdAt).toLocaleDateString("bn-BD")}</td>
                                 </tr>
                             ))}
                         </tbody>

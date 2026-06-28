@@ -45,12 +45,14 @@ export async function POST(request) {
             return NextResponse.json({ error: "Order not found" }, { status: 404 });
         }
 
-        // Verify Email or Phone
-        const matchesEmail = order.user?.email === emailOrPhone;
-        // Check phone in shipping address JSON
-        // Using loose comparison for phone (contains)
-        const phone = order.shippingAddress?.phone || "";
-        const matchesPhone = phone.includes(emailOrPhone);
+        // Verify Email or Phone — use exact match (normalize phone digits)
+        const matchesEmail = order.user?.email?.toLowerCase() === String(emailOrPhone).toLowerCase();
+
+        // Normalize both phone numbers to digits-only for exact comparison
+        const orderPhone = (order.shippingAddress?.phone || order.phone || "").replace(/\D/g, "");
+        const inputPhone = String(emailOrPhone).replace(/\D/g, "");
+        // Must be a full phone match (at least 10 digits)
+        const matchesPhone = inputPhone.length >= 10 && orderPhone === inputPhone;
 
         if (!matchesEmail && !matchesPhone) {
             return NextResponse.json({ error: "Order matched, but email/phone does not verify ownership." }, { status: 403 });

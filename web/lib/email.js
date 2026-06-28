@@ -217,7 +217,7 @@ export async function sendOrderConfirmationEmail({ order, email }) {
 
 // ── NEW ORDER ALERT (to admin)
 export async function sendAdminNewOrderAlert({ order }) {
-  const adminEmail = process.env.EMAIL_USER;
+  const adminEmail = process.env.ADMIN_EMAIL; // Fixed: was EMAIL_USER which doesn't exist in .env
   if (!adminEmail) return;
 
   const html = MASTER_HTML(`
@@ -294,7 +294,7 @@ export async function sendOrderStatusEmail({ order, email, newStatus }) {
 
 // ── SECURITY ALERT EMAIL
 export async function sendSecurityAlertEmail({ user, action, details, ip }) {
-  const adminEmail = process.env.EMAIL_USER;
+  const adminEmail = process.env.ADMIN_EMAIL; // Fixed: was EMAIL_USER which doesn't exist in .env
   if (!adminEmail) return;
 
   const html = MASTER_HTML(`

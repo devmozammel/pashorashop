@@ -13,7 +13,7 @@ export const authOptions = {
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE__CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE__CLIENT_SECRET || "",
-            allowDangerousEmailAccountLinking: true,
+            // allowDangerousEmailAccountLinking removed — prevents Google OAuth account takeover
         }),
         CredentialsProvider({
             name: "credentials",
@@ -29,16 +29,22 @@ export const authOptions = {
                 // ───── MASTER ADMIN FALLBACK ─────
                 // This allows the site owner to login even if database is down or empty.
                 const masterEmail = process.env.ADMIN_EMAIL?.trim();
-                const masterPass = process.env.ADMIN_PASSWORD?.trim();
+                const masterPassHash = process.env.ADMIN_PASSWORD_HASH?.trim();
 
-                if (masterEmail && masterPass && credentials.email?.trim() === masterEmail && credentials.password === masterPass) {
-                    console.log("[Auth] Master Admin Login Successful:", masterEmail);
-                    return {
-                        id: "master-admin",
-                        name: "Super Admin",
-                        email: masterEmail,
-                        role: "ADMIN"
-                    };
+                if (masterEmail && masterPassHash && credentials.email?.trim() === masterEmail) {
+                    const isCorrectMasterPassword = await bcrypt.compare(
+                        credentials.password,
+                        masterPassHash
+                    );
+                    if (isCorrectMasterPassword) {
+                        console.log("[Auth] Master Admin Login Successful:", masterEmail);
+                        return {
+                            id: "master-admin",
+                            name: "Super Admin",
+                            email: masterEmail,
+                            role: "ADMIN"
+                        };
+                    }
                 }
 
                 const user = await prisma.user.findUnique({

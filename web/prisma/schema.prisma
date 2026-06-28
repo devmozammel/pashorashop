@@ -121,6 +121,13 @@ model Product {
   cartItems     CartItem[]
   flashSaleItems FlashSaleItem[]
   coupons       Coupon[]
+
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([createdAt])
+  @@index([categoryId])
+  @@index([subcategoryGroupId])
+  @@index([subcategoryItemId])
 }
 
 model ProductVariant {
@@ -176,6 +183,10 @@ model Category {
   
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([isActive])
+  @@index([showOnHomepage])
+  @@index([sortOrder])
 }
 
 model SubcategoryGroup {
@@ -350,8 +361,10 @@ model Notification {
   id        String   @id @default(cuid())
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
-  type      String   // NEW_ORDER, LOW_STOCK, RETURN_REQUEST
+  type      String   // NEW_ORDER, LOW_STOCK, RETURN_REQUEST, PRICE_DROP, RESTOCK, ABANDONED_CART
+  title     String?  // Optional short title for notification
   message   String
+  link      String?  // Optional action link (e.g. /product/slug)
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
@@ -384,6 +397,10 @@ model FlashSale {
   items     FlashSaleItem[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
+
+  @@index([isActive])
+  @@index([startsAt])
+  @@index([endsAt])
 }
 
 model FlashSaleItem {
@@ -488,6 +505,7 @@ model Blacklist {
   createdAt DateTime @default(now())
 
   @@unique([phone])
+  @@unique([ip])    // Prevent duplicate IP entries
 }
 
 model AffiliateProfile {

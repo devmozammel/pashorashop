@@ -69,7 +69,7 @@ export default function OrderDetailsPage({ params }) {
         if (!confirm(`Change order status to ${newStatus}?`)) return;
         setStatusLoading(true);
         try {
-            const res = await fetch(`/api/admin/orders/${id}/status`, {
+            const res = await fetch(`/api/admin/orders/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: newStatus }),

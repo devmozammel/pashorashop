@@ -17,7 +17,16 @@ export async function GET(req) {
             include: {
                 transactions: {
                     orderBy: { createdAt: "desc" },
-                    take: 10
+                    take: 10,
+                    include: {
+                        order: {
+                            select: { orderNumber: true, status: true }
+                        }
+                    }
+                },
+                withdrawRequests: {
+                    orderBy: { createdAt: "desc" },
+                    take: 20,
                 }
             }
         });

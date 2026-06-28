@@ -61,7 +61,7 @@ export async function PATCH(req, props) {
         const body = await req.json();
         const { status, note, courierName, trackingNumber, adminNote } = body;
 
-        // Start transaction: update order + add history + notify user
+        // Start transaction: update order + add history + notify user + affiliate
         const order = await prisma.$transaction(async (tx) => {
             const updatedOrder = await tx.order.update({
                 where: { id },
@@ -93,6 +93,50 @@ export async function PATCH(req, props) {
                     }
                 });
             }
+
+            // --- Affiliate Commission Auto-Settlement ---
+            if (status === "DELIVERED") {
+                // Mark commission as APPROVED when order is delivered.
+                // pendingEarnings stays — it was already credited at checkout and is now withdrawable.
+                // We only confirm the transaction status to "APPROVED".
+                const affiliateTx = await tx.affiliateTransaction.findUnique({
+                    where: { orderId: id },
+                });
+                if (affiliateTx && affiliateTx.status === "PENDING") {
+                    await tx.affiliateTransaction.update({
+                        where: { id: affiliateTx.id },
+                        data: { status: "APPROVED" },
+                    });
+                    // totalEarnings reflects confirmed (delivered) earnings
+                    await tx.affiliateProfile.update({
+                        where: { id: affiliateTx.affiliateId },
+                        data: {
+                            totalEarnings: { increment: affiliateTx.commissionAmount },
+                        },
+                    });
+                }
+            }
+
+            if (status === "CANCELLED") {
+                // Reject commission and refund pendingEarnings when order is cancelled
+                const affiliateTx = await tx.affiliateTransaction.findUnique({
+                    where: { orderId: id },
+                });
+                if (affiliateTx && affiliateTx.status === "PENDING") {
+                    await tx.affiliateTransaction.update({
+                        where: { id: affiliateTx.id },
+                        data: { status: "REJECTED" },
+                    });
+                    // Reverse the pending earnings that were credited at checkout
+                    await tx.affiliateProfile.update({
+                        where: { id: affiliateTx.affiliateId },
+                        data: {
+                            pendingEarnings: { decrement: affiliateTx.commissionAmount },
+                        },
+                    });
+                }
+            }
+            // -------------------------------------------
 
             return updatedOrder;
         });

@@ -2,11 +2,16 @@
 import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-cbc';
-const ENCRYPTION_KEY_RAW = process.env.ENCRYPTION_KEY || 'auth-bazar-ultra-secure-master-key-2026'; 
+const ENCRYPTION_KEY_RAW = process.env.ENCRYPTION_KEY;
+const ENCRYPTION_SALT_RAW = process.env.ENCRYPTION_SALT;
 const IV_LENGTH = 16;
 
-// Derive a 32-byte key from the raw string
-const key = crypto.pbkdf2Sync(ENCRYPTION_KEY_RAW, 'salt', 100000, 32, 'sha256');
+if (!ENCRYPTION_KEY_RAW || !ENCRYPTION_SALT_RAW) {
+    throw new Error("FATAL: ENCRYPTION_KEY or ENCRYPTION_SALT is missing from environment variables");
+}
+
+// Derive a 32-byte key from the raw string and salt
+const key = crypto.pbkdf2Sync(ENCRYPTION_KEY_RAW, Buffer.from(ENCRYPTION_SALT_RAW, 'hex'), 310000, 32, 'sha256');
 
 export function encrypt(text) {
     if (!text) return text;

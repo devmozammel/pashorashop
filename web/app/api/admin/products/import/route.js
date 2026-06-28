@@ -1,9 +1,33 @@
-
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { logActivity } from "@/lib/logger";
+import { sanitizeHtml } from "@/lib/sanitize";
+import { z } from "zod";
+
+const importProductSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    description: z.string().optional().nullable().default(""),
+    price: z.preprocess((val) => {
+        if (typeof val === "number") return val;
+        if (typeof val === "string") {
+            const parsed = parseFloat(val);
+            return isNaN(parsed) ? undefined : parsed;
+        }
+        return undefined;
+    }, z.number({ required_error: "Price must be a valid number" }).nonnegative("Price must be non-negative")),
+    stock: z.preprocess((val) => {
+        if (val === undefined || val === null || val === "") return 0;
+        if (typeof val === "number") return Math.floor(val);
+        if (typeof val === "string") {
+            const parsed = parseInt(val, 10);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+        return 0;
+    }, z.number().int().nonnegative().default(0)),
+    category: z.string().optional().nullable()
+});
 
 export async function POST(request) {
     const session = await getServerSession(authOptions);
@@ -17,19 +41,30 @@ export async function POST(request) {
             return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
         }
 
+        if (products.length > 500) {
+            return NextResponse.json({ error: "Bulk import exceeds maximum allowed limit of 500 products." }, { status: 400 });
+        }
+
         let importedCount = 0;
         const errors = [];
 
         for (const [index, p] of products.entries()) {
             try {
-                // Basic Validation
-                if (!p.name || !p.price) {
-                    errors.push(`Row ${index + 1}: Missing name or price.`);
+                // Validate with Zod
+                const parseResult = importProductSchema.safeParse(p);
+                if (!parseResult.success) {
+                    const validationErrors = parseResult.error.errors.map(err => err.message).join(", ");
+                    errors.push(`Row ${index + 1}: ${validationErrors}`);
                     continue;
                 }
 
+                const parsedData = parseResult.data;
+
+                // Sanitize HTML in description
+                const sanitizedDescription = sanitizeHtml(parsedData.description || "");
+
                 // Slug generation
-                let slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                let slug = parsedData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                 // Ensure unique slug (simple append for conflict, ideally check DB)
                 const existing = await prisma.product.findUnique({ where: { slug } });
                 if (existing) {
@@ -38,14 +73,12 @@ export async function POST(request) {
 
                 // Find or Create Category
                 let categoryId = null;
-                if (p.category) {
-                    const catSlug = p.category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                if (parsedData.category) {
+                    const catSlug = parsedData.category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                     let cat = await prisma.category.findUnique({ where: { slug: catSlug } });
 
                     if (!cat) {
-                        // Create category if not exists? Or skip? Let's skip or assign uncategorized
-                        // Detailed error:
-                        errors.push(`Row ${index + 1}: Category '${p.category}' not found.`);
+                        errors.push(`Row ${index + 1}: Category '${parsedData.category}' not found.`);
                         continue;
                     }
                     categoryId = cat.id;
@@ -53,11 +86,11 @@ export async function POST(request) {
 
                 await prisma.product.create({
                     data: {
-                        name: p.name,
+                        name: parsedData.name,
                         slug: slug,
-                        description: p.description || "",
-                        price: parseFloat(p.price),
-                        stock: parseInt(p.stock || "0"),
+                        description: sanitizedDescription,
+                        price: parsedData.price,
+                        stock: parsedData.stock,
                         categoryId: categoryId,
                         isActive: true
                     }

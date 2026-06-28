@@ -213,43 +213,6 @@ export default function ProductReviews({ productId }) {
                                 />
                             </div>
 
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium mb-2">Add Photos (Optional, max 5)</label>
-                                <div className="flex flex-wrap gap-2 items-center">
-                                    {images.map((url, idx) => (
-                                        <div key={idx} className="relative w-20 h-20 border rounded-lg overflow-hidden">
-                                            <img src={url} alt="Preview" className="w-full h-full object-cover" />
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveImage(idx)}
-                                                className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
-                                            >
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {images.length < 5 && (
-                                        <label className="w-20 h-20 border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors bg-white">
-                                            {uploading ? (
-                                                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                                            ) : (
-                                                <>
-                                                    <Camera className="w-6 h-6 text-gray-400" />
-                                                    <span className="text-[10px] text-gray-500 mt-1">Upload</span>
-                                                </>
-                                            )}
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept="image/*"
-                                                onChange={handleImageChange}
-                                                disabled={uploading}
-                                                className="hidden"
-                                            />
-                                        </label>
-                                    )}
-                                </div>
-                            </div>
 
                             <button
                                 type="submit"

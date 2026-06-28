@@ -33,7 +33,19 @@ export async function POST(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { productId, rating, comment, images } = await req.json();
+        const { productId, rating, comment } = await req.json();
+
+        // --- Input Validation ---
+        if (!productId || typeof productId !== "string") {
+            return NextResponse.json({ error: "Valid Product ID required" }, { status: 400 });
+        }
+        const parsedRating = parseInt(rating);
+        if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+            return NextResponse.json({ error: "Rating must be a whole number between 1 and 5" }, { status: 400 });
+        }
+        if (comment && String(comment).length > 1000) {
+            return NextResponse.json({ error: "Comment is too long (max 1000 characters)" }, { status: 400 });
+        }
 
         // 1. Verify Purchase (Optional requirement but good for "verified")
         // Check if user has a DELIVERED order containing this product
@@ -60,9 +72,9 @@ export async function POST(req) {
             data: {
                 userId: session.user.id,
                 productId,
-                rating: parseInt(rating),
-                comment,
-                images: images || null,
+                rating: parsedRating,  // Already validated 1-5 integer
+                comment: comment ? String(comment).trim() : null,
+                images: null,
                 isVerified: !!hasPurchased, // Mark verified if purchased
                 isApproved: true // Auto-approve or false if moderation needed
             }

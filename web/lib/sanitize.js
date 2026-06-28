@@ -21,6 +21,11 @@ export function sanitizeHtml(html) {
             'blockquote', 'code', 'pre', 'u', 'strike', 'sub', 'sup',
             'div', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr'
         ],
-        ALLOWED_ATTR: ['href', 'target', 'style', 'class', 'rel'],
+        // 'style' removed — CSS injection via style="background:url(javascript:...)"
+        // 'target' removed — open redirect risk
+        ALLOWED_ATTR: ['href', 'class', 'rel'],
+        // Force all links to be safe
+        FORCE_BODY: false,
     });
 }
+

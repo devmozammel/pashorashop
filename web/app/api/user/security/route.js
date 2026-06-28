@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { passwordSchema } from "@/lib/validators";
 
 export async function PATCH(req) {
     try {
@@ -18,8 +19,11 @@ export async function PATCH(req) {
             return NextResponse.json({ error: "Missing fields" }, { status: 400 });
         }
 
-        if (newPassword.length < 6) {
-            return NextResponse.json({ error: "Password too short" }, { status: 400 });
+        const passValidation = passwordSchema.safeParse(newPassword);
+        if (!passValidation.success) {
+            const formatted = passValidation.error.format();
+            const firstError = formatted._errors?.[0] || "পাসওয়ার্ড সঠিক নয়। সব নিয়ম মেনে আবার চেষ্টা করুন।";
+            return NextResponse.json({ error: firstError }, { status: 400 });
         }
 
         const user = await prisma.user.findUnique({

@@ -1,4 +1,5 @@
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"; // Fixed: consistent named import (was default import)
+
 
 export async function validateCoupon(code, orderTotal, items = [], userId = null) {
     if (!code) return { valid: false, error: "Code required" };

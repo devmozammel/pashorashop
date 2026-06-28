@@ -2,10 +2,15 @@
 const nextConfig = {
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
+      // Cloudinary — main image storage
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      // Google profile pictures (OAuth)
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      // Facebook profile pictures
+      { protocol: 'https', hostname: 'platform-lookaside.fbsbx.com' },
+      { protocol: 'https', hostname: 'graph.facebook.com' },
+      // Steadfast courier portal
+      { protocol: 'https', hostname: 'portal.packzy.com' },
     ],
   },
   async redirects() {
@@ -20,3 +25,4 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
+

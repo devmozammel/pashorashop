@@ -118,10 +118,17 @@ export async function DELETE(req) {
         const itemId = searchParams.get("itemId");
 
         if (itemId) {
+            const existingItem = await prisma.cartItem.findUnique({
+                where: { id: itemId },
+                include: { cart: true }
+            });
+
+            if (!existingItem || existingItem.cart.userId !== session.user.id) {
+                return NextResponse.json({ error: "Item not found or unauthorized" }, { status: 404 });
+            }
+
             await prisma.cartItem.delete({ where: { id: itemId } });
         } else {
-            // Clear cart? Or error?
-            // Let's require itemId
             return NextResponse.json({ error: "ItemId required" }, { status: 400 });
         }
 

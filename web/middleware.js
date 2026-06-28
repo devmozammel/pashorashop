@@ -16,7 +16,6 @@ export default withAuth(
     // 1. Define paths
     const isAdminPage = nextUrl.pathname.startsWith("/admin") || nextUrl.pathname.startsWith("/api/admin");
     const isAuthPage = nextUrl.pathname.startsWith("/auth") || nextUrl.pathname.startsWith("/api/auth");
-    const isPromoRoute = nextUrl.pathname === "/api/admin/temp-promote"; // ALLOW THIS
     const isMaintenancePage = nextUrl.pathname === "/maintenance";
     const isPublicAsset = nextUrl.pathname.startsWith("/_next") || nextUrl.pathname.includes(".");
 
@@ -26,8 +25,8 @@ export default withAuth(
         return NextResponse.redirect(new URL("/maintenance", req.url));
     }
 
-    // 3. Admin Area Protection
-    if (isAdminPage && !isAdmin && !isPromoRoute) {
+    // 3. Admin Area Protection (no bypass exceptions)
+    if (isAdminPage && !isAdmin) {
       return NextResponse.redirect(new URL("/auth/login?error=AccessDenied", req.url));
     }
 
@@ -43,7 +42,8 @@ export default withAuth(
                              nextUrl.pathname.startsWith("/shop") || 
                              nextUrl.pathname.startsWith("/product") ||
                              nextUrl.pathname === "/maintenance" ||
-                             nextUrl.pathname.startsWith("/auth");
+                             nextUrl.pathname.startsWith("/auth") ||
+                             nextUrl.pathname.startsWith("/checkout");
         
         return isPublicPage || !!token;
       },

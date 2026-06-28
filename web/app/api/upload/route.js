@@ -14,7 +14,7 @@ const FALLBACK_TO_LOCAL = !process.env.CLOUDINARY_CLOUD_NAME;
 
 export async function POST(request) {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session || session.user.role !== "ADMIN") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -85,7 +85,15 @@ export async function POST(request) {
         console.error("[Upload] Local fallback directory error:", err);
     }
 
-    const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9]/g, "-")}${path.extname(file.name)}`;
+    const extensionMap = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+        "image/avif": ".avif"
+    };
+    const fileExtension = extensionMap[file.type] || ".jpg";
+    const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9]/g, "-")}${fileExtension}`;
     const filepath = path.join(uploadDir, filename);
     await writeFile(filepath, buffer);
 

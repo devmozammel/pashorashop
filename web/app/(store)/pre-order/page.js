@@ -240,46 +240,6 @@ export default function PreOrderPage() {
                                 ></textarea>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Product Image (Optional)</label>
-                                
-                                {!previewUrl ? (
-                                    <div 
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="border-2 border-dashed border-gray-300 rounded-2xl py-12 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-black transition-all group"
-                                    >
-                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-gray-200 transition-colors">
-                                            <UploadCloud className="w-8 h-8 text-gray-500 group-hover:text-black" />
-                                        </div>
-                                        <h3 className="text-sm font-bold text-gray-900 mb-1">Click to upload image</h3>
-                                        <p className="text-xs text-gray-500">PNG, JPG, WebP up to 5MB</p>
-                                    </div>
-                                ) : (
-                                    <div className="relative border border-gray-200 rounded-2xl p-4 flex items-center gap-4 bg-gray-50">
-                                        <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0">
-                                            <Image src={previewUrl} alt="Preview" fill className="object-cover" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-gray-900 truncate">{selectedFile.name}</p>
-                                            <p className="text-xs text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                                        </div>
-                                        <button 
-                                            type="button" 
-                                            onClick={handleRemoveFile}
-                                            className="w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500 hover:border-red-200 shadow-sm transition-all"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                )}
-                                <input
-                                    type="file"
-                                    accept="image/jpeg, image/png, image/webp, image/gif"
-                                    className="hidden"
-                                    ref={fileInputRef}
-                                    onChange={handleFileChange}
-                                />
-                            </div>
 
                             <div className="pt-4">
                                 <Button 

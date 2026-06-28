@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
+import { decrypt } from "@/lib/security";
 
 export async function POST(req, props) {
     const params = await props.params;
@@ -35,8 +36,8 @@ export async function POST(req, props) {
         }
 
         const storeSettings = JSON.parse(setting.value);
-        const apiKey = storeSettings.steadfastApiKey;
-        const secretKey = storeSettings.steadfastSecretKey;
+        const apiKey = decrypt(storeSettings.steadfastApiKey);
+        const secretKey = decrypt(storeSettings.steadfastSecretKey);
 
         if (!apiKey || !secretKey) {
             return NextResponse.json({ ok: false, message: "Steadfast API Key or Secret Key is not configured. Please set them in Shipping settings." }, { status: 400 });

@@ -16,6 +16,23 @@ export async function POST(req) {
             );
         }
 
+        if (emails.length > 1000) {
+            return NextResponse.json(
+                { ok: false, message: "Recipient count exceeds maximum allowed limit of 1000." },
+                { status: 400 }
+            );
+        }
+
+        // Validate each email address structure
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const invalidEmails = emails.filter(email => typeof email !== "string" || !emailRegex.test(email.trim()));
+        if (invalidEmails.length > 0) {
+            return NextResponse.json(
+                { ok: false, message: `Invalid email format detected in recipients: ${invalidEmails.slice(0, 5).join(", ")}` },
+                { status: 400 }
+            );
+        }
+
         if (!subject || !message) {
             return NextResponse.json(
                 { ok: false, message: "Subject and message body are required." },
@@ -23,13 +40,16 @@ export async function POST(req) {
             );
         }
 
+        // Sanitize subject line from CRLF to prevent SMTP header injection
+        const cleanSubject = subject.replace(/[\r\n]/g, " ").trim();
+
         // Production Setup Check
         if (!process.env.EMAIL_SERVER_USER || !process.env.EMAIL_SERVER_PASSWORD) {
             console.log("===============================");
             console.log("MOCK BULK EMAIL DISPATCHED (DEV MODE)");
             console.log(`To: ${emails.length} recipients`);
             console.log(`Emails: ${emails.join(", ")}`);
-            console.log(`Subject: ${subject}`);
+            console.log(`Subject: ${cleanSubject}`);
             console.log(`Content length: ${message.length} chars`);
             console.log("===============================");
 
@@ -60,7 +80,7 @@ export async function POST(req) {
                 await transporter.sendMail({
                     from: process.env.EMAIL_FROM || '"Authentic Bazar" <noreply@authenticbazar.shop>',
                     to: email,
-                    subject: subject,
+                    subject: cleanSubject,
                     html: message,
                 });
                 successCount++;
