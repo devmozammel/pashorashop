@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import AdminShell from "@/components/admin/AdminShell";
 import DataTable from "@/components/admin/ui/DataTable";
 import { Button, Badge } from "@/components/admin/ui/FormElements";
-import { Edit, Trash, Plus, Copy, Loader2 } from "lucide-react";
+import { Edit, Trash, Plus, Copy, Loader2, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 
@@ -110,6 +110,7 @@ export default function ProductsPage() {
             header: "Actions",
             cell: (row) => (
                 <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" title="Add Review" onClick={() => router.push(`/admin/reviews?productId=${row.id}`)} className="text-blue-600 hover:text-blue-800"><MessageSquare className="w-4 h-4" /></Button>
                     <Button size="sm" variant="ghost" onClick={() => router.push(`/admin/products/${row.id}/edit`)}><Edit className="w-4 h-4" /></Button>
                     <Button size="sm" variant="ghost" onClick={() => duplicateProduct(row)}><Copy className="w-4 h-4" /></Button>
                     <Button size="sm" variant="ghost" className="text-red-600" onClick={() => handleDelete(row.id)}><Trash className="w-4 h-4" /></Button>

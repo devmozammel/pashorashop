@@ -1,20 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import AdminShell from "@/components/admin/AdminShell";
 import DataTable from "@/components/admin/ui/DataTable";
 import { Button, Badge } from "@/components/admin/ui/FormElements";
 import { Star, Trash, Loader2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 import ImageUpload from "@/components/admin/ui/ImageUpload";
 
-export default function ReviewsPage() {
+function ReviewsPageContent() {
+    const searchParams = useSearchParams();
+    const urlProductId = searchParams.get("productId");
+
     const [reviews, setReviews] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [products, setProducts] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+    // Autocomplete State
+    const [productSearch, setProductSearch] = useState("");
+    const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
 
     // Form state
     const [productId, setProductId] = useState("");
@@ -58,6 +66,28 @@ export default function ReviewsPage() {
         fetchReviews();
         fetchProducts();
     }, []);
+
+    // Detect URL parameter and auto-open modal
+    useEffect(() => {
+        if (urlProductId) {
+            setProductId(urlProductId);
+            setIsModalOpen(true);
+        }
+    }, [urlProductId]);
+
+    // Sync selected product with autocomplete input text
+    const selectedProduct = products.find(p => p.id === productId);
+    useEffect(() => {
+        if (selectedProduct) {
+            setProductSearch(selectedProduct.name);
+        } else if (!productId) {
+            setProductSearch("");
+        }
+    }, [productId, products, selectedProduct]);
+
+    const filteredProducts = products.filter(p =>
+        p.name.toLowerCase().includes(productSearch.toLowerCase())
+    );
 
     const toggleApprove = async (id, currentVal) => {
         try {
@@ -245,20 +275,69 @@ export default function ReviewsPage() {
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            {/* Product Select */}
-                            <div>
+                            {/* Product Autocomplete Selector */}
+                            <div className="relative">
                                 <label className="block text-sm font-semibold text-gray-700 mb-1 font-medium">Select Product *</label>
-                                <select
-                                    value={productId}
-                                    onChange={(e) => setProductId(e.target.value)}
-                                    required
-                                    className="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                >
-                                    <option value="">-- Choose a Product --</option>
-                                    {products.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name} (৳{p.salePrice || p.price})</option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Type product name to search..."
+                                        value={productSearch}
+                                        onChange={(e) => {
+                                            setProductSearch(e.target.value);
+                                            setIsProductDropdownOpen(true);
+                                            const found = products.find(p => p.name.toLowerCase() === e.target.value.toLowerCase());
+                                            if (found) setProductId(found.id);
+                                            else setProductId("");
+                                        }}
+                                        onFocus={() => setIsProductDropdownOpen(true)}
+                                        onBlur={() => {
+                                            setTimeout(() => {
+                                                setIsProductDropdownOpen(false);
+                                                const selected = products.find(p => p.id === productId);
+                                                if (selected) setProductSearch(selected.name);
+                                                else setProductSearch("");
+                                            }, 200);
+                                        }}
+                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                    {(productId || productSearch) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setProductId("");
+                                                setProductSearch("");
+                                            }}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
+                                </div>
+
+                                {isProductDropdownOpen && (
+                                    <div className="absolute z-[60] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">
+                                        {filteredProducts.length === 0 ? (
+                                            <div className="p-3 text-sm text-gray-500 italic">No products found</div>
+                                        ) : (
+                                            filteredProducts.map(p => (
+                                                <button
+                                                    key={p.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setProductId(p.id);
+                                                        setProductSearch(p.name);
+                                                        setIsProductDropdownOpen(false);
+                                                    }}
+                                                    className={`w-full text-left p-3 text-sm border-b last:border-b-0 hover:bg-blue-50 transition-colors flex justify-between items-center ${productId === p.id ? 'bg-blue-50/50 font-semibold' : ''}`}
+                                                >
+                                                    <span className="truncate pr-4">{p.name}</span>
+                                                    <span className="text-xs text-gray-400 font-bold shrink-0">৳{p.salePrice || p.price}</span>
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -418,5 +497,19 @@ export default function ReviewsPage() {
                 </div>
             )}
         </AdminShell>
+    );
+}
+
+export default function ReviewsPage() {
+    return (
+        <Suspense fallback={
+            <AdminShell title="Reviews Moderation">
+                <div className="flex justify-center items-center py-20 bg-white rounded-xl shadow-sm border">
+                    <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                </div>
+            </AdminShell>
+        }>
+            <ReviewsPageContent />
+        </Suspense>
     );
 }
