@@ -10,6 +10,14 @@ const PLACEHOLDER = "/placeholder-product.png";
 function SafeImage({ src, alt, className, priority = false, onError: onErrorProp }) {
     const [failed, setFailed] = useState(false);
     const [loaded, setLoaded] = useState(false);
+    const imgRef = useRef(null);
+
+    useEffect(() => {
+        // If image already loaded (e.g. from cache or before JS execution)
+        if (imgRef.current && imgRef.current.complete) {
+            setLoaded(true);
+        }
+    }, [src]);
 
     const handleError = () => {
         setFailed(true);
@@ -31,6 +39,7 @@ function SafeImage({ src, alt, className, priority = false, onError: onErrorProp
                 <div className={cn("absolute inset-0 bg-gray-100 animate-pulse", className)} />
             )}
             <img
+                ref={imgRef}
                 src={src}
                 alt={alt}
                 loading={priority ? "eager" : "lazy"}
