@@ -188,8 +188,28 @@ export default function ProductDetails({
         ? (selectedVariant.price !== null ? selectedVariant.price : finalPrice)
         : product.price + (selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0);
 
-    const isSale = finalPrice < originalPrice;
-    const discountPercentage = isSale ? Math.round(((originalPrice - finalPrice) / originalPrice) * 100) : 0;
+    let isSale = finalPrice < originalPrice;
+    let discountPercentage = 0;
+
+    if (selectedVariant) {
+        discountPercentage = isSale ? Math.round(((originalPrice - finalPrice) / originalPrice) * 100) : 0;
+    } else {
+        const baseDiscount = isSale ? Math.round(((originalPrice - finalPrice) / originalPrice) * 100) : 0;
+        const activeVariants = product.variants?.filter(v => v.isActive !== false) || [];
+        if (activeVariants.length > 0) {
+            const variantDiscounts = activeVariants.map(v => {
+                const vp = v.salePrice !== null ? v.salePrice : (v.price !== null ? v.price : (product.salePrice ?? product.price) + (v.priceAdjustment || 0));
+                const op = v.price !== null ? v.price : product.price + (v.priceAdjustment || 0);
+                return op > 0 && vp < op ? Math.round(((op - vp) / op) * 100) : 0;
+            });
+            discountPercentage = Math.max(baseDiscount, ...variantDiscounts);
+            if (discountPercentage > 0) {
+                isSale = true;
+            }
+        } else {
+            discountPercentage = baseDiscount;
+        }
+    }
 
     const handleAddToCart = () => {
         // Validate selections
