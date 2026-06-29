@@ -71,6 +71,8 @@ export default function ProductForm({ initialData, categories }) {
                     color: v.color || "",
                     stock: Number(v.stock || 0),
                     priceAdjustment: Number(v.priceAdjustment || 0),
+                    price: v.price !== null ? Number(v.price) : "",
+                    salePrice: v.salePrice !== null ? Number(v.salePrice) : "",
                     isActive: v.isActive !== false,
                     isNewArrival: initialData.isNewArrival ?? false,
                     sku: v.sku || ""
@@ -157,7 +159,7 @@ export default function ProductForm({ initialData, categories }) {
     const addVariant = () => {
         setFormData(prev => ({
             ...prev,
-            variants: [...prev.variants, { size: "", color: "", stock: 0, priceAdjustment: 0, isActive: true, sku: "" }]
+            variants: [...prev.variants, { size: "", color: "", stock: 0, priceAdjustment: 0, price: "", salePrice: "", isActive: true, sku: "" }]
         }));
     };
 
@@ -170,8 +172,8 @@ export default function ProductForm({ initialData, categories }) {
             const newVariants = [...prev.variants];
             newVariants[index] = {
                 ...newVariants[index],
-                [field]: (field === "stock" || field === "priceAdjustment")
-                    ? (value === "" ? 0 : Number(value)) : value
+                [field]: (field === "stock" || field === "priceAdjustment" || field === "price" || field === "salePrice")
+                    ? (value === "" ? "" : Number(value)) : value
             };
             return { ...prev, variants: newVariants };
         });
@@ -192,7 +194,7 @@ export default function ProductForm({ initialData, categories }) {
         const addIfNotExist = (s, c) => {
             const key = `${s.toLowerCase()}|${c.toLowerCase()}`;
             if (!existingKeys.has(key)) {
-                newVariants.push({ size: s, color: c, stock: 0, priceAdjustment: 0, isActive: true, sku: "" });
+                newVariants.push({ size: s, color: c, stock: 0, priceAdjustment: 0, price: "", salePrice: "", isActive: true, sku: "" });
                 existingKeys.add(key);
             }
         };
@@ -255,6 +257,8 @@ export default function ProductForm({ initialData, categories }) {
                     color: (v.color || "").trim(),
                     stock: Number(v.stock || 0),
                     priceAdjustment: Number(v.priceAdjustment || 0),
+                    price: v.price !== "" && v.price !== null ? Number(v.price) : null,
+                    salePrice: v.salePrice !== "" && v.salePrice !== null ? Number(v.salePrice) : null,
                     isActive: v.isActive !== false,
                     sku: (v.sku || "").trim()
                 }))
@@ -439,7 +443,8 @@ export default function ProductForm({ initialData, categories }) {
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-600">Size</th>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-600">Color</th>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-600 w-24">Stock</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-600 w-28">Price +/-</th>
+                                                <th className="px-4 py-3 text-left font-semibold text-gray-600 w-28">Regular Price</th>
+                                                <th className="px-4 py-3 text-left font-semibold text-gray-600 w-28">Sale Price</th>
                                                 <th className="px-4 py-3 text-center font-semibold text-gray-600 w-16">Stat</th>
                                                 <th className="px-4 py-3 w-12"></th>
                                             </tr>
@@ -457,7 +462,10 @@ export default function ProductForm({ initialData, categories }) {
                                                         <input type="number" value={v.stock} onChange={(e) => updateVariant(idx, "stock", e.target.value)} min="0" className="w-full px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-1 focus:ring-blue-500 outline-none" />
                                                     </td>
                                                     <td className="p-2">
-                                                        <input type="number" value={v.priceAdjustment} onChange={(e) => updateVariant(idx, "priceAdjustment", e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-1 focus:ring-blue-500 outline-none" />
+                                                        <input type="number" value={v.price || ""} onChange={(e) => updateVariant(idx, "price", e.target.value)} placeholder="Reg. Price" className="w-full px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-1 focus:ring-blue-500 outline-none" />
+                                                    </td>
+                                                    <td className="p-2">
+                                                        <input type="number" value={v.salePrice || ""} onChange={(e) => updateVariant(idx, "salePrice", e.target.value)} placeholder="Sale Price" className="w-full px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-1 focus:ring-blue-500 outline-none" />
                                                     </td>
                                                     <td className="p-2 text-center">
                                                         <input type="checkbox" checked={v.isActive !== false} onChange={(e) => updateVariant(idx, "isActive", e.target.checked)} className="w-4 h-4 text-blue-600 rounded cursor-pointer" />

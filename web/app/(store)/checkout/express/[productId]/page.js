@@ -102,8 +102,10 @@ export default function ExpressCheckout({ params }) {
         }
 
         const basePrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
-        const priceAdjustment = selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0;
-        const finalPrice = basePrice + priceAdjustment;
+        const hasVariantPrices = selectedVariant && (selectedVariant.price !== null && selectedVariant.price !== undefined || selectedVariant.salePrice !== null && selectedVariant.salePrice !== undefined);
+        const finalPrice = hasVariantPrices
+            ? (selectedVariant.salePrice !== null && selectedVariant.salePrice !== undefined && selectedVariant.salePrice !== "" ? Number(selectedVariant.salePrice) : Number(selectedVariant.price))
+            : basePrice + (selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0);
         const shippingCost = form.shippingArea === "inside"
             ? (Number(settings.shipping_fee_inside) || 70)
             : (Number(settings.shipping_fee_outside) || 130);
@@ -128,6 +130,8 @@ export default function ExpressCheckout({ params }) {
                         size: selectedVariant.size,
                         color: selectedVariant.color,
                         priceAdjustment: selectedVariant.priceAdjustment,
+                        price: selectedVariant.price,
+                        salePrice: selectedVariant.salePrice,
                         stock: selectedVariant.stock
                     } : null,
                     quantity: 1,
@@ -178,8 +182,10 @@ export default function ExpressCheckout({ params }) {
     if (!product) return <div className="p-8 text-center text-red-500">Product not found</div>;
 
     const basePrice = product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
-    const priceAdjustment = selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0;
-    const finalPrice = basePrice + priceAdjustment;
+    const hasVariantPrices = selectedVariant && (selectedVariant.price !== null && selectedVariant.price !== undefined || selectedVariant.salePrice !== null && selectedVariant.salePrice !== undefined);
+    const finalPrice = hasVariantPrices
+        ? (selectedVariant.salePrice !== null && selectedVariant.salePrice !== undefined && selectedVariant.salePrice !== "" ? Number(selectedVariant.salePrice) : Number(selectedVariant.price))
+        : basePrice + (selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0);
     const shippingCost = form.shippingArea === "inside"
         ? (Number(settings.shipping_fee_inside) || 70)
         : (Number(settings.shipping_fee_outside) || 130);

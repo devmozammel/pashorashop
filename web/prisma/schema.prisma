@@ -139,7 +139,8 @@ model ProductVariant {
   color           String?
   stock           Int     @default(0)
   priceAdjustment Int?    @default(0) // Int
-  price           Int?    // Optional override
+  price           Int?    // Optional override (Regular Price)
+  salePrice       Int?    // Optional override (Sale Price)
   sku             String?
   isActive        Boolean @default(true) // For disabling a variant
   

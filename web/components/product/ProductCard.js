@@ -25,8 +25,12 @@ export default function ProductCard({ product, isFlashSale }) {
     if (product.variants && product.variants.length > 0) {
         const activeVariants = product.variants.filter(v => v.isActive !== false);
         if (activeVariants.length > 0) {
-            const variantPrices = activeVariants.map(v => basePrice + (v.priceAdjustment || 0));
-            const variantOriginalPrices = activeVariants.map(v => product.price + (v.priceAdjustment || 0));
+            const variantPrices = activeVariants.map(v => 
+                v.salePrice !== null ? v.salePrice : (v.price !== null ? v.price : basePrice + (v.priceAdjustment || 0))
+            );
+            const variantOriginalPrices = activeVariants.map(v => 
+                v.price !== null ? v.price : product.price + (v.priceAdjustment || 0)
+            );
 
             const minPrice = Math.min(...variantPrices);
             const maxPrice = Math.max(...variantPrices);
@@ -44,13 +48,13 @@ export default function ProductCard({ product, isFlashSale }) {
             } else {
                 displayPriceStr = `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`;
                 hasRange = true;
-                const hasAnyDiscount = activeVariants.some(v => (basePrice + (v.priceAdjustment || 0)) < (product.price + (v.priceAdjustment || 0)));
+                const hasAnyDiscount = activeVariants.some((v, idx) => variantPrices[idx] < variantOriginalPrices[idx]);
                 if (hasAnyDiscount) {
                     isSale = true;
                     const discountPercentages = activeVariants
-                        .map(v => {
-                            const vp = basePrice + (v.priceAdjustment || 0);
-                            const op = product.price + (v.priceAdjustment || 0);
+                        .map((v, idx) => {
+                            const vp = variantPrices[idx];
+                            const op = variantOriginalPrices[idx];
                             return op > 0 ? Math.round(((op - vp) / op) * 100) : 0;
                         })
                         .filter(pct => pct > 0);

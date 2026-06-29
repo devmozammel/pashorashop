@@ -21,7 +21,7 @@ export async function GET(req) {
                             select: { id: true, name: true, price: true, salePrice: true, slug: true, images: true }
                         },
                         variant: {
-                            select: { id: true, size: true, color: true, priceAdjustment: true, stock: true }
+                            select: { id: true, size: true, color: true, priceAdjustment: true, price: true, salePrice: true, stock: true }
                         }
                     }
                 }

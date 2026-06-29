@@ -17,20 +17,23 @@ export default function QuickViewModal({ product, isOpen, onClose }) {
 
     const basePrice = Number(product.discountPrice ?? product.salePrice ?? product.price ?? 0);
     const baseOriginalPrice = Number(product.price);
-    const priceAdjustment = selectedVariant ? Number(selectedVariant.priceAdjustment || 0) : 0;
-    const price = basePrice + priceAdjustment;
-    const originalPrice = baseOriginalPrice + priceAdjustment;
-    const hasDiscount = (product.discountPrice || product.salePrice) && basePrice < baseOriginalPrice;
+    
+    const hasVariantPrices = selectedVariant && (selectedVariant.price !== null || selectedVariant.salePrice !== null);
+    const price = hasVariantPrices
+        ? (selectedVariant.salePrice !== null ? selectedVariant.salePrice : selectedVariant.price)
+        : basePrice + (selectedVariant ? Number(selectedVariant.priceAdjustment || 0) : 0);
+
+    const originalPrice = hasVariantPrices
+        ? (selectedVariant.price !== null ? selectedVariant.price : price)
+        : baseOriginalPrice + (selectedVariant ? Number(selectedVariant.priceAdjustment || 0) : 0);
+
+    const hasDiscount = price < originalPrice;
 
     // Handle variants if any
     const variants = product.variants || [];
 
     const handleAddToCart = () => {
-        addItem({
-            ...product,
-            price: selectedVariant ? price + Number(selectedVariant.priceAdjustment) : price,
-            variant: selectedVariant
-        });
+        addItem(product, selectedVariant, 1);
         onClose();
         openDrawer();
     };

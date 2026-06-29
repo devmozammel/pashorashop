@@ -58,6 +58,8 @@ const productSchema = z.object({
         size: z.string().optional().or(z.literal("")),
         color: z.string().optional().or(z.literal("")),
         priceAdjustment: z.number().int().default(0),
+        price: z.number().int().nonnegative().optional().nullable(),
+        salePrice: z.number().int().nonnegative().optional().nullable(),
         stock: z.number().int().min(0).default(0),
         isActive: z.boolean().optional().default(true),
         sku: z.string().optional().or(z.literal(""))
@@ -75,6 +77,8 @@ function sanitizeVariants(variants) {
             sku: (v.sku || "").trim() || null,
             stock: Number(v.stock || 0),
             priceAdjustment: Number(v.priceAdjustment || 0),
+            price: v.price !== undefined && v.price !== null && v.price !== "" ? Number(v.price) : null,
+            salePrice: v.salePrice !== undefined && v.salePrice !== null && v.salePrice !== "" ? Number(v.salePrice) : null,
             isActive: v.isActive !== false
         }))
         .filter(v => v.size || v.color); // Remove variants with BOTH empty
@@ -153,6 +157,8 @@ export async function POST(req) {
                         color: v.color,
                         stock: v.stock,
                         priceAdjustment: v.priceAdjustment,
+                        price: v.price,
+                        salePrice: v.salePrice,
                         isActive: v.isActive,
                         sku: v.sku
                     }))

@@ -98,7 +98,10 @@ export default function ProductView({ product }) {
                 ? Number(settings.shipping_fee_inside || "70") 
                 : Number(settings.shipping_fee_outside || "130");
 
-            const finalPrice = selectedVariant ? (product.price + selectedVariant.priceAdjustment) : (product.salePrice || product.price);
+            const hasVariantPrices = selectedVariant && (selectedVariant.price !== null || selectedVariant.salePrice !== null);
+            const finalPrice = hasVariantPrices
+                ? (selectedVariant.salePrice !== null ? selectedVariant.salePrice : selectedVariant.price)
+                : (product.salePrice ?? product.price) + (selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0);
 
             const checkoutPayload = {
                 items: [
@@ -114,6 +117,8 @@ export default function ProductView({ product }) {
                             size: selectedVariant.size,
                             color: selectedVariant.color,
                             priceAdjustment: selectedVariant.priceAdjustment,
+                            price: selectedVariant.price,
+                            salePrice: selectedVariant.salePrice,
                             stock: selectedVariant.stock
                         } : null,
                         quantity: 1
@@ -262,7 +267,13 @@ export default function ProductView({ product }) {
                 <div className="flex flex-col min-w-[25%]">
                     <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Price</span>
                     <span className="font-bold text-base text-black">
-                        {require("@/lib/utils").formatPrice(selectedVariant ? (product.price + selectedVariant.priceAdjustment) : (product.salePrice || product.price))}
+                        {(() => {
+                            const hasVariantPrices = selectedVariant && (selectedVariant.price !== null || selectedVariant.salePrice !== null);
+                            const finalPrice = hasVariantPrices
+                                ? (selectedVariant.salePrice !== null ? selectedVariant.salePrice : selectedVariant.price)
+                                : (product.salePrice ?? product.price) + (selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0);
+                            return require("@/lib/utils").formatPrice(finalPrice);
+                        })()}
                     </span>
                 </div>
 

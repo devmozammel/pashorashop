@@ -163,7 +163,13 @@ export async function POST(req) {
                         throw new Error(`Insufficient stock for "${product.name}" (${label})`);
                     }
 
-                    unitPrice += (variant.priceAdjustment || 0);
+                    if (variant.salePrice !== null) {
+                        unitPrice = variant.salePrice;
+                    } else if (variant.price !== null) {
+                        unitPrice = variant.price;
+                    } else {
+                        unitPrice += (variant.priceAdjustment || 0);
+                    }
                     variantId = variant.id;
                     variantLabel = [variant.size, variant.color].filter(Boolean).join(" / ");
 

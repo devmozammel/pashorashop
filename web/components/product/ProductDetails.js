@@ -178,13 +178,18 @@ export default function ProductDetails({
     // handleSelect and getSelectedVariant logic handled via props/derived.
 
     // Price Logic (Int)
-    const basePrice = product.salePrice ?? product.price; // Use null coalescence for 0 check if needed, but ?? checks null/undefined
-    const priceAdjustment = selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0;
-    const finalPrice = basePrice + priceAdjustment;
+    const hasVariantPrices = selectedVariant && (selectedVariant.price !== null || selectedVariant.salePrice !== null);
+    
+    const finalPrice = hasVariantPrices
+        ? (selectedVariant.salePrice !== null ? selectedVariant.salePrice : selectedVariant.price)
+        : (product.salePrice ?? product.price) + (selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0);
 
-    const originalPrice = product.price + priceAdjustment;
-    const isSale = basePrice < product.price;
-    const discountPercentage = isSale ? Math.round(((product.price - basePrice) / product.price) * 100) : 0;
+    const originalPrice = hasVariantPrices
+        ? (selectedVariant.price !== null ? selectedVariant.price : finalPrice)
+        : product.price + (selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0);
+
+    const isSale = finalPrice < originalPrice;
+    const discountPercentage = isSale ? Math.round(((originalPrice - finalPrice) / originalPrice) * 100) : 0;
 
     const handleAddToCart = () => {
         // Validate selections

@@ -22,8 +22,10 @@ export const useCartStore = create(
 
                 // Calculate unit price (Int)
                 const basePrice = Number(product.salePrice ?? product.price);
-                const adjustment = variant ? Number(variant.priceAdjustment || 0) : 0;
-                const unitPrice = basePrice + adjustment;
+                const hasVariantPrices = variant && (variant.price !== null && variant.price !== undefined || variant.salePrice !== null && variant.salePrice !== undefined);
+                const unitPrice = hasVariantPrices
+                    ? (variant.salePrice !== null && variant.salePrice !== undefined && variant.salePrice !== "" ? Number(variant.salePrice) : Number(variant.price))
+                    : basePrice + (variant ? Number(variant.priceAdjustment || 0) : 0);
 
                 if (existingItemIndex > -1) {
                     const newItems = [...currentItems];
@@ -49,6 +51,8 @@ export const useCartStore = create(
                                     size: variant.size || null,
                                     color: variant.color || null,
                                     priceAdjustment: Number(variant.priceAdjustment || 0),
+                                    price: variant.price !== undefined && variant.price !== null ? Number(variant.price) : null,
+                                    salePrice: variant.salePrice !== undefined && variant.salePrice !== null ? Number(variant.salePrice) : null,
                                     stock: Number(variant.stock || 0),
                                 } : null,
                                 quantity,
@@ -140,8 +144,10 @@ export const useCartStore = create(
 
                                 // Calculate price (similar to addItem logic)
                                 const basePrice = Number(product.salePrice ?? product.price);
-                                const adjustment = variant ? Number(variant.priceAdjustment || 0) : 0;
-                                const unitPrice = basePrice + adjustment;
+                                const hasVariantPrices = variant && (variant.price !== null && variant.price !== undefined || variant.salePrice !== null && variant.salePrice !== undefined);
+                                const unitPrice = hasVariantPrices
+                                    ? (variant.salePrice !== null && variant.salePrice !== undefined && variant.salePrice !== "" ? Number(variant.salePrice) : Number(variant.price))
+                                    : basePrice + (variant ? Number(variant.priceAdjustment || 0) : 0);
 
                                 return {
                                     uniqueKey,
@@ -159,6 +165,8 @@ export const useCartStore = create(
                                         size: variant.size || null,
                                         color: variant.color || null,
                                         priceAdjustment: Number(variant.priceAdjustment || 0),
+                                        price: variant.price !== undefined && variant.price !== null ? Number(variant.price) : null,
+                                        salePrice: variant.salePrice !== undefined && variant.salePrice !== null ? Number(variant.salePrice) : null,
                                         stock: Number(variant.stock || 0),
                                     } : null,
                                     quantity: item.quantity,
