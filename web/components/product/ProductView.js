@@ -23,7 +23,17 @@ export default function ProductView({ product }) {
 
     const { data: session } = useSession();
     const router = useRouter();
-    const [selections, setSelections] = useState({});
+    const [selections, setSelections] = useState(() => {
+        const initialSelections = {};
+        if (product.variants && product.variants.length > 0) {
+            const firstVariant = product.variants.find(v => v.isActive !== false);
+            if (firstVariant) {
+                if (firstVariant.size) initialSelections["Size"] = firstVariant.size;
+                if (firstVariant.color) initialSelections["Color"] = firstVariant.color;
+            }
+        }
+        return initialSelections;
+    });
 
     // WhatsApp Direct Order State
     const [whatsappNumber, setWhatsappNumber] = useState("8801613134043");
@@ -34,6 +44,20 @@ export default function ProductView({ product }) {
     const [waArea, setWaArea] = useState("inside");
     const [waLoading, setWaLoading] = useState(false);
     const [settings, setSettings] = useState({ shipping_fee_inside: "70", shipping_fee_outside: "130" });
+
+    useEffect(() => {
+        if (product.variants && product.variants.length > 0) {
+            const firstVariant = product.variants.find(v => v.isActive !== false);
+            if (firstVariant) {
+                const initialSelections = {};
+                if (firstVariant.size) initialSelections["Size"] = firstVariant.size;
+                if (firstVariant.color) initialSelections["Color"] = firstVariant.color;
+                setSelections(initialSelections);
+            }
+        } else {
+            setSelections({});
+        }
+    }, [product.id]);
 
     useEffect(() => {
         fetch("/api/settings")
