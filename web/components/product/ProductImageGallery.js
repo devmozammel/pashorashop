@@ -63,6 +63,18 @@ export default function ProductImageGallery({ images, name }) {
     const [lightbox, setLightbox] = useState(false);
     const scrollRef = useRef(null);
 
+    const handleScroll = (e) => {
+        const container = e.target;
+        const scrollLeft = container.scrollLeft;
+        const width = container.clientWidth;
+        if (width > 0) {
+            const newIndex = Math.round(scrollLeft / width);
+            if (newIndex !== activeIdx && newIndex >= 0 && newIndex < safeImages.length) {
+                setActiveIdx(newIndex);
+            }
+        }
+    };
+
     useEffect(() => {
         if (safeImages.length > 0) setActiveIdx(0);
     }, [images]);
@@ -105,6 +117,7 @@ export default function ProductImageGallery({ images, name }) {
                     {/* Mobile Horizontal Scroll */}
                     <div
                         ref={scrollRef}
+                        onScroll={handleScroll}
                         className="md:hidden flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth gap-3"
                     >
                         {safeImages.map((img, idx) => (
