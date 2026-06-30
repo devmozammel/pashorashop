@@ -7,7 +7,7 @@ export async function GET() {
     try {
         const products = await prisma.product.findMany({
             where: { isActive: true },
-            include: { category: true }
+            include: { category: true, variants: true }
         });
 
         const baseUrl = process.env.NEXTAUTH_URL || 'https://www.authenticbazar.shop';
@@ -16,7 +16,29 @@ export async function GET() {
 
         products.forEach(product => {
             const image = getProductThumbnail(product) || '';
-            const finalPrice = product.discountPrice || product.salePrice || product.price || 0;
+            
+            // Calculate baseline price (handling variants overrides and adjustments)
+            let finalPrice = product.discountPrice || product.salePrice || product.price || 0;
+
+            if (finalPrice === 0 && product.variants && product.variants.length > 0) {
+                const variantPrices = product.variants.map(v => {
+                    const hasVariantPrices = (v.price !== null && v.price !== undefined) || (v.salePrice !== null && v.salePrice !== undefined);
+                    if (hasVariantPrices) {
+                        return (v.salePrice !== null && v.salePrice !== undefined && v.salePrice !== "") ? Number(v.salePrice) : Number(v.price);
+                    } else {
+                        const basePrice = Number(product.salePrice ?? product.price);
+                        return basePrice + Number(v.priceAdjustment || 0);
+                    }
+                }).filter(price => price > 0);
+
+                if (variantPrices.length > 0) {
+                    finalPrice = Math.min(...variantPrices);
+                }
+            }
+
+            // Skip zero-priced products to prevent GMC policy suspensions/disapprovals
+            if (finalPrice <= 0) return;
+
             const price = `${finalPrice} BDT`;
             const categoryName = product.category?.name || "Shopping";
 
