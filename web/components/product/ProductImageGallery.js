@@ -87,30 +87,10 @@ export default function ProductImageGallery({ images, name }) {
 
     return (
         <>
-            <div className="flex flex-col-reverse md:flex-row gap-4 sticky top-24">
+            <div className="flex flex-col gap-4 sticky top-24">
 
-                {/* Thumbnails — Desktop */}
-                {safeImages.length > 1 && (
-                    <div className="hidden md:flex md:flex-col gap-2 overflow-y-auto md:max-h-[520px] scrollbar-hide shrink-0 w-[76px]">
-                        {safeImages.map((img, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => setActiveIdx(idx)}
-                                className={cn(
-                                    "relative w-[68px] h-[68px] rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white",
-                                    activeIdx === idx
-                                        ? "border-black ring-2 ring-black/10 shadow-sm"
-                                        : "border-gray-100 hover:border-gray-300"
-                                )}
-                            >
-                                <SafeImage src={img} alt={`${name} - ${idx + 1}`} />
-                            </button>
-                        ))}
-                    </div>
-                )}
-
-                {/* Main Image */}
-                <div className="flex-1 w-full">
+                {/* Main Image Container */}
+                <div className="w-full">
                     {/* Desktop Main */}
                     <div
                         className="hidden md:block relative w-full aspect-[3/4] max-h-[580px] bg-gray-50 rounded-2xl overflow-hidden cursor-zoom-in group"
@@ -157,6 +137,26 @@ export default function ProductImageGallery({ images, name }) {
                         </div>
                     )}
                 </div>
+
+                {/* Thumbnails — Desktop (Horizontal row below main image) */}
+                {safeImages.length > 1 && (
+                    <div className="hidden md:flex md:flex-row gap-3 overflow-x-auto scrollbar-hide py-1">
+                        {safeImages.map((img, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setActiveIdx(idx)}
+                                className={cn(
+                                    "relative w-[76px] h-[76px] rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white",
+                                    activeIdx === idx
+                                        ? "border-black ring-2 ring-black/10 shadow-sm"
+                                        : "border-gray-100 hover:border-gray-300"
+                                )}
+                            >
+                                <SafeImage src={img} alt={`${name} - ${idx + 1}`} />
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Lightbox — Desktop zoom */}
