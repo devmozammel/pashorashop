@@ -93,7 +93,7 @@ export default function ProductImageGallery({ images, name }) {
                 <div className="w-full">
                     {/* Desktop Main */}
                     <div
-                        className="hidden md:block relative w-full aspect-[3/4] max-h-[580px] bg-gray-50 rounded-2xl overflow-hidden cursor-zoom-in group"
+                        className="hidden md:block relative w-full aspect-square max-h-[580px] bg-gray-50 rounded-2xl overflow-hidden cursor-zoom-in group"
                         onClick={() => setLightbox(true)}
                     >
                         <SafeImage src={activeImage} alt={`${name}`} priority />
@@ -110,7 +110,7 @@ export default function ProductImageGallery({ images, name }) {
                         {safeImages.map((img, idx) => (
                             <div
                                 key={idx}
-                                className="flex-shrink-0 w-full snap-center relative aspect-[3/4] max-h-[480px] bg-gray-50 rounded-2xl overflow-hidden"
+                                className="flex-shrink-0 w-full snap-center relative aspect-square max-h-[480px] bg-gray-50 rounded-2xl overflow-hidden"
                             >
                                 <SafeImage src={img} alt={`${name} - ${idx + 1}`} priority={idx === 0} />
                                 {safeImages.length > 1 && (
