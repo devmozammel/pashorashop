@@ -75,6 +75,7 @@ model Product {
   slug          String   @unique
   shortDesc     String?  @db.Text
   description   String?  @db.Text
+  sizeChart     String?  @db.Text
   price         Int      // Int
   salePrice     Int?     // Int
   discountPrice Int?     // Int

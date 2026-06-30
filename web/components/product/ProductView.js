@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import ProductImageGallery from "@/components/product/ProductImageGallery";
 import ProductDetails from "@/components/product/ProductDetails";
+import ProductTabs from "@/components/product/ProductTabs";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -264,27 +265,32 @@ export default function ProductView({ product }) {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 mb-16 md:mb-0 pb-28 md:pb-0 items-start">
-            {/* Gallery */}
-            <div>
-                <ProductImageGallery
-                    images={currentImages}
-                    name={product.name}
-                />
+        <div className="w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 mb-8 items-start">
+                {/* Gallery */}
+                <div>
+                    <ProductImageGallery
+                        images={currentImages}
+                        name={product.name}
+                    />
+                </div>
+
+                {/* Info */}
+                <div className="flex flex-col gap-8">
+                    <ProductDetails
+                        product={product}
+                        selections={selections}
+                        setSelections={setSelections}
+                        selectedVariant={selectedVariant}
+                        optionsMap={optionsMap}
+                        optionKeys={optionKeys}
+                        onWhatsAppOrderInit={handleWhatsAppOrderInit}
+                    />
+                </div>
             </div>
 
-            {/* Info */}
-            <div className="flex flex-col gap-8">
-                <ProductDetails
-                    product={product}
-                    selections={selections}
-                    setSelections={setSelections}
-                    selectedVariant={selectedVariant}
-                    optionsMap={optionsMap}
-                    optionKeys={optionKeys}
-                    onWhatsAppOrderInit={handleWhatsAppOrderInit}
-                />
-            </div>
+            {/* Product description & details tabbed view */}
+            <ProductTabs product={product} />
 
             {/* Mobile Sticky Actions */}
             <div className="fixed bottom-[72px] left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t z-[60] md:hidden flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.08)]">

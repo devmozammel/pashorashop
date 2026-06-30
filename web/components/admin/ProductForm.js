@@ -17,6 +17,7 @@ export default function ProductForm({ initialData, categories }) {
         name: "",
         slug: "",
         description: "",
+        sizeChart: "",
         price: 0,
         salePrice: null,
         stock: 0,
@@ -64,6 +65,7 @@ export default function ProductForm({ initialData, categories }) {
                 paymentMethods: initialData.paymentMethods || "BOTH",
                 isPreOrder: initialData.isPreOrder || false,
                 expectedDeliveryText: initialData.expectedDeliveryText || "",
+                sizeChart: initialData.sizeChart || "",
                 images: sanitizeImageUrls(initialData.productImages?.map(i => i.url) || initialData.images || []),
                 variants: (initialData.variants || []).map(v => ({
                     id: v.id,
@@ -326,6 +328,26 @@ export default function ProductForm({ initialData, categories }) {
                                     value={formData.description || ""}
                                     onChange={(val) => setFormData(prev => ({ ...prev, description: val }))}
                                     placeholder="Describe the product details, materials, and benefits..."
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Size Chart Card */}
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+                            <Layers className="w-5 h-5 text-emerald-500" />
+                            <h3 className="text-lg font-semibold text-gray-800">Size Chart (Only for Clothing/Garments)</h3>
+                        </div>
+                        <div className="p-6 space-y-5">
+                            <div>
+                                <label className="block text-xs text-gray-500 font-medium mb-3">
+                                    Add a size guide table or details here. This will only be displayed on clothing products.
+                                </label>
+                                <RichTextEditor
+                                    value={formData.sizeChart || ""}
+                                    onChange={(val) => setFormData(prev => ({ ...prev, sizeChart: val }))}
+                                    placeholder="Insert table or sizes description..."
                                 />
                             </div>
                         </div>

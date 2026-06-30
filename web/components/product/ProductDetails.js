@@ -315,18 +315,7 @@ export default function ProductDetails({
                     )}
                 </div>
 
-                {product.description ? (
-                    <div className="w-full overflow-hidden break-words">
-                        <div
-                            className="prose prose-sm md:prose-base max-w-none text-muted-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 break-words overflow-x-auto"
-                            dangerouslySetInnerHTML={{ __html: product.description }}
-                        />
-                    </div>
-                ) : (
-                    <p className="text-base text-muted-foreground leading-relaxed">
-                        No description available.
-                    </p>
-                )}
+                {/* Description removed from sidebar to be rendered below the main grid */}
             </div>
 
             <div className="h-px bg-border/50 w-full" />
