@@ -184,8 +184,8 @@ export default function ProductTabs({ product }) {
                                         <div className="flex items-start gap-3">
                                             <ShieldCheck className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                                             <div>
-                                                <span className="font-bold text-gray-900 block">7 Days Exchange Policy</span>
-                                                <span>If you face any size or fit issues, you can easily exchange the product within 7 days.</span>
+                                                <span className="font-bold text-gray-900 block">2 Days Return & Exchange Policy</span>
+                                                <span>If you face any issues, you can return or exchange the product within 2 days. Return shipping charge must be paid by the customer.</span>
                                             </div>
                                         </div>
 
