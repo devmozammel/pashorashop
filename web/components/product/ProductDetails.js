@@ -429,39 +429,41 @@ export default function ProductDetails({
             </div>
 
             {/* Premium Trust & Info Blocks */}
-            <div className="mt-4 bg-gray-50/50 border border-gray-100 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                        <div className="p-2.5 bg-green-100 text-green-700 rounded-xl shrink-0">
-                            <Truck className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-gray-900 text-sm">Fast & Reliable Delivery</h4>
-                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">Inside Dhaka: 2-3 days (70 BDT). Outside Dhaka: 3-5 days (130 BDT).</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start gap-4">
-                        <div className="p-2.5 bg-blue-100 text-blue-700 rounded-xl shrink-0">
-                            <ShieldCheck className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-gray-900 text-sm">100% Authentic Quality</h4>
-                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">We guarantee the authenticity and quality of every product.</p>
-                        </div>
-                    </div>
+            <div className="mt-6 border-t border-b border-gray-100 py-4 grid grid-cols-3 gap-2 md:gap-4">
+                {/* Delivery */}
+                <div className="flex flex-col items-center text-center p-1">
+                    <Truck className="w-5 h-5 text-gray-600 mb-1.5" />
+                    <h5 className="font-bold text-gray-900 text-[11px] md:text-xs">Fast Delivery</h5>
+                    <p className="text-[10px] text-gray-500 mt-1 leading-normal hidden md:block">
+                        Dhaka: 2-3 days (70 BDT)<br />Outside: 3-5 days (130 BDT)
+                    </p>
+                    <p className="text-[9px] text-gray-400 mt-0.5 leading-tight md:hidden">
+                        2-5 Days Delivery
+                    </p>
                 </div>
 
-                <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                        <div className="p-2.5 bg-purple-100 text-purple-700 rounded-xl shrink-0">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-gray-900 text-sm">Fabric & Care</h4>
-                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">Premium material blend. Machine wash cold, tumble dry low.</p>
-                        </div>
-                    </div>
+                {/* Returns */}
+                <div className="flex flex-col items-center text-center p-1 border-l border-r border-gray-100">
+                    <RotateCcw className="w-5 h-5 text-gray-600 mb-1.5" />
+                    <h5 className="font-bold text-gray-900 text-[11px] md:text-xs">2 Days Returns</h5>
+                    <p className="text-[10px] text-gray-500 mt-1 leading-normal hidden md:block">
+                        Easy replacement. Return charge paid by customer.
+                    </p>
+                    <p className="text-[9px] text-gray-400 mt-0.5 leading-tight md:hidden">
+                        Return charge by customer
+                    </p>
+                </div>
+
+                {/* Quality */}
+                <div className="flex flex-col items-center text-center p-1">
+                    <ShieldCheck className="w-5 h-5 text-gray-600 mb-1.5" />
+                    <h5 className="font-bold text-gray-900 text-[11px] md:text-xs">100% Authentic</h5>
+                    <p className="text-[10px] text-gray-500 mt-1 leading-normal hidden md:block">
+                        We guarantee the premium quality of every product.
+                    </p>
+                    <p className="text-[9px] text-gray-400 mt-0.5 leading-tight md:hidden">
+                        Guaranteed Quality
+                    </p>
                 </div>
             </div>
 
