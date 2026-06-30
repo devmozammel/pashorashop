@@ -144,7 +144,7 @@ export default async function ProductPage(props) {
         "sku": product.sku || product.id,
         "brand": {
             "@type": "Brand",
-            "name": "Authentic Bazar"
+            "name": "Authentic Bazar Shop"
         },
         "aggregateRating": totalReviews > 0 ? {
             "@type": "AggregateRating",

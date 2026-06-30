@@ -6,6 +6,10 @@ import { formatCurrency } from "@/lib/utils/format";
 import { Loader2, Lock, MapPin, Truck, Coins, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+const BANGLADESH_DISTRICTS = [
+    "Bagerhat", "Bandarban", "Barguna", "Barisal", "Bhola", "Bogra", "Brahmanbaria", "Chandpur", "Chittagong", "Chuadanga", "Comilla", "Cox's Bazar", "Dhaka", "Dinajpur", "Faridpur", "Feni", "Gaibandha", "Gazipur", "Gopalganj", "Habiganj", "Jamalpur", "Jessore", "Jhalokati", "Jhenaidah", "Joypurhat", "Khagrachhari", "Khulna", "Kishoreganj", "Kurigram", "Kushtia", "Lakshmipur", "Lalmonirhat", "Madaripur", "Magura", "Manikganj", "Meherpur", "Maulvibazar", "Munshiganj", "Mymensingh", "Naogaon", "Narail", "Narayanganj", "Narsingdi", "Natore", "Nawabganj", "Netrokona", "Nilphamari", "Noakhali", "Pabna", "Panchagarh", "Patuakhali", "Pirojpur", "Rajbari", "Rajshahi", "Rangamati", "Rangpur", "Satkhira", "Shariatpur", "Sherpur", "Sirajganj", "Sunamganj", "Sylhet", "Tangail", "Thakurgaon"
+];
+
 export default function ExpressCheckout({ params }) {
     const { productId } = params;
     const router = useRouter();
@@ -291,71 +295,19 @@ export default function ExpressCheckout({ params }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold mb-2 text-gray-800">Shipping Area</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {/* Inside Dhaka Card */}
-                                    <label
-                                        className={`relative flex items-center gap-2.5 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 select-none ${
-                                            form.shippingArea === "inside"
-                                                ? "border-black bg-black text-white shadow-md scale-[1.02]"
-                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-gray-700"
-                                        }`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="shippingArea"
-                                            value="inside"
-                                            checked={form.shippingArea === "inside"}
-                                            onChange={() => setForm({ ...form, shippingArea: "inside" })}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${form.shippingArea === "inside" ? "bg-white/20" : "bg-gray-100"}`}>
-                                            <MapPin className={`w-4 h-4 ${form.shippingArea === "inside" ? "text-white" : "text-gray-500"}`} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-bold leading-tight">Inside Dhaka</p>
-                                            <p className={`text-[11px] font-black mt-0.5 ${form.shippingArea === "inside" ? "text-gray-300" : "text-gray-500"}`}>
-                                                ৳{Number(settings.shipping_fee_inside) || 70}
-                                            </p>
-                                        </div>
-                                        {form.shippingArea === "inside" && (
-                                            <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                                <div className="w-1.5 h-1.5 bg-black rounded-full" />
-                                            </div>
-                                        )}
-                                    </label>
-
-                                    {/* Outside Dhaka Card */}
-                                    <label
-                                        className={`relative flex items-center gap-2.5 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 select-none ${
-                                            form.shippingArea === "outside"
-                                                ? "border-black bg-black text-white shadow-md scale-[1.02]"
-                                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-gray-700"
-                                        }`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="shippingArea"
-                                            value="outside"
-                                            checked={form.shippingArea === "outside"}
-                                            onChange={() => setForm({ ...form, shippingArea: "outside" })}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${form.shippingArea === "outside" ? "bg-white/20" : "bg-gray-100"}`}>
-                                            <Truck className={`w-4 h-4 ${form.shippingArea === "outside" ? "text-white" : "text-gray-500"}`} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-bold leading-tight">Outside Dhaka</p>
-                                            <p className={`text-[11px] font-black mt-0.5 ${form.shippingArea === "outside" ? "text-gray-300" : "text-gray-500"}`}>
-                                                ৳{Number(settings.shipping_fee_outside) || 130}
-                                            </p>
-                                        </div>
-                                        {form.shippingArea === "outside" && (
-                                            <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                                <div className="w-1.5 h-1.5 bg-black rounded-full" />
-                                            </div>
-                                        )}
-                                    </label>
+                                <label className="block text-sm font-bold mb-2 text-gray-800">Shipping Method (Auto-Calculated)</label>
+                                <div className="flex items-center gap-3 p-3 border border-gray-200 bg-gray-50 rounded-xl text-gray-700">
+                                    <div className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center shrink-0">
+                                        {form.shippingArea === "inside" ? <MapPin className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold leading-tight">
+                                            {form.shippingArea === "inside" ? "Delivery Inside Dhaka" : "Delivery Outside Dhaka"}
+                                        </p>
+                                        <p className="text-[11px] font-semibold text-gray-500 mt-0.5">
+                                            Fee: ৳{form.shippingArea === "inside" ? (Number(settings.shipping_fee_inside) || 70) : (Number(settings.shipping_fee_outside) || 130)}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                             <div>
@@ -371,14 +323,21 @@ export default function ExpressCheckout({ params }) {
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold mb-1 text-gray-700">City / District</label>
-                                <input
+                                <select
                                     required
-                                    type="text"
-                                    placeholder="শহর বা জেলা"
-                                    className="w-full p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm"
+                                    className="w-full p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 text-sm bg-white cursor-pointer"
                                     value={form.city}
-                                    onChange={e => setForm({ ...form, city: e.target.value })}
-                                />
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        const area = (val.toLowerCase() === "dhaka") ? "inside" : "outside";
+                                        setForm({ ...form, city: val, shippingArea: area });
+                                    }}
+                                >
+                                    <option value="" disabled>Select District</option>
+                                    {BANGLADESH_DISTRICTS.map((district) => (
+                                        <option key={district} value={district}>{district}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="pt-4 border-t">

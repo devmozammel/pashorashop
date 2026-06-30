@@ -3,6 +3,27 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getProductThumbnail } from "@/lib/productImages";
 
+function getGoogleCategory(categoryName) {
+    if (!categoryName) return "Shopping";
+    const cat = categoryName.toLowerCase();
+    if (cat.includes("jersey") || cat.includes("t-shirt") || cat.includes("shirt") || cat.includes("clothing") || cat.includes("wear")) {
+        return "Apparel & Accessories > Clothing > Activewear > Athletic Uniforms";
+    }
+    if (cat.includes("perfume") || cat.includes("cologne") || cat.includes("fragrance") || cat.includes("attar") || cat.includes("body spray")) {
+        return "Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne";
+    }
+    if (cat.includes("skin") || cat.includes("face") || cat.includes("cream") || cat.includes("gel") || cat.includes("serum") || cat.includes("wash") || cat.includes("soap")) {
+        return "Health & Beauty > Personal Care > Cosmetics > Skin Care";
+    }
+    if (cat.includes("tea") || cat.includes("beverage") || cat.includes("drink")) {
+        return "Food, Beverages & Tobacco > Beverages > Tea & Infusions";
+    }
+    if (cat.includes("massager") || cat.includes("massage") || cat.includes("personal care") || cat.includes("health")) {
+        return "Health & Beauty > Personal Care";
+    }
+    return "Shopping";
+}
+
 export async function GET() {
     try {
         const products = await prisma.product.findMany({
@@ -40,7 +61,19 @@ export async function GET() {
             if (finalPrice <= 0) return;
 
             const price = `${finalPrice} BDT`;
-            const categoryName = product.category?.name || "Shopping";
+            const googleCategory = getGoogleCategory(product.category?.name);
+
+            // Extract unique sizes and colors
+            let sizes = [];
+            let colors = [];
+            if (product.variants && product.variants.length > 0) {
+                product.variants.forEach(v => {
+                    if (v.size && v.size.trim() !== "") sizes.push(v.size.trim());
+                    if (v.color && v.color.trim() !== "") colors.push(v.color.trim());
+                });
+            }
+            sizes = [...new Set(sizes)];
+            colors = [...new Set(colors)];
 
             xml += `<item>
     <g:id>${product.id}</g:id>
@@ -52,7 +85,9 @@ export async function GET() {
     <g:condition>new</g:condition>
     <g:availability>${product.stock > 0 ? 'in stock' : 'out of stock'}</g:availability>
     <g:price>${price}</g:price>
-    <g:google_product_category><![CDATA[${categoryName}]]></g:google_product_category>
+    <g:google_product_category><![CDATA[${googleCategory}]]></g:google_product_category>
+    ${sizes.length > 0 ? `<g:size><![CDATA[${sizes.join(", ")}]]></g:size>` : ""}
+    ${colors.length > 0 ? `<g:color><![CDATA[${colors.join(", ")}]]></g:color>` : ""}
 </item>\n`;
         });
 
