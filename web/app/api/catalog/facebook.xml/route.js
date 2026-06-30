@@ -48,7 +48,7 @@ export async function GET() {
     <g:description><![CDATA[${product.shortDesc || product.description || product.name}]]></g:description>
     <g:link>${baseUrl}/product/${product.slug}</g:link>
     <g:image_link>${image}</g:image_link>
-    <g:brand>Authentic Bazar</g:brand>
+    <g:brand>Authentic Bazar Shop</g:brand>
     <g:condition>new</g:condition>
     <g:availability>${product.stock > 0 ? 'in stock' : 'out of stock'}</g:availability>
     <g:price>${price}</g:price>
