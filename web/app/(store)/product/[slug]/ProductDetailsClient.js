@@ -7,7 +7,7 @@ import { Check, Truck, ShieldCheck, ArrowRight, Star } from "lucide-react";
 import WishlistButton from "@/components/storefront/WishlistButton";
 
 export default function ProductDetailsClient({ product }) {
-    const { addItem } = useCartStore();
+    const { addItem, openDrawer } = useCartStore();
     const [selectedVariant, setSelectedVariant] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -28,6 +28,7 @@ export default function ProductDetailsClient({ product }) {
             return;
         }
         addItem(product, selectedVariant, 1);
+        openDrawer();
 
         // Track AddToCart
         import("@/lib/fpixel").then(fb => {

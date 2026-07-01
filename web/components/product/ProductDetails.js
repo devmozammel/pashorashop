@@ -20,6 +20,7 @@ export default function ProductDetails({
     onWhatsAppOrderInit
 }) {
     const addItem = useCartStore(state => state.addItem);
+    const openDrawer = useCartStore(state => state.openDrawer);
     const [quantity, setQuantity] = useState(1);
     const router = useRouter();
     const { data: session } = useSession();
@@ -227,6 +228,7 @@ export default function ProductDetails({
         }
 
         addItem(product, selectedVariant, quantity);
+        openDrawer();
     };
 
     const handleBuyNow = () => {

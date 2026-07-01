@@ -81,6 +81,7 @@ export default function ProductCard({ product, isFlashSale }) {
     }
 
     const addItem = useCartStore(state => state.addItem);
+    const openDrawer = useCartStore(state => state.openDrawer);
     const router = useRouter();
 
     const handleQuickAdd = (e) => {
@@ -95,6 +96,7 @@ export default function ProductCard({ product, isFlashSale }) {
 
         // Add to cart directly
         addItem(product, null, 1);
+        openDrawer();
     };
 
     return (
