@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useCartStore } from "@/lib/store/cart";
 
 export default function CartSync() {
-    const { status } = useSession();
+    const { data: session, status } = useSession();
     const syncWithServer = useCartStore((state) => state.syncWithServer);
     const hasSynced = useRef(false);
     const [mounted, setMounted] = useState(false);
@@ -16,9 +16,20 @@ export default function CartSync() {
     useEffect(() => {
         if (mounted && status === "authenticated" && !hasSynced.current) {
             hasSynced.current = true;
+
+            const userId = session?.user?.id || session?.user?.email;
+            if (userId) {
+                const sessionKey = `cart_synced_${userId}`;
+                if (sessionStorage.getItem(sessionKey)) {
+                    // Already synced in this browser tab session, skip
+                    return;
+                }
+                sessionStorage.setItem(sessionKey, "true");
+            }
+
             syncWithServer();
         }
-    }, [status, syncWithServer, mounted]);
+    }, [status, syncWithServer, mounted, session]);
 
     return null;
 }

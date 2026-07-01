@@ -116,6 +116,8 @@ export async function DELETE(req) {
 
         const { searchParams } = new URL(req.url);
         const itemId = searchParams.get("itemId");
+        const productId = searchParams.get("productId");
+        const variantId = searchParams.get("variantId") || null;
 
         if (itemId) {
             const existingItem = await prisma.cartItem.findUnique({
@@ -128,8 +130,29 @@ export async function DELETE(req) {
             }
 
             await prisma.cartItem.delete({ where: { id: itemId } });
+        } else if (productId) {
+            const cart = await prisma.cart.findUnique({
+                where: { userId: session.user.id }
+            });
+            if (cart) {
+                await prisma.cartItem.deleteMany({
+                    where: {
+                        cartId: cart.id,
+                        productId,
+                        variantId: variantId === "" ? null : variantId
+                    }
+                });
+            }
         } else {
-            return NextResponse.json({ error: "ItemId required" }, { status: 400 });
+            // Clear entire database cart
+            const cart = await prisma.cart.findUnique({
+                where: { userId: session.user.id }
+            });
+            if (cart) {
+                await prisma.cartItem.deleteMany({
+                    where: { cartId: cart.id }
+                });
+            }
         }
 
         return NextResponse.json({ success: true });

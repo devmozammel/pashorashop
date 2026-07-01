@@ -93,21 +93,61 @@ export const useCartStore = create(
                 }
 
                 // Note: Drawer is NOT auto-opened here — caller decides (openDrawer vs router.push)
+                
+                // Real-time backend sync
+                const newItems = get().items;
+                const finalItem = newItems.find(item => item.uniqueKey === uniqueKey);
+                if (finalItem) {
+                    fetch('/api/cart', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            productId: product.id,
+                            variantId: variant?.id || null,
+                            quantity: finalItem.quantity
+                        })
+                    }).catch(err => console.error("Sync add failed", err));
+                }
             },
 
             removeItem: (uniqueKey) => {
+                const item = get().items.find(i => i.uniqueKey === uniqueKey);
                 set({ items: get().items.filter(item => item.uniqueKey !== uniqueKey) });
+                if (item) {
+                    const productId = item.product.id;
+                    const variantId = item.variant?.id || "";
+                    fetch(`/api/cart?productId=${productId}&variantId=${variantId}`, {
+                        method: 'DELETE'
+                    }).catch(err => console.error("Sync remove failed", err));
+                }
             },
 
             updateQuantity: (uniqueKey, quantity) => {
                 if (quantity < 1) return;
+                const item = get().items.find(i => i.uniqueKey === uniqueKey);
                 const newItems = get().items.map(item =>
                     item.uniqueKey === uniqueKey ? { ...item, quantity } : item
                 );
                 set({ items: newItems });
+                if (item) {
+                    fetch('/api/cart', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            productId: item.product.id,
+                            variantId: item.variant?.id || null,
+                            quantity
+                        })
+                    }).catch(err => console.error("Sync update failed", err));
+                }
             },
 
-            clearCart: () => set({ items: [] }),
+            clearCart: () => {
+                set({ items: [] });
+                fetch('/api/cart', {
+                    method: 'DELETE'
+                }).catch(err => console.error("Sync clear failed", err));
+            },
 
             syncWithServer: async () => {
                 const localItems = get().items;
