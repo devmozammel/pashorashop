@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { getClientIP } from "@/lib/utils/ip";
 
 export async function POST(req) {
     try {
-        const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
+        const ip = getClientIP(req);
         const { success } = rateLimit(ip, 3); // 3 requests per minute
         if (!success) {
             return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
@@ -21,9 +22,13 @@ export async function POST(req) {
             );
         }
 
+        // Normalize email (trim spaces and convert to lowercase)
+        const normalizedEmail = email.trim().toLowerCase();
+
         const user = await prisma.user.findUnique({
-            where: { email },
+            where: { email: normalizedEmail },
         });
+
 
         if (!user) {
             // Return 200 even if user not found to prevent email enumeration attacks

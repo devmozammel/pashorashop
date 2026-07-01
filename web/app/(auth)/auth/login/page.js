@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, AlertCircle, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 function LoginContent() {
@@ -14,7 +14,22 @@ function LoginContent() {
 
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [error, setError] = useState(() => {
+        const errParam = searchParams?.get("error");
+        if (errParam === "OAuthAccountNotLinked") {
+            return "এই ইমেইলটি ইতিমধ্যে সাধারণ ইমেইল ও পাসওয়ার্ড দিয়ে রেজিস্টার করা হয়েছে। অনুগ্রহ করে পাসওয়ার্ড টাইপ করে লগইন করুন।";
+        }
+        if (errParam === "OAuthCallback" || errParam === "OAuthSignin" || errParam === "OAuthCreateAccount") {
+            return "গুগল দিয়ে লগইন করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।";
+        }
+        if (errParam === "Callback") {
+            return "লগইন ভেরিফিকেশন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
+        }
+        if (errParam) {
+            return "লগইন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।";
+        }
+        return "";
+    });
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         email: "",
@@ -33,8 +48,11 @@ function LoginContent() {
         setError("");
 
         try {
+            // Trim email space before submitting
+            const emailInput = formData.email.trim();
+
             const res = await signIn("credentials", {
-                email: formData.email,
+                email: emailInput,
                 password: formData.password,
                 redirect: false,
             });
@@ -90,6 +108,14 @@ function LoginContent() {
                     <span className="font-medium">{error}</span>
                 </div>
             )}
+
+            {searchParams?.get("success") && (
+                <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-4 rounded-xl text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-green-500" />
+                    <span className="font-medium">{searchParams.get("success")}</span>
+                </div>
+            )}
+
 
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-1.5">

@@ -3,13 +3,14 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { rateLimit } from "@/lib/rate-limit";
 import { passwordSchema } from "@/lib/validators";
+import { getClientIP } from "@/lib/utils/ip";
 
 export async function POST(request) {
     try {
-        const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
-        const { success } = rateLimit(ip, 5); // 5 registrations per minute per IP
+        const ip = getClientIP(request);
+        const { success } = rateLimit(ip, 20); // 20 registrations per minute per IP to prevent blocking real users
         if (!success) {
-            return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+            return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
         }
 
         const { name, email, password } = await request.json();
@@ -17,6 +18,9 @@ export async function POST(request) {
         if (!name || !email || !password) {
             return NextResponse.json({ error: "Missing fields" }, { status: 400 });
         }
+
+        // Normalize email (trim spaces and convert to lowercase)
+        const normalizedEmail = email.trim().toLowerCase();
 
         const passValidation = passwordSchema.safeParse(password);
         if (!passValidation.success) {
@@ -26,11 +30,17 @@ export async function POST(request) {
         }
 
         const existingUser = await prisma.user.findUnique({
-            where: { email }
+            where: { email: normalizedEmail }
         });
 
         if (existingUser) {
-            return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+            if (!existingUser.password) {
+                // Registered via Google OAuth (password is null)
+                return NextResponse.json({ 
+                    error: "এই ইমেইলটি গুগল দিয়ে রেজিস্টার করা হয়েছে। দয়া করে গুগল দিয়ে লগইন করুন।" 
+                }, { status: 400 });
+            }
+            return NextResponse.json({ error: "ইমেইলটি ইতিমধ্যে রেজিস্টার করা হয়েছে।" }, { status: 400 });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -38,7 +48,7 @@ export async function POST(request) {
         const user = await prisma.user.create({
             data: {
                 name,
-                email,
+                email: normalizedEmail,
                 password: hashedPassword,
                 role: "USER"
             }
@@ -54,3 +64,4 @@ export async function POST(request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+

@@ -26,12 +26,15 @@ export const authOptions = {
                     throw new Error("Invalid credentials");
                 }
 
+                // Normalize email (trim spaces and convert to lowercase)
+                const normalizedEmail = credentials.email.trim().toLowerCase();
+
                 // ───── MASTER ADMIN FALLBACK ─────
                 // This allows the site owner to login even if database is down or empty.
                 const masterEmail = process.env.ADMIN_EMAIL?.trim();
                 const masterPassHash = process.env.ADMIN_PASSWORD_HASH?.trim();
 
-                if (masterEmail && masterPassHash && credentials.email?.trim() === masterEmail) {
+                if (masterEmail && masterPassHash && normalizedEmail === masterEmail.toLowerCase()) {
                     const isCorrectMasterPassword = await bcrypt.compare(
                         credentials.password,
                         masterPassHash
@@ -48,8 +51,9 @@ export const authOptions = {
                 }
 
                 const user = await prisma.user.findUnique({
-                    where: { email: credentials.email }
+                    where: { email: normalizedEmail }
                 });
+
 
                 if (!user || !user.password) {
                     throw new Error("Invalid credentials");

@@ -4,14 +4,16 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { rateLimit } from "@/lib/rate-limit";
 import { passwordSchema } from "@/lib/validators";
+import { getClientIP } from "@/lib/utils/ip";
 
 export async function POST(req) {
     try {
-        const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
+        const ip = getClientIP(req);
         const { success } = rateLimit(ip, 5);
         if (!success) {
             return NextResponse.json({ error: "Too many requests" }, { status: 429 });
         }
+
 
         const { token, newPassword } = await req.json();
 
