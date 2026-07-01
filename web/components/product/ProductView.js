@@ -45,7 +45,14 @@ export default function ProductView({ product }) {
     const [waArea, setWaArea] = useState("inside");
     const [waLoading, setWaLoading] = useState(false);
     const [settings, setSettings] = useState({ shipping_fee_inside: "70", shipping_fee_outside: "130" });
-
+    
+    // WhatsApp Coupon State
+    const [waCoupon, setWaCoupon] = useState("");
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [appliedCouponCode, setAppliedCouponCode] = useState(null);
+    const [couponError, setCouponError] = useState("");
+ 
     useEffect(() => {
         if (product.variants && product.variants.length > 0) {
             const firstVariant = product.variants.find(v => v.isActive !== false);
@@ -59,7 +66,7 @@ export default function ProductView({ product }) {
             setSelections({});
         }
     }, [product.id]);
-
+ 
     useEffect(() => {
         fetch("/api/settings")
             .then(res => res.json())
@@ -82,52 +89,111 @@ export default function ProductView({ product }) {
             })
             .catch(err => console.error("Failed to load settings", err));
     }, []);
-
+ 
     const handleWhatsAppOrderInit = () => {
         const missing = optionKeys.filter(key => !selections[key]);
         if (missing.length > 0) {
             alert(`Please select ${missing.join(", ")}`);
             return;
         }
-
+ 
         const stockToCheck = selectedVariant ? selectedVariant.stock : product.stock;
         if (stockToCheck < 1) {
             alert("This item is currently out of stock");
             return;
         }
 
+        // Reset Coupon states on Modal open
+        setWaCoupon("");
+        setAppliedCouponCode(null);
+        setCouponDiscount(0);
+        setCouponError("");
+ 
         setShowWaModal(true);
     };
 
+    const handleApplyCoupon = async () => {
+        if (!waCoupon.trim()) {
+            setCouponError("কুপন কোড লিখুন");
+            return;
+        }
+
+        setCouponLoading(true);
+        setCouponError("");
+
+        try {
+            const hasVariantPrices = selectedVariant && (selectedVariant.price !== null || selectedVariant.salePrice !== null);
+            const finalPrice = hasVariantPrices
+                ? (selectedVariant.salePrice !== null ? selectedVariant.salePrice : selectedVariant.price)
+                : (product.salePrice ?? product.price) + (selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0);
+
+            const res = await fetch("/api/coupons/apply", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    code: waCoupon.trim(),
+                    subtotal: finalPrice
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.ok) {
+                setAppliedCouponCode(data.data.code);
+                setCouponDiscount(data.data.discountAmount);
+                toast.success("কুপনটি সফলভাবে প্রয়োগ করা হয়েছে!");
+            } else {
+                setCouponError(data.message || "কুপন কোডটি সঠিক নয়");
+                setAppliedCouponCode(null);
+                setCouponDiscount(0);
+            }
+        } catch (err) {
+            console.error("Coupon apply error", err);
+            setCouponError("সার্ভারে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+            setAppliedCouponCode(null);
+            setCouponDiscount(0);
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setWaCoupon("");
+        setAppliedCouponCode(null);
+        setCouponDiscount(0);
+        setCouponError("");
+        toast.info("কুপনটি মুছে ফেলা হয়েছে");
+    };
+ 
     const handleWhatsAppOrderSubmit = async (e) => {
         e.preventDefault();
         if (!waName.trim() || !waPhone.trim() || !waAddress.trim()) {
             alert("সবগুলো তথ্য সঠিকভাবে পূরণ করুন");
             return;
         }
-
+ 
         let cleanPhone = waPhone.replace(/\D/g, "");
         if (cleanPhone.length !== 11 || !cleanPhone.startsWith("01")) {
             alert("সঠিক ১১-সংখ্যার মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)");
             return;
         }
-
+ 
         setWaLoading(true);
-
+ 
         try {
             const nameParts = waName.trim().split(" ");
             const firstName = nameParts[0];
             const lastName = nameParts.slice(1).join(" ") || ".";
-
+ 
             const shippingCost = waArea === "inside" 
                 ? Number(settings.shipping_fee_inside || "70") 
                 : Number(settings.shipping_fee_outside || "130");
-
+ 
             const hasVariantPrices = selectedVariant && (selectedVariant.price !== null || selectedVariant.salePrice !== null);
             const finalPrice = hasVariantPrices
                 ? (selectedVariant.salePrice !== null ? selectedVariant.salePrice : selectedVariant.price)
                 : (product.salePrice ?? product.price) + (selectedVariant ? (selectedVariant.priceAdjustment || 0) : 0);
-
+ 
             const checkoutPayload = {
                 items: [
                     {
@@ -159,32 +225,35 @@ export default function ProductView({ product }) {
                     paymentMethod: "COD"
                 },
                 shippingCost,
-                couponCode: null,
+                couponCode: appliedCouponCode || null,
                 affiliateCode: null
             };
-
+ 
             const res = await fetch("/api/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(checkoutPayload)
             });
-
+ 
             const data = await res.json();
-
+ 
             if (data.success && data.orderId) {
                 toast.success("অর্ডারটি সফলভাবে প্লেস হয়েছে! আপনাকে হোয়াটসঅ্যাপে রিডাইরেক্ট করা হচ্ছে...");
-
+ 
                 const variantStr = selectedVariant 
                     ? `Size: ${selectedVariant.size || ''} ${selectedVariant.color ? `, Color: ${selectedVariant.color}` : ''}`.trim() 
                     : "";
-
+ 
                 const waMessage = `*হোয়াটসঅ্যাপ ডিরেক্ট অর্ডার (authenticbazar.shop)*\n` +
                     `---------------------------------------------\n` +
                     `অর্ডার নম্বর: ${data.orderNumber || 'N/A'}\n` +
                     `প্রোডাক্ট: ${product.name}\n` +
                     (variantStr ? `${variantStr}\n` : '') +
                     `পরিমাণ: 1 টি\n` +
-                    `মোট মূল্য: ৳${finalPrice + shippingCost} (ডেলিভারি চার্জ সহ)\n\n` +
+                    `মূল্য: ৳${finalPrice}\n` +
+                    (couponDiscount > 0 ? `কুপন ডিসকাউন্ট: -৳${couponDiscount} (${appliedCouponCode})\n` : '') +
+                    `ডেলিভারি চার্জ: ৳${shippingCost}\n` +
+                    `মোট মূল্য: ৳${finalPrice - couponDiscount + shippingCost} (ডেলিভারি চার্জ সহ)\n\n` +
                     `*গ্রাহকের তথ্য:*\n` +
                     `নাম: ${waName}\n` +
                     `মোবাইল: ${cleanPhone}\n` +
@@ -192,7 +261,7 @@ export default function ProductView({ product }) {
                     `এরিয়া: ${waArea === "inside" ? "inside Dhaka" : "outside Dhaka"}\n` +
                     `---------------------------------------------\n` +
                     `অনুগ্রহ করে আমার অর্ডারটি কনফার্ম করুন। ধন্যবাদ!`;
-
+ 
                 const waUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(waMessage)}`;
                 
                 window.location.href = waUrl;
@@ -417,6 +486,46 @@ export default function ProductView({ product }) {
                                         <span className="text-xs text-emerald-700 font-bold">৳{settings.shipping_fee_outside || "130"}</span>
                                     </button>
                                 </div>
+                            </div>
+
+                            <div className="space-y-1.5 border-t pt-4">
+                                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">কুপন কোড (Coupon Code)</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="যেমন: SAVE10"
+                                        value={waCoupon}
+                                        onChange={(e) => setWaCoupon(e.target.value)}
+                                        disabled={couponLoading || !!appliedCouponCode}
+                                        className="flex-1 text-sm p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 uppercase disabled:bg-gray-50 text-black font-semibold placeholder:font-normal"
+                                    />
+                                    {appliedCouponCode ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoveCoupon}
+                                            className="px-4 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl text-xs font-bold transition shrink-0"
+                                        >
+                                            Remove
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleApplyCoupon}
+                                            disabled={couponLoading}
+                                            className="px-4 bg-black text-white hover:bg-neutral-800 rounded-xl text-xs font-bold transition flex items-center justify-center min-w-[70px] shrink-0"
+                                        >
+                                            {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                                        </button>
+                                    )}
+                                </div>
+                                {couponError && (
+                                    <p className="text-xs text-red-500 font-semibold">{couponError}</p>
+                                )}
+                                {appliedCouponCode && (
+                                    <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                                        ✓ কুপন প্রয়োগ করা হয়েছে! আপনি পাচ্ছেন ৳{couponDiscount} ডিসকাউন্ট।
+                                    </p>
+                                )}
                             </div>
 
                             <button
