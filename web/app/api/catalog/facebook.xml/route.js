@@ -55,29 +55,54 @@ export async function GET() {
             // Extract secondary gallery images for Google Shopping Carousel
             const additionalImages = product.productImages?.slice(1).map(pi => pi.url) || [];
 
-            // Calculate baseline price (handling variants overrides and adjustments)
-            let finalPrice = product.discountPrice || product.salePrice || product.price || 0;
+            // Calculate regular price and sale price (handling variants overrides and adjustments)
+            let regularPrice = Number(product.price || 0);
+            let salePrice = Number(product.discountPrice || product.salePrice || 0);
 
-            if (finalPrice === 0 && product.variants && product.variants.length > 0) {
-                const variantPrices = product.variants.map(v => {
-                    const hasVariantPrices = (v.price !== null && v.price !== undefined) || (v.salePrice !== null && v.salePrice !== undefined);
-                    if (hasVariantPrices) {
-                        return (v.salePrice !== null && v.salePrice !== undefined && v.salePrice !== "") ? Number(v.salePrice) : Number(v.price);
-                    } else {
-                        const basePrice = Number(product.salePrice ?? product.price);
-                        return basePrice + Number(v.priceAdjustment || 0);
+            if (product.variants && product.variants.length > 0) {
+                const activeVariants = product.variants.filter(v => v.isActive !== false);
+                if (activeVariants.length > 0) {
+                    const regularPrices = [];
+                    const salePrices = [];
+
+                    activeVariants.forEach(v => {
+                        const vRegPrice = (v.price !== null && v.price !== undefined && v.price !== "")
+                            ? Number(v.price)
+                            : Number(product.price) + Number(v.priceAdjustment || 0);
+                        
+                        const vSalePrice = (v.salePrice !== null && v.salePrice !== undefined && v.salePrice !== "")
+                            ? Number(v.salePrice)
+                            : (product.discountPrice || product.salePrice)
+                                ? Number(product.discountPrice || product.salePrice) + Number(v.priceAdjustment || 0)
+                                : null;
+
+                        if (vRegPrice > 0) regularPrices.push(vRegPrice);
+                        if (vSalePrice > 0) salePrices.push(vSalePrice);
+                    });
+
+                    if (regularPrices.length > 0) {
+                        regularPrice = Math.min(...regularPrices);
                     }
-                }).filter(price => price > 0);
-
-                if (variantPrices.length > 0) {
-                    finalPrice = Math.min(...variantPrices);
+                    if (salePrices.length > 0) {
+                        salePrice = Math.min(...salePrices);
+                    } else {
+                        salePrice = 0;
+                    }
                 }
             }
 
-            // Skip zero-priced products to prevent GMC policy suspensions/disapprovals
-            if (finalPrice <= 0) return;
+            if (regularPrice <= 0 && salePrice > 0) {
+                regularPrice = salePrice;
+                salePrice = 0;
+            }
 
-            const price = `${finalPrice} BDT`;
+            if (salePrice >= regularPrice) {
+                salePrice = 0;
+            }
+
+            // Skip zero-priced products to prevent GMC policy suspensions/disapprovals
+            if (regularPrice <= 0) return;
+
             const googleCategory = getGoogleCategory(product.category?.name);
             const cleanDescription = stripHtml(product.shortDesc || product.description || product.name);
 
@@ -103,9 +128,10 @@ export async function GET() {
     <g:brand>Authentic Bazar Shop</g:brand>
     <g:condition>new</g:condition>
     <g:availability>${product.stock > 0 ? 'in stock' : 'out of stock'}</g:availability>
-    <g:price>${price}</g:price>
+    <g:price>${regularPrice} BDT</g:price>
+    ${salePrice > 0 ? `<g:sale_price>${salePrice} BDT</g:sale_price>` : ""}
     <g:google_product_category><![CDATA[${googleCategory}]]></g:google_product_category>
-    ${product.sku ? `<g:mpn><![CDATA[${product.sku}]]></g:mpn>` : ""}
+    ${product.sku ? `<g:mpn><![CDATA[${product.sku}]]></g:mpn>` : "<g:identifier_exists>false</g:identifier_exists>"}
     ${sizes.length > 0 ? `<g:size><![CDATA[${sizes.join(", ")}]]></g:size>` : ""}
     ${colors.length > 0 ? `<g:color><![CDATA[${colors.join(", ")}]]></g:color>` : ""}
 </item>\n`;
