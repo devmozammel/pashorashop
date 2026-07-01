@@ -24,11 +24,25 @@ function getGoogleCategory(categoryName) {
     return "Shopping";
 }
 
+// Safely strip HTML tags to prevent GMC policy rejection
+function stripHtml(html) {
+    if (!html) return "";
+    return html
+        .replace(/<[^>]*>/g, " ")      // Strip HTML tags
+        .replace(/&nbsp;/g, " ")       // Replace non-breaking spaces
+        .replace(/\s+/g, " ")          // Collapse multiple spaces
+        .trim();
+}
+
 export async function GET() {
     try {
         const products = await prisma.product.findMany({
             where: { isActive: true },
-            include: { category: true, variants: true }
+            include: { 
+                category: true, 
+                variants: true,
+                productImages: { orderBy: { sortOrder: 'asc' } }
+            }
         });
 
         const baseUrl = process.env.NEXTAUTH_URL || 'https://www.authenticbazar.shop';
@@ -38,6 +52,9 @@ export async function GET() {
         products.forEach(product => {
             const image = getProductThumbnail(product) || '';
             
+            // Extract secondary gallery images for Google Shopping Carousel
+            const additionalImages = product.productImages?.slice(1).map(pi => pi.url) || [];
+
             // Calculate baseline price (handling variants overrides and adjustments)
             let finalPrice = product.discountPrice || product.salePrice || product.price || 0;
 
@@ -62,6 +79,7 @@ export async function GET() {
 
             const price = `${finalPrice} BDT`;
             const googleCategory = getGoogleCategory(product.category?.name);
+            const cleanDescription = stripHtml(product.shortDesc || product.description || product.name);
 
             // Extract unique sizes and colors
             let sizes = [];
@@ -78,14 +96,16 @@ export async function GET() {
             xml += `<item>
     <g:id>${product.id}</g:id>
     <g:title><![CDATA[${product.name}]]></g:title>
-    <g:description><![CDATA[${product.shortDesc || product.description || product.name}]]></g:description>
+    <g:description><![CDATA[${cleanDescription}]]></g:description>
     <g:link>${baseUrl}/product/${product.slug}</g:link>
     <g:image_link>${image}</g:image_link>
+    ${additionalImages.map(img => `<g:additional_image_link>${img}</g:additional_image_link>`).join('\n    ')}
     <g:brand>Authentic Bazar Shop</g:brand>
     <g:condition>new</g:condition>
     <g:availability>${product.stock > 0 ? 'in stock' : 'out of stock'}</g:availability>
     <g:price>${price}</g:price>
     <g:google_product_category><![CDATA[${googleCategory}]]></g:google_product_category>
+    ${product.sku ? `<g:mpn><![CDATA[${product.sku}]]></g:mpn>` : ""}
     ${sizes.length > 0 ? `<g:size><![CDATA[${sizes.join(", ")}]]></g:size>` : ""}
     ${colors.length > 0 ? `<g:color><![CDATA[${colors.join(", ")}]]></g:color>` : ""}
 </item>\n`;
@@ -104,3 +124,4 @@ export async function GET() {
         return new NextResponse("Internal Server Error", { status: 500 });
     }
 }
+
