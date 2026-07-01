@@ -16,6 +16,7 @@ export default function ProductForm({ initialData, categories }) {
     const [formData, setFormData] = useState({
         name: "",
         slug: "",
+        sku: "",
         description: "",
         sizeChart: "",
         price: 0,
@@ -49,6 +50,7 @@ export default function ProductForm({ initialData, categories }) {
         if (initialData) {
             setFormData({
                 ...initialData,
+                sku: initialData.sku || "",
                 price: Number(initialData.price),
                 salePrice: initialData.salePrice ? Number(initialData.salePrice) : null,
                 costPrice: Number(initialData.costPrice || 0),
@@ -464,6 +466,7 @@ export default function ProductForm({ initialData, categories }) {
                                             <tr>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-600">Size</th>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-600">Color</th>
+                                                <th className="px-4 py-3 text-left font-semibold text-gray-600 w-36">Variant SKU</th>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-600 w-24">Stock</th>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-600 w-28">Regular Price</th>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-600 w-28">Sale Price</th>
@@ -479,6 +482,9 @@ export default function ProductForm({ initialData, categories }) {
                                                     </td>
                                                     <td className="p-2">
                                                         <input value={v.color || ""} onChange={(e) => updateVariant(idx, "color", e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-1 focus:ring-blue-500 outline-none" placeholder="Color" />
+                                                    </td>
+                                                    <td className="p-2">
+                                                        <input value={v.sku || ""} onChange={(e) => updateVariant(idx, "sku", e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-1 focus:ring-blue-500 outline-none uppercase font-semibold text-xs placeholder:font-normal" placeholder="Variant SKU" />
                                                     </td>
                                                     <td className="p-2">
                                                         <input type="number" value={v.stock} onChange={(e) => updateVariant(idx, "stock", e.target.value)} min="0" className="w-full px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-1 focus:ring-blue-500 outline-none" />
@@ -642,6 +648,18 @@ export default function ProductForm({ initialData, categories }) {
                                 <div className="flex flex-col justify-end pb-1 px-1">
                                     <p className="text-[10px] text-gray-400 font-medium italic">Profit: {(formData.salePrice || formData.price) - formData.costPrice}৳</p>
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Product SKU</label>
+                                <input
+                                    type="text"
+                                    name="sku"
+                                    value={formData.sku || ""}
+                                    onChange={(e) => setFormData(p => ({ ...p, sku: e.target.value }))}
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-gray-400 outline-none text-sm font-semibold uppercase placeholder:font-normal"
+                                    placeholder="e.g. AB-JRS-ARG-AWY"
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-3 pt-2">

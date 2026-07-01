@@ -11,6 +11,7 @@ const productSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1),
     slug: z.string().optional().or(z.literal("")),
+    sku: z.string().optional().nullable().or(z.literal("")),
     description: z.string().optional(),
     sizeChart: z.string().optional().nullable(),
     price: z.number().int().nonnegative(),
@@ -143,6 +144,7 @@ export async function PUT(req, props) {
                 data: {
                     name: data.name,
                     slug,
+                    sku: (data.sku || "").trim() || null,
                     description: sanitizeHtml(data.description),
                     sizeChart: sanitizeHtml(data.sizeChart),
                     price: data.price,
