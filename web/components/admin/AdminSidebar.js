@@ -31,6 +31,7 @@ const NAV_ITEMS = [
     { title: "Blacklist", href: "/admin/blacklist", icon: Ban },
     { title: "Settings", href: "/admin/settings", icon: Settings },
     { title: "Calculator", href: "/admin/calculator", icon: Calculator },
+    { title: "Investments", href: "/admin/investments", icon: DollarSign },
     { title: "Features", href: "/admin/features", icon: ToggleLeft },
 
     // Experimental / Toggled Features
