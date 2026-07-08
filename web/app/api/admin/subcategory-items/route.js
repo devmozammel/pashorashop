@@ -1,3 +1,8 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import slugify from 'slugify';
+import { requireAdmin, unauthorizedResponse } from '@/lib/require-admin';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { createAuditLog } from '@/lib/audit';
 
 export async function GET(request) {
