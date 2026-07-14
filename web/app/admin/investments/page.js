@@ -534,9 +534,24 @@ export default function AdminInvestmentsPage() {
                                     <TrendingUp className="w-5 h-5" />
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-400 mt-4 border-t pt-3 flex items-center gap-1">
-                                <Info className="w-3.5 h-3.5" /> Real-time revenue from successfully delivered products
-                            </p>
+                            <div className="mt-4 pt-3 border-t text-xs text-gray-500 space-y-1.5">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Website:</span>
+                                    <span className="font-semibold text-gray-700">{formatCurrency(dbStats.websiteSales || 0)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">WhatsApp:</span>
+                                    <span className="font-semibold text-green-600">{formatCurrency(dbStats.whatsappSales || 0)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Facebook Page:</span>
+                                    <span className="font-semibold text-blue-600">{formatCurrency(dbStats.facebookSales || 0)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Phone Call:</span>
+                                    <span className="font-semibold text-purple-600">{formatCurrency(dbStats.phoneSales || 0)}</span>
+                                </div>
+                            </div>
                         </div>
 
                         {/* 3. Shipped / In-Transit Value */}

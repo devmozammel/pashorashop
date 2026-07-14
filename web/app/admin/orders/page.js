@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import AdminShell from "@/components/admin/AdminShell";
-import { Search, Loader2, Eye, Truck, Package, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Loader2, Eye, Truck, Package, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -95,16 +95,24 @@ function AdminOrdersContent() {
                             </button>
                         ))}
                     </div>
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search order number, name, or phone..."
-                            defaultValue={search}
-                            onBlur={handleSearch}
-                            onKeyDown={(e) => e.key === "Enter" && handleSearch(e)}
-                            className="w-full pl-9 p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                        />
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="relative max-w-md w-full">
+                            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search order number, name, or phone..."
+                                defaultValue={search}
+                                onBlur={handleSearch}
+                                onKeyDown={(e) => e.key === "Enter" && handleSearch(e)}
+                                className="w-full pl-9 p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <Link
+                            href="/admin/orders/create"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" /> Create Manual Order
+                        </Link>
                     </div>
                 </div>
 

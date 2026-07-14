@@ -42,7 +42,10 @@ export async function GET(req) {
         const data = await getFileData();
 
         // Query real-time statistics from the database using Prisma
-        const [deliveredAgg, shippedAgg, returnedAgg, totalOrders, returnedOrders] = await Promise.all([
+        const [
+            deliveredAgg, shippedAgg, returnedAgg, totalOrders, returnedOrders,
+            whatsappSales, facebookSales, phoneSales
+        ] = await Promise.all([
             prisma.order.aggregate({
                 where: { status: "DELIVERED" },
                 _sum: { total: true }
@@ -58,15 +61,37 @@ export async function GET(req) {
             prisma.order.count(),
             prisma.order.count({
                 where: { status: "RETURNED" }
+            }),
+            prisma.order.aggregate({
+                where: { status: "DELIVERED", orderNumber: { startsWith: "WA-" } },
+                _sum: { total: true }
+            }),
+            prisma.order.aggregate({
+                where: { status: "DELIVERED", orderNumber: { startsWith: "FB-" } },
+                _sum: { total: true }
+            }),
+            prisma.order.aggregate({
+                where: { status: "DELIVERED", orderNumber: { startsWith: "PH-" } },
+                _sum: { total: true }
             })
         ]);
 
+        const deliveredVal = deliveredAgg._sum.total || 0;
+        const waVal = whatsappSales._sum.total || 0;
+        const fbVal = facebookSales._sum.total || 0;
+        const phVal = phoneSales._sum.total || 0;
+        const webVal = Math.max(0, deliveredVal - waVal - fbVal - phVal);
+
         const dbStats = {
-            deliveredSales: deliveredAgg._sum.total || 0,
+            deliveredSales: deliveredVal,
             shippedSales: shippedAgg._sum.total || 0,
             returnedSales: returnedAgg._sum.total || 0,
             totalOrders,
-            returnedOrdersCount: returnedOrders
+            returnedOrdersCount: returnedOrders,
+            whatsappSales: waVal,
+            facebookSales: fbVal,
+            phoneSales: phVal,
+            websiteSales: webVal
         };
 
         return NextResponse.json({ ok: true, data, dbStats });
