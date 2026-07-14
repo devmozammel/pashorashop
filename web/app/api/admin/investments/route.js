@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
+import prisma from "@/lib/prisma";
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -7,92 +8,20 @@ import path from "path";
 const DATA_FILE_PATH = path.join(process.cwd(), "appData", "partners_investments.json");
 
 const DEFAULT_DATA = {
-    partners: [
-        {
-            id: "partner-1",
-            name: "Co-founder A",
-            role: "Managing Director",
-            investmentAmount: 500000,
-            sharePercentage: 40,
-            status: "Paid",
-            joinedDate: "2026-01-10",
-            avatarColor: "from-blue-500 to-indigo-500"
-        },
-        {
-            id: "partner-2",
-            name: "Co-founder B",
-            role: "Operations Director",
-            investmentAmount: 375000,
-            sharePercentage: 30,
-            status: "Paid",
-            joinedDate: "2026-01-15",
-            avatarColor: "from-pink-500 to-rose-500"
-        },
-        {
-            id: "partner-3",
-            name: "Co-founder C",
-            role: "Marketing Director",
-            investmentAmount: 250000,
-            sharePercentage: 20,
-            status: "Paid",
-            joinedDate: "2026-02-01",
-            avatarColor: "from-amber-500 to-orange-500"
-        },
-        {
-            id: "partner-4",
-            name: "Co-founder D",
-            role: "Financial Director",
-            investmentAmount: 125000,
-            sharePercentage: 10,
-            status: "Paid",
-            joinedDate: "2026-02-10",
-            avatarColor: "from-emerald-500 to-teal-500"
-        }
-    ],
-    transactions: [
-        {
-            id: "tx-1",
-            partnerId: "partner-1",
-            partnerName: "Co-founder A",
-            amount: 500000,
-            date: "2026-01-10",
-            type: "Capital Injection",
-            description: "Initial capital contribution for shop launch"
-        },
-        {
-            id: "tx-2",
-            partnerId: "partner-2",
-            partnerName: "Co-founder B",
-            amount: 375000,
-            date: "2026-01-15",
-            type: "Capital Injection",
-            description: "Initial capital contribution for shop launch"
-        },
-        {
-            id: "tx-3",
-            partnerId: "partner-3",
-            partnerName: "Co-founder C",
-            amount: 250000,
-            date: "2026-02-01",
-            type: "Capital Injection",
-            description: "Sourcing and inventory capital contribution"
-        },
-        {
-            id: "tx-4",
-            partnerId: "partner-4",
-            partnerName: "Co-founder D",
-            amount: 125000,
-            date: "2026-02-10",
-            type: "Capital Injection",
-            description: "Office setup and initial marketing cash injection"
-        }
-    ]
+    partners: [],
+    transactions: [],
+    boostingSpends: []
 };
 
 async function getFileData() {
     try {
         const fileContent = await fs.readFile(DATA_FILE_PATH, "utf-8");
-        return JSON.parse(fileContent);
+        const parsed = JSON.parse(fileContent);
+        return {
+            partners: parsed.partners || [],
+            transactions: parsed.transactions || [],
+            boostingSpends: parsed.boostingSpends || []
+        };
     } catch (error) {
         // If file does not exist or has invalid JSON, write default data and return it
         try {
@@ -111,7 +40,36 @@ export async function GET(req) {
         if (!admin) return unauthorizedResponse();
 
         const data = await getFileData();
-        return NextResponse.json({ ok: true, data });
+
+        // Query real-time statistics from the database using Prisma
+        const [deliveredAgg, shippedAgg, returnedAgg, totalOrders, returnedOrders] = await Promise.all([
+            prisma.order.aggregate({
+                where: { status: "DELIVERED" },
+                _sum: { total: true }
+            }),
+            prisma.order.aggregate({
+                where: { status: "SHIPPED" },
+                _sum: { total: true }
+            }),
+            prisma.order.aggregate({
+                where: { status: "RETURNED" },
+                _sum: { total: true }
+            }),
+            prisma.order.count(),
+            prisma.order.count({
+                where: { status: "RETURNED" }
+            })
+        ]);
+
+        const dbStats = {
+            deliveredSales: deliveredAgg._sum.total || 0,
+            shippedSales: shippedAgg._sum.total || 0,
+            returnedSales: returnedAgg._sum.total || 0,
+            totalOrders,
+            returnedOrdersCount: returnedOrders
+        };
+
+        return NextResponse.json({ ok: true, data, dbStats });
     } catch (error) {
         return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
     }
@@ -123,7 +81,7 @@ export async function POST(req) {
         if (!admin) return unauthorizedResponse();
 
         const body = await req.json();
-        const { partners = [], transactions = [] } = body;
+        const { partners = [], transactions = [], boostingSpends = [] } = body;
 
         // Calculate total investment amount
         const totalInvestment = partners.reduce((sum, p) => sum + (Number(p.investmentAmount) || 0), 0);
@@ -141,7 +99,8 @@ export async function POST(req) {
 
         const updatedData = {
             partners: updatedPartners,
-            transactions
+            transactions,
+            boostingSpends
         };
 
         // Write back to the file
@@ -153,3 +112,4 @@ export async function POST(req) {
         return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
     }
 }
+
