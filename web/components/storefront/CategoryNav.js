@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ChevronDown, ArrowRight, Sparkles } from "lucide-react";
+import { ChevronDown, ArrowRight, Sparkles, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CategoryNav() {
@@ -36,10 +36,19 @@ export default function CategoryNav() {
 
     return (
         <nav className="hidden md:flex items-center h-full">
+            {/* Hot Products / Hot Deals */}
+            <Link
+                href="/#hot-products"
+                className="group relative flex items-center gap-1.5 px-3 py-2 mx-0.5 rounded-lg text-[12px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-all duration-200"
+            >
+                <Flame className="w-3.5 h-3.5 fill-red-500 text-red-600 animate-bounce" />
+                Hot Deals
+            </Link>
+
             {/* New Arrivals — Special highlight */}
             <Link
                 href="/new-arrivals"
-                className="group relative flex items-center gap-1.5 px-3.5 py-2 mx-0.5 rounded-lg text-[12px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 transition-all duration-200"
+                className="group relative flex items-center gap-1.5 px-3 py-2 mx-0.5 rounded-lg text-[12px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 transition-all duration-200"
             >
                 <Sparkles className="w-3 h-3" />
                 New Arrivals

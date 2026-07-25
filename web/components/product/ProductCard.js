@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { getProductThumbnail } from "@/lib/productImages";
 import { motion } from "framer-motion";
 
-export default function ProductCard({ product, isFlashSale }) {
+export default function ProductCard({ product, isFlashSale, isHot }) {
     const thumbnail = getProductThumbnail(product);
 
     let displayPriceStr = "";
@@ -118,6 +118,13 @@ export default function ProductCard({ product, isFlashSale }) {
                     <div className="flex h-full items-center justify-center bg-secondary/50 text-muted-foreground">
                         <span className="text-xs font-medium uppercase tracking-wider">No Image</span>
                     </div>
+                )}
+
+                {/* Hot / Featured Badge */}
+                {(isHot || product.isFeatured) && (
+                    <span className="absolute top-3 right-3 bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 text-white text-[10px] font-black px-2 py-0.5 uppercase tracking-wider rounded-full shadow-lg z-10 flex items-center gap-1">
+                        🔥 HOT
+                    </span>
                 )}
 
                 {/* Sale Badge - Percentage */}
