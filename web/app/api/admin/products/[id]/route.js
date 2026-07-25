@@ -22,6 +22,7 @@ const productSchema = z.object({
     subcategoryItemId: z.string().optional().nullable(),
     isActive: z.boolean().optional().default(true),
     isFeatured: z.boolean().optional().default(false),
+    isHot: z.boolean().optional().default(false),
     isNewArrival: z.boolean().optional().default(false),
     isFlashSale: z.boolean().optional().default(false),
     paymentMethods: z.enum(["BOTH", "COD", "ONLINE"]).optional().default("BOTH"),
@@ -157,6 +158,7 @@ export async function PUT(req, props) {
                     subcategoryItemId: (data.subcategoryItemId && data.subcategoryItemId !== "") ? data.subcategoryItemId : null,
                     isActive: data.isActive,
                     isFeatured: data.isFeatured,
+                    isHot: data.isHot,
                     isNewArrival: data.isNewArrival,
                     isFlashSale: data.isFlashSale,
                     paymentMethods: data.paymentMethods,
@@ -227,7 +229,7 @@ export async function PUT(req, props) {
     }
 }
 
-// PATCH: Lightweight stock-only update (used by Inventory page)
+// PATCH: Lightweight update for stock or isHot toggle
 export async function PATCH(req, props) {
     const admin = await requireAdmin();
     if (!admin) return unauthorizedResponse();
@@ -235,20 +237,33 @@ export async function PATCH(req, props) {
     try {
         const { id } = await props.params;
         const body = await req.json();
-        const newStock = Number(body.stock);
-
-        if (isNaN(newStock) || newStock < 0) {
-            return NextResponse.json({ error: "Invalid stock value" }, { status: 400 });
-        }
 
         const existing = await findProductByIdOrSlug(id, null);
         if (!existing) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
 
+        const updateData = {};
+
+        if (body.stock !== undefined) {
+            const newStock = Number(body.stock);
+            if (isNaN(newStock) || newStock < 0) {
+                return NextResponse.json({ error: "Invalid stock value" }, { status: 400 });
+            }
+            updateData.stock = newStock;
+        }
+
+        if (body.isHot !== undefined) {
+            updateData.isHot = Boolean(body.isHot);
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+        }
+
         const updated = await prisma.product.update({
             where: { id: existing.id },
-            data: { stock: newStock },
+            data: updateData,
         });
 
         await createAuditLog({
@@ -256,14 +271,16 @@ export async function PATCH(req, props) {
             action: "UPDATE",
             entityType: "Product",
             entityId: updated.id,
-            meta: { name: updated.name, stockChanged: { from: existing.stock, to: newStock } },
+            meta: { name: updated.name, updateData },
         });
 
+        revalidatePath("/", "layout");
+        revalidatePath("/admin/products");
         revalidatePath("/admin/inventory");
 
-        return NextResponse.json({ success: true, stock: updated.stock });
+        return NextResponse.json({ success: true, product: updated });
     } catch (error) {
-        console.error("Product PATCH (stock) Error:", error);
+        console.error("Product PATCH Error:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

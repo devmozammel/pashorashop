@@ -61,13 +61,14 @@ export default async function HomePage() {
         where: {
             isActive: true,
             OR: [
+                { isHot: true },
                 { isFeatured: true },
                 { salePrice: { not: null } },
                 { discountPrice: { not: null } }
             ]
         },
         take: 8,
-        orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [{ isHot: 'desc' }, { isFeatured: 'desc' }, { createdAt: 'desc' }],
         include: { variants: true }
     });
 

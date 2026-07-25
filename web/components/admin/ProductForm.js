@@ -28,6 +28,7 @@ export default function ProductForm({ initialData, categories }) {
         subcategoryItemId: "",
         isActive: true,
         isFeatured: false,
+        isHot: false,
         isNewArrival: false,
         paymentMethods: "BOTH",
         images: [],
@@ -66,6 +67,7 @@ export default function ProductForm({ initialData, categories }) {
                 subcategoryItemId: initialData.subcategoryItemId || "",
                 paymentMethods: initialData.paymentMethods || "BOTH",
                 isPreOrder: initialData.isPreOrder || false,
+                isHot: initialData.isHot || false,
                 expectedDeliveryText: initialData.expectedDeliveryText || "",
                 sizeChart: initialData.sizeChart || "",
                 images: sanitizeImageUrls(initialData.productImages?.map(i => i.url) || initialData.images || []),
@@ -701,6 +703,16 @@ export default function ProductForm({ initialData, categories }) {
                             </label>
 
                             <label className="flex items-center justify-between cursor-pointer group pt-2 border-t border-gray-100">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-sm font-bold text-red-600 group-hover:text-red-700">🔥 Hot Item / Product</span>
+                                </div>
+                                <div className="relative inline-flex items-center">
+                                    <input type="checkbox" name="isHot" checked={formData.isHot} onChange={handleChange} className="sr-only peer" />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-orange-500 peer-checked:to-red-600"></div>
+                                </div>
+                            </label>
+
+                            <label className="flex items-center justify-between cursor-pointer group pt-2 border-t border-gray-100">
                                 <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Featured Product</span>
                                 <div className="relative inline-flex items-center">
                                     <input type="checkbox" name="isFeatured" checked={formData.isFeatured} onChange={handleChange} className="sr-only peer" />
@@ -716,7 +728,7 @@ export default function ProductForm({ initialData, categories }) {
                                 </div>
                             </label>
                             <p className="text-[10px] text-gray-400 mt-2 leading-tight uppercase font-bold tracking-wider">
-                                Featured/New Arrival status helps prioritize products in store sections.
+                                Hot Item/Featured/New Arrival status helps prioritize products in store sections.
                             </p>
 
                             <div className="pt-4 border-t border-gray-100 mt-4">

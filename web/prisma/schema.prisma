@@ -95,6 +95,7 @@ model Product {
   
   isActive      Boolean   @default(true)
   isFeatured    Boolean   @default(false)
+  isHot         Boolean   @default(false)
   isNewArrival  Boolean   @default(false)
   isFlashSale   Boolean   @default(false)
   isPreOrder    Boolean   @default(false)
@@ -125,6 +126,7 @@ model Product {
 
   @@index([isActive])
   @@index([isFeatured])
+  @@index([isHot])
   @@index([createdAt])
   @@index([categoryId])
   @@index([subcategoryGroupId])

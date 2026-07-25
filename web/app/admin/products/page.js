@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import AdminShell from "@/components/admin/AdminShell";
 import DataTable from "@/components/admin/ui/DataTable";
 import { Button, Badge } from "@/components/admin/ui/FormElements";
-import { Edit, Trash, Plus, Copy, Loader2, MessageSquare } from "lucide-react";
+import { Edit, Trash, Plus, Copy, Loader2, MessageSquare, Flame } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 
@@ -33,6 +33,22 @@ export default function ProductsPage() {
         fetchProducts();
     }, []);
 
+    const toggleHotItem = async (id, currentHot) => {
+        try {
+            // Optimistic update
+            setProducts(prev => prev.map(p => p.id === id ? { ...p, isHot: !currentHot } : p));
+            const res = await fetch(`/api/admin/products/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isHot: !currentHot })
+            });
+            if (!res.ok) throw new Error('Hot toggle failed');
+        } catch (err) {
+            alert("Error toggling Hot status: " + err.message);
+            fetchProducts();
+        }
+    };
+
     const handleDelete = async (id) => {
         if (!confirm("Delete this product?")) return;
         try {
@@ -58,6 +74,7 @@ export default function ProductsPage() {
                     categoryId: product.categoryId,
                     isActive: false, // Duplicate starts as draft
                     isFeatured: false,
+                    isHot: false,
                     images: product.images || [],
                 })
             });
@@ -75,11 +92,14 @@ export default function ProductsPage() {
                 const imgUrl = row.productImages?.[0]?.url || row.images?.[0];
                 return (
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden">
+                        <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden flex-shrink-0">
                             {imgUrl && <img src={imgUrl} className="w-full h-full object-cover" alt="" />}
                         </div>
                         <div>
-                            <p className="font-medium">{row.name}</p>
+                            <p className="font-medium flex items-center gap-1.5">
+                                {row.name}
+                                {row.isHot && <Flame className="w-3.5 h-3.5 fill-red-500 text-red-600 inline" />}
+                            </p>
                             <p className="text-xs text-gray-500">{row.slug}</p>
                         </div>
                     </div>
@@ -105,6 +125,23 @@ export default function ProductsPage() {
             )
         },
         { header: "Stock", accessor: "stock" },
+        {
+            header: "Hot Item",
+            cell: (row) => (
+                <button
+                    onClick={() => toggleHotItem(row.id, row.isHot)}
+                    title={row.isHot ? "Remove from Hot Products" : "Mark as Hot Product"}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
+                        row.isHot
+                            ? "bg-red-100 text-red-600 border border-red-200 hover:bg-red-200"
+                            : "bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-orange-600"
+                    }`}
+                >
+                    <Flame className={`w-3.5 h-3.5 ${row.isHot ? "fill-red-500 text-red-600 animate-pulse" : ""}`} />
+                    {row.isHot ? "HOT 🔥" : "Off"}
+                </button>
+            )
+        },
         { header: "Status", cell: (row) => <Badge variant={row.isActive ? 'success' : 'default'}>{row.isActive ? 'Active' : 'Draft'}</Badge> },
         {
             header: "Actions",
