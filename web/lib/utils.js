@@ -6,12 +6,8 @@ export function cn(...inputs) {
 }
 
 export const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-BD', {
-        style: 'currency',
-        currency: 'BDT',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(price);
+    if (price === undefined || price === null || isNaN(price)) return "৳0";
+    return `৳${Number(price).toLocaleString("en-BD")}`;
 };
 
 export function getProductDisplayName(productName, selectedVariant, variants = []) {

@@ -6,6 +6,7 @@ import { ArrowLeft, Package, User, MapPin, Truck, CreditCard, Clock, MessageSqua
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { formatPrice } from "@/lib/utils";
 
 const statusOptions = [
     "PENDING", "CONFIRMED", "PACKED", "SHIPPED", "DELIVERED", "CANCELLED"
@@ -53,10 +54,19 @@ export default function OrderDetailsPage({ params }) {
             });
             const data = await res.json();
             if (data.ok) {
-                toast.success("Order successfully booked with Steadfast Courier!");
+                toast.success(`Order booked with Steadfast Courier! Tracking: ${data.trackingCode || ""}`);
                 fetchOrder();
             } else {
-                toast.error(data.message || "Failed to book with Steadfast");
+                if (data.message && (data.message.includes("Shipping settings") || data.message.includes("not configured"))) {
+                    toast.error(data.message, {
+                        action: {
+                            label: "Configure",
+                            onClick: () => router.push("/admin/shipping")
+                        }
+                    });
+                } else {
+                    toast.error(data.message || "Failed to book with Steadfast");
+                }
             }
         } catch (error) {
             toast.error("An error occurred during dispatch");
@@ -178,28 +188,28 @@ export default function OrderDetailsPage({ params }) {
                                                         {item.variantId && <p className="text-xs text-gray-500">Variant: {item.variantId}</p>}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">৳{item.unitPrice}</td>
+                                                <td className="px-6 py-4 text-right">{formatPrice(item.unitPrice)}</td>
                                                 <td className="px-6 py-4 text-center">{item.quantity}</td>
-                                                <td className="px-6 py-4 text-right font-medium">৳{item.total}</td>
+                                                <td className="px-6 py-4 text-right font-medium">{formatPrice(item.total)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot className="bg-gray-50 border-t font-medium">
                                         <tr>
                                             <td colSpan="3" className="px-6 py-3 text-right">Subtotal</td>
-                                            <td className="px-6 py-3 text-right">৳{order.subtotal}</td>
+                                            <td className="px-6 py-3 text-right">{formatPrice(order.subtotal)}</td>
                                         </tr>
                                         <tr>
                                             <td colSpan="3" className="px-6 py-3 text-right text-red-600">Discount {order.couponCode && `(${order.couponCode})`}</td>
-                                            <td className="px-6 py-3 text-right text-red-600">-৳{order.discount}</td>
+                                            <td className="px-6 py-3 text-right text-red-600">-{formatPrice(order.discount)}</td>
                                         </tr>
                                         <tr>
                                             <td colSpan="3" className="px-6 py-3 text-right">Delivery Fee</td>
-                                            <td className="px-6 py-3 text-right">৳{order.deliveryFee}</td>
+                                            <td className="px-6 py-3 text-right">{formatPrice(order.deliveryFee)}</td>
                                         </tr>
                                         <tr className="text-base border-t border-gray-200">
                                             <td colSpan="3" className="px-6 py-4 text-right font-bold">Total</td>
-                                            <td className="px-6 py-4 text-right font-bold text-blue-600">৳{order.total}</td>
+                                            <td className="px-6 py-4 text-right font-bold text-blue-600">{formatPrice(order.total)}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -324,7 +334,10 @@ export default function OrderDetailsPage({ params }) {
                             ) : (
                                 <div className="space-y-4">
                                     <p className="text-xs text-gray-500">
-                                        Book this order directly to Steadfast Courier. The status will automatically update to SHIPPED.
+                                        Book this order directly to Steadfast Courier. The status will automatically update to SHIPPED.{" "}
+                                        <Link href="/admin/shipping" className="text-blue-600 font-semibold underline hover:text-blue-800">
+                                            Shipping Settings
+                                        </Link>
                                     </p>
                                     <button
                                         onClick={handleSteadfastDispatch}

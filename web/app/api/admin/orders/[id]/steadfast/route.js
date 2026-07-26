@@ -26,28 +26,34 @@ export async function POST(req, props) {
             return NextResponse.json({ ok: false, message: "Order not found" }, { status: 404 });
         }
 
-        // 3. Fetch Settings
+        // 3. Fetch Settings & Credentials (with .env fallback)
         const setting = await prisma.siteSetting.findUnique({
             where: { key: "store_settings" }
         });
 
-        if (!setting) {
-            return NextResponse.json({ ok: false, message: "Store settings not configured. Please configure credentials." }, { status: 400 });
+        let storeSettings = {};
+        if (setting?.value) {
+            try {
+                storeSettings = JSON.parse(setting.value);
+            } catch (e) {
+                console.error("Error parsing store_settings:", e);
+            }
         }
 
-        const storeSettings = JSON.parse(setting.value);
-        const apiKey = decrypt(storeSettings.steadfastApiKey);
-        const secretKey = decrypt(storeSettings.steadfastSecretKey);
+        const apiKey = (storeSettings.steadfastApiKey ? decrypt(storeSettings.steadfastApiKey) : null) || process.env.STEADFAST_API_KEY || "";
+        const secretKey = (storeSettings.steadfastSecretKey ? decrypt(storeSettings.steadfastSecretKey) : null) || process.env.STEADFAST_SECRET_KEY || "";
 
         if (!apiKey || !secretKey) {
-            return NextResponse.json({ ok: false, message: "Steadfast API Key or Secret Key is not configured. Please set them in Shipping settings." }, { status: 400 });
+            return NextResponse.json({
+                ok: false,
+                message: "Steadfast API Key or Secret Key is not configured. Please set them in Admin > Shipping settings."
+            }, { status: 400 });
         }
 
         // 4. Validate & Format Phone Number
         // Steadfast requires an 11-digit mobile number, e.g. 01XXXXXXXXX
-        let cleanPhone = order.phone.replace(/\D/g, ""); // remove all non-digits
+        let cleanPhone = (order.phone || "").replace(/\D/g, ""); // remove all non-digits
 
-        // Handle prefixes like +880 or 880
         if (cleanPhone.startsWith("880") && cleanPhone.length === 14) {
             cleanPhone = cleanPhone.slice(3);
         } else if (cleanPhone.startsWith("88") && cleanPhone.length === 13) {
@@ -56,12 +62,10 @@ export async function POST(req, props) {
             cleanPhone = cleanPhone.split("880")[1];
         }
 
-        // Add leading 0 if missing
         if (cleanPhone.length === 10 && !cleanPhone.startsWith("0")) {
             cleanPhone = "0" + cleanPhone;
         }
 
-        // Final sanity check
         if (cleanPhone.length !== 11 || !cleanPhone.startsWith("01")) {
             return NextResponse.json({
                 ok: false,
@@ -69,41 +73,76 @@ export async function POST(req, props) {
             }, { status: 400 });
         }
 
-        // 5. Calculate COD Amount
-        let codAmount = order.total - order.advancePayment;
+        // 5. Build Full Recipient Address
+        const addressParts = [order.address, order.city, order.deliveryArea].filter(Boolean);
+        const fullAddress = addressParts.join(", ");
+
+        if (!fullAddress || fullAddress.trim().length < 3) {
+            return NextResponse.json({
+                ok: false,
+                message: "Delivery address is missing or invalid. Please update the shipping address."
+            }, { status: 400 });
+        }
+
+        // 6. Calculate COD Amount
+        let codAmount = Number(order.total || 0) - Number(order.advancePayment || 0);
         if (codAmount < 0) codAmount = 0;
 
-        // 6. Build Item Description
-        const itemDescription = order.items.map(item => `${item.name} (x${item.quantity})`).join(", ");
+        // 7. Build Item Description
+        const itemDescription = (order.items || []).map(item => `${item.name} (x${item.quantity})`).join(", ");
 
-        // 7. Prepare Payload
+        // 8. Prepare Payload
         const payload = {
             invoice: order.orderNumber,
-            recipient_name: order.customerName,
+            recipient_name: order.customerName || "Customer",
             recipient_phone: cleanPhone,
-            recipient_address: order.address,
+            recipient_address: fullAddress,
             cod_amount: codAmount,
             note: order.customerNote || "Please handle with care.",
-            item_description: itemDescription.slice(0, 250)
+            item_description: itemDescription.slice(0, 250) || "Store order"
         };
 
-        // 8. Dispatch to Steadfast API
-        const response = await fetch("https://portal.packzy.com/api/v1/create_order", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "api-key": apiKey,
-                "secret-key": secretKey
-            },
-            body: JSON.stringify(payload)
-        });
+        // 9. Dispatch to Steadfast API (with primary & secondary endpoints)
+        const headers = {
+            "Content-Type": "application/json",
+            "Api-Key": apiKey,
+            "Secret-Key": secretKey,
+            "api-key": apiKey,
+            "secret-key": secretKey
+        };
 
-        const result = await response.json();
+        let response;
+        let result;
 
-        // 9. Process Response
-        if (result.status === 200 && result.consignment) {
-            const trackingCode = result.consignment.tracking_code;
+        try {
+            response = await fetch("https://portal.packzy.com/api/v1/create_order", {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload)
+            });
+            result = await response.json();
+        } catch (fetchErr) {
+            // Fallback URL if packzy domain fails
+            try {
+                response = await fetch("https://portal.steadfast.com.bd/api/v1/create_order", {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+                result = await response.json();
+            } catch (fallbackErr) {
+                return NextResponse.json({
+                    ok: false,
+                    message: `Failed to connect to Steadfast Courier API: ${fetchErr.message}`
+                }, { status: 500 });
+            }
+        }
 
+        // 10. Process Response
+        const trackingCode = result.consignment?.tracking_code || result.tracking_code || result.consignment?.consignment_id?.toString() || result.consignment_id?.toString();
+        const isSuccess = (result.status === 200 || result.code === 200 || result.status === "200") && Boolean(trackingCode);
+
+        if (isSuccess) {
             const updatedOrder = await prisma.$transaction(async (tx) => {
                 // Update Order fields
                 const updated = await tx.order.update({
@@ -130,7 +169,7 @@ export async function POST(req, props) {
                         data: {
                             userId: updated.userId,
                             type: "ORDER_STATUS_UPDATE",
-                            message: `Your order #${updated.orderNumber} has been dispatched. Steadfast Tracking Code: ${trackingCode}.`
+                            message: `Your order #${updated.orderNumber} has been dispatched via Steadfast. Tracking Code: ${trackingCode}.`
                         }
                     });
                 }
@@ -138,7 +177,7 @@ export async function POST(req, props) {
                 return updated;
             });
 
-            // 10. Audit Log
+            // Audit Log
             const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
             await createAuditLog({
                 adminId: admin.user?.id || admin.user?.email || admin.id,
@@ -149,11 +188,12 @@ export async function POST(req, props) {
                 ip
             });
 
-            return NextResponse.json({ ok: true, data: updatedOrder });
+            return NextResponse.json({ ok: true, data: updatedOrder, trackingCode });
         } else {
+            const errorMsg = result.message || (typeof result.errors === 'object' ? JSON.stringify(result.errors) : null) || "Courier booking failed. Please verify Steadfast credentials.";
             return NextResponse.json({
                 ok: false,
-                message: result.message || "Courier booking failed. Check Steadfast credentials/status."
+                message: errorMsg
             }, { status: 400 });
         }
 
@@ -161,3 +201,4 @@ export async function POST(req, props) {
         return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
     }
 }
+
