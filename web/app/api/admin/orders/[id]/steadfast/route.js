@@ -40,8 +40,8 @@ export async function POST(req, props) {
             }
         }
 
-        const apiKey = (storeSettings.steadfastApiKey ? decrypt(storeSettings.steadfastApiKey) : null) || process.env.STEADFAST_API_KEY || "";
-        const secretKey = (storeSettings.steadfastSecretKey ? decrypt(storeSettings.steadfastSecretKey) : null) || process.env.STEADFAST_SECRET_KEY || "";
+        const apiKey = ((storeSettings.steadfastApiKey ? decrypt(storeSettings.steadfastApiKey) : null) || process.env.STEADFAST_API_KEY || "").trim();
+        const secretKey = ((storeSettings.steadfastSecretKey ? decrypt(storeSettings.steadfastSecretKey) : null) || process.env.STEADFAST_SECRET_KEY || "").trim();
 
         if (!apiKey || !secretKey) {
             return NextResponse.json({
@@ -106,9 +106,7 @@ export async function POST(req, props) {
         const headers = {
             "Content-Type": "application/json",
             "Api-Key": apiKey,
-            "Secret-Key": secretKey,
-            "api-key": apiKey,
-            "secret-key": secretKey
+            "Secret-Key": secretKey
         };
 
         let response;
