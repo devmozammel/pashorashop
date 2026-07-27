@@ -37,7 +37,7 @@ export default function ProductView({ product }) {
     });
 
     // WhatsApp Direct Order State
-    const [whatsappNumber, setWhatsappNumber] = useState("8801600995299");
+    const [whatsappNumber, setWhatsappNumber] = useState("8801613134043");
     const [showWaModal, setShowWaModal] = useState(false);
     const [waName, setWaName] = useState("");
     const [waPhone, setWaPhone] = useState("");

@@ -82,7 +82,7 @@ export default async function ReturnPolicyPage() {
                             <h3 className="text-lg font-bold text-gray-900 mt-8 mb-4">রিটার্ন প্রক্রিয়া (How to Return):</h3>
                             <p>ডেলিভারি পাওয়ার ৩ দিনের মধ্যে আমাদের সাথে যোগাযোগ করুন:</p>
                             <div className="bg-gray-50 p-4 rounded-xl space-y-2 border border-gray-100">
-                                <p className="font-semibold text-gray-800">ফোন: <a href="tel:01600995299" className="text-red-600 hover:underline">01600995299</a></p>
+                                <p className="font-semibold text-gray-800">ফোন: <a href="tel:01613134043" className="text-red-600 hover:underline">01613134043</a></p>
                                 <p className="font-semibold text-gray-800">ইমেইল: <a href="mailto:authenticbazarshop@gmail.com" className="text-red-600 hover:underline">authenticbazarshop@gmail.com</a></p>
                             </div>
                             <p>আমরা পণ্য সংগ্রহ/গ্রহণ করার পর যাচাই করব এবং কারণ সঠিক হলে আপনাকে নতুন পণ্য দেওয়া হবে অথবা রিফান্ড দেওয়া হবে।</p>
@@ -160,7 +160,7 @@ export default async function ReturnPolicyPage() {
                             <h3 className="text-lg font-bold text-gray-900 mt-8 mb-4">How to Return:</h3>
                             <p>Contact us within 03 days after receiving your order:</p>
                             <div className="bg-gray-50 p-4 rounded-xl space-y-2 border border-gray-100">
-                                <p className="font-semibold text-gray-800">Phone: <a href="tel:01600995299" className="text-gray-900 hover:underline">01600995299</a></p>
+                                <p className="font-semibold text-gray-800">Phone: <a href="tel:01613134043" className="text-gray-900 hover:underline">01613134043</a></p>
                                 <p className="font-semibold text-gray-800">Email: <a href="mailto:authenticbazarshop@gmail.com" className="text-gray-900 hover:underline">authenticbazarshop@gmail.com</a></p>
                             </div>
                             <p>After we receive/pick up your return, we will perform a quality check and if valid, we will replace the item or proceed with a refund.</p>

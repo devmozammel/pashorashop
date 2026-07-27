@@ -63,7 +63,7 @@ export const initialAdminData = {
         siteName: 'Fashion House',
         currencySymbol: '৳',
         supportEmail: 'support@fashionhouse.com',
-        supportPhone: '+8801600995299',
+        supportPhone: '+8801613134043',
         address: '123 Fashion Street, Dhaka',
         deliveryFeeInside: 70,
         deliveryFeeOutside: 130
