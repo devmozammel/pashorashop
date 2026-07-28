@@ -40,8 +40,13 @@ export async function POST(req, props) {
             }
         }
 
-        const apiKey = ((storeSettings.steadfastApiKey ? decrypt(storeSettings.steadfastApiKey) : null) || process.env.STEADFAST_API_KEY || "").trim();
-        const secretKey = ((storeSettings.steadfastSecretKey ? decrypt(storeSettings.steadfastSecretKey) : null) || process.env.STEADFAST_SECRET_KEY || "").trim();
+        const isValidPlaintextKey = (k) => k && typeof k === 'string' && !k.includes(':') && k.trim().length > 0;
+
+        const dbApiKey = storeSettings.steadfastApiKey ? decrypt(storeSettings.steadfastApiKey) : null;
+        const dbSecretKey = storeSettings.steadfastSecretKey ? decrypt(storeSettings.steadfastSecretKey) : null;
+
+        const apiKey = (isValidPlaintextKey(dbApiKey) ? dbApiKey : (process.env.STEADFAST_API_KEY || "")).trim();
+        const secretKey = (isValidPlaintextKey(dbSecretKey) ? dbSecretKey : (process.env.STEADFAST_SECRET_KEY || "")).trim();
 
         if (!apiKey || !secretKey) {
             return NextResponse.json({

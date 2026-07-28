@@ -43,18 +43,24 @@ export function encrypt(text) {
 }
 
 export function decrypt(text) {
-    if (!text || !text.includes(':')) return text;
+    if (!text || typeof text !== 'string' || !text.includes(':')) return text;
     try {
         const key = getEncryptionKey();
         let textParts = text.split(':');
-        let iv = Buffer.from(textParts.shift(), 'hex');
-        let encryptedText = Buffer.from(textParts.join(':'), 'hex');
+        if (textParts.length !== 2) return null;
+        let iv = Buffer.from(textParts[0], 'hex');
+        let encryptedText = Buffer.from(textParts[1], 'hex');
+        if (iv.length !== IV_LENGTH || encryptedText.length === 0) return null;
         let decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
         let decrypted = decipher.update(encryptedText);
         decrypted = Buffer.concat([decrypted, decipher.final()]);
-        return decrypted.toString();
+        const result = decrypted.toString('utf8');
+        if (!result || /^[\u0000-\u0008\u000E-\u001F]/.test(result)) {
+            return null;
+        }
+        return result;
     } catch (error) {
-        console.error("Encryption Decryption error:", error);
-        return text; // Fallback to raw if decryption fails
+        console.error("Decryption error:", error);
+        return null;
     }
 }

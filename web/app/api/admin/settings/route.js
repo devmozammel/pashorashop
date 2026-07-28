@@ -40,13 +40,20 @@ export async function GET(req) {
         const settings = setting ? JSON.parse(setting.value) : DEFAULT_SETTINGS;
         const mergedSettings = { ...DEFAULT_SETTINGS, ...settings };
 
+        const isValidKey = (k) => k && typeof k === 'string' && !k.includes(':') && k.trim().length > 0;
+        const safeDecrypt = (val, fallback = "") => {
+            if (!val) return fallback;
+            const dec = decrypt(val);
+            return isValidKey(dec) ? dec : fallback;
+        };
+
         // Decrypt sensitive fields
         const decryptedSettings = {
             ...mergedSettings,
-            facebookConversionToken: decrypt(mergedSettings.facebookConversionToken),
-            sslcommerzStorePassword: decrypt(mergedSettings.sslcommerzStorePassword),
-            steadfastApiKey: decrypt(mergedSettings.steadfastApiKey),
-            steadfastSecretKey: decrypt(mergedSettings.steadfastSecretKey),
+            facebookConversionToken: decrypt(mergedSettings.facebookConversionToken) || "",
+            sslcommerzStorePassword: decrypt(mergedSettings.sslcommerzStorePassword) || "",
+            steadfastApiKey: safeDecrypt(mergedSettings.steadfastApiKey, process.env.STEADFAST_API_KEY || ""),
+            steadfastSecretKey: safeDecrypt(mergedSettings.steadfastSecretKey, process.env.STEADFAST_SECRET_KEY || ""),
         };
 
         return NextResponse.json({ ok: true, data: decryptedSettings });
@@ -68,13 +75,20 @@ export async function POST(req) {
         });
         const currentSettings = existing ? JSON.parse(existing.value) : {};
 
+        const isValidKey = (k) => k && typeof k === 'string' && !k.includes(':') && k.trim().length > 0;
+        const safeDecrypt = (val, fallback = "") => {
+            if (!val) return fallback;
+            const dec = decrypt(val);
+            return isValidKey(dec) ? dec : fallback;
+        };
+
         // Decrypt current settings to work with plaintext values internally
         const decryptedCurrent = {
             ...currentSettings,
-            facebookConversionToken: decrypt(currentSettings.facebookConversionToken),
-            sslcommerzStorePassword: decrypt(currentSettings.sslcommerzStorePassword),
-            steadfastApiKey: decrypt(currentSettings.steadfastApiKey),
-            steadfastSecretKey: decrypt(currentSettings.steadfastSecretKey),
+            facebookConversionToken: decrypt(currentSettings.facebookConversionToken) || "",
+            sslcommerzStorePassword: decrypt(currentSettings.sslcommerzStorePassword) || "",
+            steadfastApiKey: safeDecrypt(currentSettings.steadfastApiKey, process.env.STEADFAST_API_KEY || ""),
+            steadfastSecretKey: safeDecrypt(currentSettings.steadfastSecretKey, process.env.STEADFAST_SECRET_KEY || ""),
         };
 
         const cleanSettings = {
