@@ -17,17 +17,54 @@ import {
     Flame,
     Crown,
     Headphones,
-    Smile
+    Smile,
+    Gamepad2,
+    Dog
 } from "lucide-react";
 
 // Category slug/name to Lucide Icon & Gradient mapping
 const CATEGORY_THEMES = {
+    "beauty-skincare": {
+        icon: Heart,
+        gradient: "from-pink-500 via-rose-500 to-fuchsia-600",
+        shadow: "shadow-pink-500/20",
+        bg: "bg-pink-50 dark:bg-pink-950/30",
+        badge: "Beauty & Care"
+    },
+    "bags-backpacks": {
+        icon: ShoppingBag,
+        gradient: "from-emerald-500 via-teal-600 to-cyan-600",
+        shadow: "shadow-teal-500/20",
+        bg: "bg-teal-50 dark:bg-teal-950/30",
+        badge: "Bags & Luggage"
+    },
+    "perfumes-fragrances": {
+        icon: Flame,
+        gradient: "from-rose-600 via-amber-500 to-red-600",
+        shadow: "shadow-rose-500/20",
+        bg: "bg-rose-50 dark:bg-rose-950/30",
+        badge: "Fragrance"
+    },
+    "gaming-pc-gear": {
+        icon: Gamepad2,
+        gradient: "from-purple-600 via-indigo-600 to-blue-600",
+        shadow: "shadow-purple-500/20",
+        bg: "bg-purple-50 dark:bg-purple-950/30",
+        badge: "Gaming Gear"
+    },
+    "pet-care-accessories": {
+        icon: Dog,
+        gradient: "from-amber-500 via-orange-500 to-yellow-500",
+        shadow: "shadow-amber-500/20",
+        bg: "bg-amber-50 dark:bg-amber-950/30",
+        badge: "Pet Corner"
+    },
     "phones-gadgets": {
         icon: Smartphone,
         gradient: "from-emerald-500 via-teal-500 to-cyan-600",
         shadow: "shadow-teal-500/20",
         bg: "bg-teal-50 dark:bg-teal-950/30",
-        badge: "Gatgets & Phones"
+        badge: "Gadgets & Phones"
     },
     "men": {
         icon: Shirt,

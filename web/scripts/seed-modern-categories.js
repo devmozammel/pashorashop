@@ -1,131 +1,194 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+const NEW_CATEGORIES = [
+    {
+        name: "Beauty & Skincare",
+        slug: "beauty-skincare",
+        showInTopbar: true,
+        showInMegaMenu: true,
+        showOnHomepage: true,
+        sortOrder: 2,
+        groups: [
+            {
+                name: "Skincare",
+                slug: "beauty-skincare-care",
+                items: ["Face Serums", "Sunscreen", "Moisturizers", "Cleansers"]
+            },
+            {
+                name: "Makeup",
+                slug: "beauty-makeup",
+                items: ["Lipsticks", "Foundations", "Eye Makeup"]
+            },
+            {
+                name: "Hair Care",
+                slug: "beauty-haircare",
+                items: ["Shampoos", "Hair Oils & Serums", "Conditioners"]
+            }
+        ]
+    },
+    {
+        name: "Bags & Backpacks",
+        slug: "bags-backpacks",
+        showInTopbar: true,
+        showInMegaMenu: true,
+        showOnHomepage: true,
+        sortOrder: 3,
+        groups: [
+            {
+                name: "Backpacks",
+                slug: "bags-backpacks-list",
+                items: ["Laptop Bags", "Travel Backpacks", "College Bags"]
+            },
+            {
+                name: "Ladies Handbags",
+                slug: "bags-handbags",
+                items: ["Tote Bags", "Crossbody Bags", "Clutches & Purses"]
+            },
+            {
+                name: "Wallets & Travel",
+                slug: "bags-wallets",
+                items: ["Travel Luggage", "Leather Wallets", "Passport Holders"]
+            }
+        ]
+    },
+    {
+        name: "Perfumes & Fragrances",
+        slug: "perfumes-fragrances",
+        showInTopbar: true,
+        showInMegaMenu: true,
+        showOnHomepage: true,
+        sortOrder: 4,
+        groups: [
+            {
+                name: "Men's Perfumes",
+                slug: "perfumes-men",
+                items: ["EDP Perfumes", "Body Sprays", "Pocket Perfumes"]
+            },
+            {
+                name: "Women's Fragrances",
+                slug: "perfumes-women",
+                items: ["Floral Perfumes", "Body Mists", "Gift Sets"]
+            },
+            {
+                name: "Attar & Oils",
+                slug: "perfumes-attar",
+                items: ["Organic Attar", "Essential Oils"]
+            }
+        ]
+    },
+    {
+        name: "Gaming & PC Gear",
+        slug: "gaming-pc-gear",
+        showInTopbar: true,
+        showInMegaMenu: true,
+        showOnHomepage: true,
+        sortOrder: 5,
+        groups: [
+            {
+                name: "Peripherals",
+                slug: "gaming-peripherals",
+                items: ["Gaming Mice", "RGB Keyboards", "Gaming Headsets"]
+            },
+            {
+                name: "Setup Accessories",
+                slug: "gaming-accessories",
+                items: ["RGB Mousepads", "Game Controllers", "Cable Organizers"]
+            },
+            {
+                name: "Audio & Microphones",
+                slug: "gaming-audio",
+                items: ["Streaming Microphones", "Bluetooth Speakers"]
+            }
+        ]
+    },
+    {
+        name: "Pet Care & Accessories",
+        slug: "pet-care-accessories",
+        showInTopbar: true,
+        showInMegaMenu: true,
+        showOnHomepage: true,
+        sortOrder: 6,
+        groups: [
+            {
+                name: "Cat Care",
+                slug: "pet-cat-care",
+                items: ["Cat Food", "Cat Litter", "Toys & Scratchers"]
+            },
+            {
+                name: "Dog Care",
+                slug: "pet-dog-care",
+                items: ["Dog Food", "Leashes & Harnesses", "Dog Toys"]
+            },
+            {
+                name: "Grooming & Beds",
+                slug: "pet-grooming",
+                items: ["Grooming Brushes", "Pet Shampoos", "Pet Beds"]
+            }
+        ]
+    }
+];
+
 async function main() {
-    console.log("Seeding modern categories and subcategories...");
+    console.log("Seeding requested 5 main categories for Topbar & Shop by Category...");
 
-    // 1. Phones & Gadgets Main Category
-    const phonesCategory = await prisma.category.upsert({
-        where: { slug: "phones-gadgets" },
-        update: {
-            name: "Phones & Gadgets",
-            isActive: true,
-            showInMegaMenu: false,
-            showInTopbar: false,
-            showOnHomepage: true,
-            sortOrder: 1,
-        },
-        create: {
-            name: "Phones & Gadgets",
-            slug: "phones-gadgets",
-            image: "",
-            isActive: true,
-            showInMegaMenu: false,
-            showInTopbar: false,
-            showOnHomepage: true,
-            sortOrder: 1,
-        }
-    });
-
-    console.log("Category created/updated:", phonesCategory.name);
-
-    // Group 1: Smartphones & Phones
-    const phonesGroup = await prisma.subcategoryGroup.upsert({
-        where: { slug: "phones-smartphones" },
-        update: {
-            name: "Smartphones",
-            categoryId: phonesCategory.id,
-            isActive: true,
-            sortOrder: 1,
-        },
-        create: {
-            name: "Smartphones",
-            slug: "phones-smartphones",
-            categoryId: phonesCategory.id,
-            isActive: true,
-            sortOrder: 1,
-        }
-    });
-
-    const phoneItems = ["iPhones", "Android Phones", "Feature Phones"];
-    for (let i = 0; i < phoneItems.length; i++) {
-        const itemName = phoneItems[i];
-        const itemSlug = `phones-${itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-        await prisma.subcategoryItem.upsert({
-            where: { slug: itemSlug },
-            update: { name: itemName, groupId: phonesGroup.id, isActive: true },
-            create: { name: itemName, slug: itemSlug, groupId: phonesGroup.id, isActive: true, sortOrder: i }
+    for (const catData of NEW_CATEGORIES) {
+        const category = await prisma.category.upsert({
+            where: { slug: catData.slug },
+            update: {
+                name: catData.name,
+                isActive: true,
+                showInMegaMenu: catData.showInMegaMenu,
+                showInTopbar: catData.showInTopbar,
+                showOnHomepage: catData.showOnHomepage,
+                sortOrder: catData.sortOrder,
+            },
+            create: {
+                name: catData.name,
+                slug: catData.slug,
+                image: "",
+                isActive: true,
+                showInMegaMenu: catData.showInMegaMenu,
+                showInTopbar: catData.showInTopbar,
+                showOnHomepage: catData.showOnHomepage,
+                sortOrder: catData.sortOrder,
+            }
         });
+
+        console.log(`Created/Updated Category: ${category.name}`);
+
+        for (let gIdx = 0; gIdx < catData.groups.length; gIdx++) {
+            const grpData = catData.groups[gIdx];
+            const group = await prisma.subcategoryGroup.upsert({
+                where: { slug: grpData.slug },
+                update: {
+                    name: grpData.name,
+                    categoryId: category.id,
+                    isActive: true,
+                    sortOrder: gIdx + 1,
+                },
+                create: {
+                    name: grpData.name,
+                    slug: grpData.slug,
+                    categoryId: category.id,
+                    isActive: true,
+                    sortOrder: gIdx + 1,
+                }
+            });
+
+            for (let iIdx = 0; iIdx < grpData.items.length; iIdx++) {
+                const itemName = grpData.items[iIdx];
+                const itemSlug = `${grpData.slug}-${itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                await prisma.subcategoryItem.upsert({
+                    where: { slug: itemSlug },
+                    update: { name: itemName, groupId: group.id, isActive: true },
+                    create: { name: itemName, slug: itemSlug, groupId: group.id, isActive: true, sortOrder: iIdx }
+                });
+            }
+        }
     }
 
-    // Group 2: Mobile Accessories
-    const accGroup = await prisma.subcategoryGroup.upsert({
-        where: { slug: "phones-mobile-accessories" },
-        update: {
-            name: "Mobile Accessories",
-            categoryId: phonesCategory.id,
-            isActive: true,
-            sortOrder: 2,
-        },
-        create: {
-            name: "Mobile Accessories",
-            slug: "phones-mobile-accessories",
-            categoryId: phonesCategory.id,
-            isActive: true,
-            sortOrder: 2,
-        }
-    });
-
-    const accItems = ["Phone Cases & Covers", "Chargers & Cables", "Power Banks", "Earphones & TWS"];
-    for (let i = 0; i < accItems.length; i++) {
-        const itemName = accItems[i];
-        const itemSlug = `acc-${itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-        await prisma.subcategoryItem.upsert({
-            where: { slug: itemSlug },
-            update: { name: itemName, groupId: accGroup.id, isActive: true },
-            create: { name: itemName, slug: itemSlug, groupId: accGroup.id, isActive: true, sortOrder: i }
-        });
-    }
-
-    // Group 3: Smart Devices
-    const smartGroup = await prisma.subcategoryGroup.upsert({
-        where: { slug: "phones-smart-devices" },
-        update: {
-            name: "Smart Devices",
-            categoryId: phonesCategory.id,
-            isActive: true,
-            sortOrder: 3,
-        },
-        create: {
-            name: "Smart Devices",
-            slug: "phones-smart-devices",
-            categoryId: phonesCategory.id,
-            isActive: true,
-            sortOrder: 3,
-        }
-    });
-
-    const smartItems = ["Smartwatches", "Bluetooth Speakers", "Wireless Headphones"];
-    for (let i = 0; i < smartItems.length; i++) {
-        const itemName = smartItems[i];
-        const itemSlug = `smart-${itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-        await prisma.subcategoryItem.upsert({
-            where: { slug: itemSlug },
-            update: { name: itemName, groupId: smartGroup.id, isActive: true },
-            create: { name: itemName, slug: itemSlug, groupId: smartGroup.id, isActive: true, sortOrder: i }
-        });
-    }
-
-    // Update existing categories to show on homepage
-    const existingCats = await prisma.category.findMany({ where: { isActive: true } });
-    for (const cat of existingCats) {
-        await prisma.category.update({
-            where: { id: cat.id },
-            data: { showOnHomepage: true }
-        });
-    }
-
-    console.log("Seeding finished successfully!");
+    console.log("Finished seeding 5 requested topbar & homepage categories!");
 }
 
 main()
