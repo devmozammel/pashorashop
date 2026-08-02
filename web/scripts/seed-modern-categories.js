@@ -10,8 +10,8 @@ async function main() {
         update: {
             name: "Phones & Gadgets",
             isActive: true,
-            showInMegaMenu: true,
-            showInTopbar: true,
+            showInMegaMenu: false,
+            showInTopbar: false,
             showOnHomepage: true,
             sortOrder: 1,
         },
@@ -20,8 +20,8 @@ async function main() {
             slug: "phones-gadgets",
             image: "",
             isActive: true,
-            showInMegaMenu: true,
-            showInTopbar: true,
+            showInMegaMenu: false,
+            showInTopbar: false,
             showOnHomepage: true,
             sortOrder: 1,
         }
