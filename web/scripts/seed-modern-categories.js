@@ -5,8 +5,8 @@ const NEW_CATEGORIES = [
     {
         name: "Beauty & Skincare",
         slug: "beauty-skincare",
-        showInTopbar: true,
-        showInMegaMenu: true,
+        showInTopbar: false,
+        showInMegaMenu: false,
         showOnHomepage: true,
         sortOrder: 2,
         groups: [
@@ -30,8 +30,8 @@ const NEW_CATEGORIES = [
     {
         name: "Bags & Backpacks",
         slug: "bags-backpacks",
-        showInTopbar: true,
-        showInMegaMenu: true,
+        showInTopbar: false,
+        showInMegaMenu: false,
         showOnHomepage: true,
         sortOrder: 3,
         groups: [
@@ -55,8 +55,8 @@ const NEW_CATEGORIES = [
     {
         name: "Perfumes & Fragrances",
         slug: "perfumes-fragrances",
-        showInTopbar: true,
-        showInMegaMenu: true,
+        showInTopbar: false,
+        showInMegaMenu: false,
         showOnHomepage: true,
         sortOrder: 4,
         groups: [
@@ -80,8 +80,8 @@ const NEW_CATEGORIES = [
     {
         name: "Gaming & PC Gear",
         slug: "gaming-pc-gear",
-        showInTopbar: true,
-        showInMegaMenu: true,
+        showInTopbar: false,
+        showInMegaMenu: false,
         showOnHomepage: true,
         sortOrder: 5,
         groups: [
@@ -105,8 +105,8 @@ const NEW_CATEGORIES = [
     {
         name: "Pet Care & Accessories",
         slug: "pet-care-accessories",
-        showInTopbar: true,
-        showInMegaMenu: true,
+        showInTopbar: false,
+        showInMegaMenu: false,
         showOnHomepage: true,
         sortOrder: 6,
         groups: [

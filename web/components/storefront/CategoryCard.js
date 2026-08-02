@@ -19,101 +19,93 @@ import {
     Headphones,
     Smile,
     Gamepad2,
-    Dog
+    Dog,
+    Tag,
+    Tv,
+    Briefcase,
+    Gem,
+    Scissors
 } from "lucide-react";
 
-// Category slug/name to Lucide Icon & Gradient mapping
+// Category slug/name to Lucide Icon & White Theme mapping
 const CATEGORY_THEMES = {
     "beauty-skincare": {
         icon: Heart,
-        gradient: "from-pink-500 via-rose-500 to-fuchsia-600",
-        shadow: "shadow-pink-500/20",
-        bg: "bg-pink-50 dark:bg-pink-950/30",
-        badge: "Beauty & Care"
+        color: "text-rose-500 dark:text-rose-400",
+        badgeBg: "bg-rose-50 dark:bg-rose-950/40 border-rose-100 dark:border-rose-900/50",
+        badge: "Beauty Care"
     },
     "bags-backpacks": {
-        icon: ShoppingBag,
-        gradient: "from-emerald-500 via-teal-600 to-cyan-600",
-        shadow: "shadow-teal-500/20",
-        bg: "bg-teal-50 dark:bg-teal-950/30",
+        icon: Briefcase,
+        color: "text-teal-600 dark:text-teal-400",
+        badgeBg: "bg-teal-50 dark:bg-teal-950/40 border-teal-100 dark:border-teal-900/50",
         badge: "Bags & Luggage"
     },
     "perfumes-fragrances": {
         icon: Flame,
-        gradient: "from-rose-600 via-amber-500 to-red-600",
-        shadow: "shadow-rose-500/20",
-        bg: "bg-rose-50 dark:bg-rose-950/30",
+        color: "text-amber-500 dark:text-amber-400",
+        badgeBg: "bg-amber-50 dark:bg-amber-950/40 border-amber-100 dark:border-amber-900/50",
         badge: "Fragrance"
     },
     "gaming-pc-gear": {
         icon: Gamepad2,
-        gradient: "from-purple-600 via-indigo-600 to-blue-600",
-        shadow: "shadow-purple-500/20",
-        bg: "bg-purple-50 dark:bg-purple-950/30",
+        color: "text-indigo-600 dark:text-indigo-400",
+        badgeBg: "bg-indigo-50 dark:bg-indigo-950/40 border-indigo-100 dark:border-indigo-900/50",
         badge: "Gaming Gear"
     },
     "pet-care-accessories": {
         icon: Dog,
-        gradient: "from-amber-500 via-orange-500 to-yellow-500",
-        shadow: "shadow-amber-500/20",
-        bg: "bg-amber-50 dark:bg-amber-950/30",
-        badge: "Pet Corner"
+        color: "text-orange-500 dark:text-orange-400",
+        badgeBg: "bg-orange-50 dark:bg-orange-950/40 border-orange-100 dark:border-orange-900/50",
+        badge: "Pet Care"
     },
     "phones-gadgets": {
         icon: Smartphone,
-        gradient: "from-emerald-500 via-teal-500 to-cyan-600",
-        shadow: "shadow-teal-500/20",
-        bg: "bg-teal-50 dark:bg-teal-950/30",
-        badge: "Gadgets & Phones"
+        color: "text-emerald-600 dark:text-emerald-400",
+        badgeBg: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-900/50",
+        badge: "Phones & Tech"
     },
     "men": {
         icon: Shirt,
-        gradient: "from-blue-600 via-indigo-600 to-violet-600",
-        shadow: "shadow-blue-500/20",
-        bg: "bg-blue-50 dark:bg-blue-950/30",
-        badge: "Fashion"
+        color: "text-blue-600 dark:text-blue-400",
+        badgeBg: "bg-blue-50 dark:bg-blue-950/40 border-blue-100 dark:border-blue-900/50",
+        badge: "Men's Fashion"
     },
     "women": {
-        icon: Sparkles,
-        gradient: "from-rose-500 via-pink-500 to-fuchsia-600",
-        shadow: "shadow-rose-500/20",
-        bg: "bg-rose-50 dark:bg-rose-950/30",
-        badge: "Trending"
+        icon: Crown,
+        color: "text-fuchsia-600 dark:text-fuchsia-400",
+        badgeBg: "bg-fuchsia-50 dark:bg-fuchsia-950/40 border-fuchsia-100 dark:border-fuchsia-900/50",
+        badge: "Women's Fashion"
     },
     "teens": {
         icon: Zap,
-        gradient: "from-amber-500 via-orange-500 to-red-500",
-        shadow: "shadow-amber-500/20",
-        bg: "bg-amber-50 dark:bg-amber-950/30",
+        color: "text-amber-500 dark:text-amber-400",
+        badgeBg: "bg-amber-50 dark:bg-amber-950/40 border-amber-100 dark:border-amber-900/50",
         badge: "Youth Style"
     },
     "kids": {
         icon: Baby,
-        gradient: "from-lime-500 via-emerald-500 to-teal-500",
-        shadow: "shadow-emerald-500/20",
-        bg: "bg-emerald-50 dark:bg-emerald-950/30",
+        color: "text-cyan-600 dark:text-cyan-400",
+        badgeBg: "bg-cyan-50 dark:bg-cyan-950/40 border-cyan-100 dark:border-cyan-900/50",
         badge: "Kids Corner"
     },
     "sports": {
         icon: Trophy,
-        gradient: "from-red-500 via-orange-600 to-amber-600",
-        shadow: "shadow-red-500/20",
-        bg: "bg-red-50 dark:bg-red-950/30",
+        color: "text-red-600 dark:text-red-400",
+        badgeBg: "bg-red-50 dark:bg-red-950/40 border-red-100 dark:border-red-900/50",
         badge: "Fitness"
     },
     "home-living": {
         icon: Home,
-        gradient: "from-purple-600 via-violet-600 to-indigo-600",
-        shadow: "shadow-purple-500/20",
-        bg: "bg-purple-50 dark:bg-purple-950/30",
+        color: "text-purple-600 dark:text-purple-400",
+        badgeBg: "bg-purple-50 dark:bg-purple-950/40 border-purple-100 dark:border-purple-900/50",
         badge: "Home Decor"
     },
     "accessories": {
         icon: Watch,
-        gradient: "from-amber-500 via-yellow-500 to-orange-500",
-        shadow: "shadow-yellow-500/20",
-        bg: "bg-yellow-50 dark:bg-yellow-950/30",
-        badge: "Luxury"
+        color: "text-yellow-600 dark:text-yellow-400",
+        badgeBg: "bg-yellow-50 dark:bg-yellow-950/40 border-yellow-100 dark:border-yellow-900/50",
+        badge: "Accessories"
     }
 };
 
@@ -142,25 +134,25 @@ export default function CategoryCard({ cat }) {
         } else if (nameLower.includes("shoe") || nameLower.includes("footwear")) {
             theme = {
                 icon: Footprints,
-                gradient: "from-cyan-500 to-blue-600",
-                shadow: "shadow-cyan-500/20",
-                bg: "bg-cyan-50 dark:bg-cyan-950/30",
+                color: "text-cyan-600 dark:text-cyan-400",
+                badgeBg: "bg-cyan-50 dark:bg-cyan-950/40 border-cyan-100 dark:border-cyan-900/50",
                 badge: "Footwear"
             };
-        } else if (nameLower.includes("beauty") || nameLower.includes("cosmetic")) {
-            theme = {
-                icon: Heart,
-                gradient: "from-pink-500 to-rose-600",
-                shadow: "shadow-pink-500/20",
-                bg: "bg-pink-50 dark:bg-pink-950/30",
-                badge: "Beauty"
-            };
+        } else if (nameLower.includes("beauty") || nameLower.includes("cosmetic") || nameLower.includes("skin")) {
+            theme = CATEGORY_THEMES["beauty-skincare"];
+        } else if (nameLower.includes("bag") || nameLower.includes("luggage")) {
+            theme = CATEGORY_THEMES["bags-backpacks"];
+        } else if (nameLower.includes("perfume") || nameLower.includes("fragrance") || nameLower.includes("attar")) {
+            theme = CATEGORY_THEMES["perfumes-fragrances"];
+        } else if (nameLower.includes("game") || nameLower.includes("gaming") || nameLower.includes("pc")) {
+            theme = CATEGORY_THEMES["gaming-pc-gear"];
+        } else if (nameLower.includes("pet") || nameLower.includes("cat") || nameLower.includes("dog")) {
+            theme = CATEGORY_THEMES["pet-care-accessories"];
         } else {
             theme = {
                 icon: ShoppingBag,
-                gradient: "from-indigo-500 via-purple-500 to-pink-500",
-                shadow: "shadow-indigo-500/20",
-                bg: "bg-indigo-50 dark:bg-indigo-950/30",
+                color: "text-indigo-600 dark:text-indigo-400",
+                badgeBg: "bg-indigo-50 dark:bg-indigo-950/40 border-indigo-100 dark:border-indigo-900/50",
                 badge: "Featured"
             };
         }
@@ -171,14 +163,11 @@ export default function CategoryCard({ cat }) {
     return (
         <Link
             href={`/category/${cat.slug}`}
-            className="group relative flex flex-col items-center justify-between p-4 sm:p-5 rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 overflow-hidden"
+            className="group relative flex flex-col items-center justify-between p-5 rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_30px_rgba(0,0,0,0.08)] hover:-translate-y-1.5 transition-all duration-300 overflow-hidden"
         >
-            {/* Ambient Background Glow */}
-            <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full bg-gradient-to-br ${theme.gradient} opacity-10 group-hover:opacity-20 blur-xl transition-opacity duration-300 pointer-events-none`} />
-
-            {/* Icon Container */}
-            <div className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${theme.gradient} ${theme.shadow} flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}>
-                <Icon className="w-7 h-7 sm:w-8 sm:h-8 stroke-[1.8]" />
+            {/* White/Soft Badge Icon Container */}
+            <div className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${theme.badgeBg} border flex items-center justify-center p-3.5 group-hover:scale-105 transition-transform duration-300 shadow-sm`}>
+                <Icon className={`w-8 h-8 sm:w-9 sm:h-9 stroke-[1.8] ${theme.color} transition-transform duration-300 group-hover:scale-110`} />
             </div>
 
             {/* Content Area */}
@@ -188,11 +177,10 @@ export default function CategoryCard({ cat }) {
                 </span>
 
                 {/* Sub-badge / Explore hint */}
-                <span className="mt-1 text-[10px] font-bold tracking-wider uppercase text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors flex items-center gap-1">
+                <span className="mt-1 text-[10px] font-bold tracking-wider uppercase text-gray-400 dark:text-gray-500 group-hover:text-black dark:group-hover:text-gray-200 transition-colors flex items-center gap-1">
                     Explore &rarr;
                 </span>
             </div>
         </Link>
     );
 }
-
