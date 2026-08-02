@@ -43,14 +43,21 @@ export async function generateMetadata() {
 
 export default async function HomePage() {
     // 1. Fetch Homepage Config and Categories in parallel
-    const [config, categories] = await Promise.all([
+    const [config, categoriesRaw] = await Promise.all([
         prisma.homepageConfig.findFirst(),
         prisma.category.findMany({
             where: { isActive: true },
             orderBy: [{ showOnHomepage: 'desc' }, { sortOrder: 'asc' }],
-            take: 8,
+            take: 14,
+            include: {
+                subcategoryGroups: {
+                    select: { id: true }
+                }
+            }
         })
     ]);
+
+    const categories = serializePrisma(categoriesRaw);
 
     const showFeatured = config?.showFeatured !== false;
     const showNewArrivals = config?.showNewArrivals !== false;
@@ -148,32 +155,28 @@ export default async function HomePage() {
             {/* ── CATEGORIES — Mobile scroll + Desktop grid ── */}
             {categories.length > 0 && (
                 <section className="container px-4">
-                    <h2 className="text-2xl font-bold tracking-tight mb-6">Shop by Category</h2>
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+                                Shop by Category
+                            </h2>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                Browse authentic collections by top categories
+                            </p>
+                        </div>
+                    </div>
 
                     {/* Mobile: horizontal scroll */}
-                    <div className="flex md:hidden overflow-x-auto gap-4 pb-3 no-scrollbar scroll-smooth -mx-1 px-1">
+                    <div className="flex sm:hidden overflow-x-auto gap-3.5 pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
                         {categories.map((cat) => (
-                            <Link
-                                key={cat.id}
-                                href={`/shop?categoryId=${cat.id}`}
-                                className="flex flex-col items-center gap-1.5 flex-shrink-0 w-20"
-                            >
-                                <div className="w-16 h-16 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-gray-50">
-                                    {cat.image ? (
-                                        <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                                            <span className="text-lg font-black text-gray-400">{cat.name?.charAt(0)}</span>
-                                        </div>
-                                    )}
-                                </div>
-                                <span className="text-[10px] font-bold text-gray-700 text-center leading-tight line-clamp-1 w-full">{cat.name}</span>
-                            </Link>
+                            <div key={cat.id} className="flex-shrink-0 w-28">
+                                <CategoryCard cat={cat} />
+                            </div>
                         ))}
                     </div>
 
-                    {/* Desktop: grid */}
-                    <div className="hidden md:grid grid-cols-4 lg:grid-cols-8 gap-4">
+                    {/* Tablet & Desktop: grid */}
+                    <div className="hidden sm:grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-5">
                         {categories.map((cat) => (
                             <CategoryCard key={cat.id} cat={cat} />
                         ))}
