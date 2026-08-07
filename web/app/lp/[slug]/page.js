@@ -1,4 +1,4 @@
-// app/lp/[slug]/page.js — Premium White LP v6 (clean, fixed)
+// app/lp/[slug]/page.js — Premium White LP v7
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -244,62 +244,24 @@ export default async function LandingPage({ params }) {
                             </div>
                         </div>
 
-                        {/* ── RIGHT: Product image with floating badges ── */}
+                        {/* ── RIGHT: Product image — large, clean, no floating badges ── */}
                         <div className="order-1 md:order-2 relative flex items-center justify-center">
-                            <div className="relative w-full max-w-[400px] md:max-w-full mx-auto">
+                            <div className="relative w-full mx-auto">
                                 {/* Glow blob */}
-                                <div className="absolute inset-8 rounded-[2rem] blur-[60px] opacity-20"
+                                <div className="absolute inset-4 rounded-[2rem] blur-[70px] opacity-15"
                                     style={{ background: "linear-gradient(135deg,#25d366,#7c3aed)" }} />
 
-                                {/* Product card */}
-                                <div className="relative rounded-[2.5rem] overflow-hidden border border-zinc-100 shadow-[0_24px_80px_rgba(0,0,0,0.12)] aspect-square bg-white">
+                                {/* Product card — bigger, full width */}
+                                <div className="relative rounded-[2.5rem] overflow-hidden border border-zinc-100 shadow-[0_28px_90px_rgba(0,0,0,0.13)] bg-white" style={{ aspectRatio: "1/1", minHeight: 320 }}>
                                     {heroImg ? (
                                         <Image src={heroImg} alt={primaryProduct?.name || page.title} fill priority className="object-cover" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-7xl bg-zinc-50">📦</div>
+                                        <div className="w-full h-full flex items-center justify-center text-8xl bg-zinc-50">📦</div>
                                     )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/8 via-transparent to-white/5 pointer-events-none" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none" />
                                 </div>
 
-                                {/* Floating badges — desktop only */}
-                                {featureList[0] && (
-                                    <div className="lp-fl1 hidden md:flex absolute -left-5 top-10 items-center gap-2.5 bg-white border border-zinc-100 shadow-xl rounded-2xl px-3.5 py-2.5 z-20 max-w-[170px]">
-                                        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xl" style={{ background: `${featureList[0].color}15` }}>{featureList[0].icon}</div>
-                                        <div className="min-w-0">
-                                            <p className="text-zinc-900 font-black text-xs truncate">{featureList[0].title}</p>
-                                            <p className="text-zinc-400 text-[10px] truncate">{featureList[0].desc}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {featureList[1] && (
-                                    <div className="lp-fl2 hidden md:flex absolute -right-5 top-8 items-center gap-2.5 rounded-2xl px-3.5 py-2.5 z-20 shadow-xl max-w-[170px]" style={{ background: featureList[1].color }}>
-                                        <span className="text-xl shrink-0">{featureList[1].icon}</span>
-                                        <div className="min-w-0">
-                                            <p className="text-white font-black text-xs truncate">{featureList[1].title}</p>
-                                            <p className="text-white/70 text-[10px] truncate">{featureList[1].desc}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {featureList[2] && (
-                                    <div className="lp-fl3 hidden md:flex absolute -left-5 bottom-14 items-center gap-2.5 bg-zinc-950 rounded-2xl px-3.5 py-2.5 z-20 max-w-[170px]">
-                                        <span className="text-xl shrink-0">{featureList[2].icon}</span>
-                                        <div className="min-w-0">
-                                            <p className="text-white font-black text-xs truncate">{featureList[2].title}</p>
-                                            <p className="text-zinc-400 text-[10px] truncate">{featureList[2].desc}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {featureList[3] && (
-                                    <div className="lp-fl4 hidden md:flex absolute -right-5 bottom-10 items-center gap-2.5 bg-white border border-zinc-100 shadow-xl rounded-2xl px-3.5 py-2.5 z-20 max-w-[170px]">
-                                        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xl" style={{ background: `${featureList[3].color}15` }}>{featureList[3].icon}</div>
-                                        <div className="min-w-0">
-                                            <p className="text-zinc-900 font-black text-xs truncate">{featureList[3].title}</p>
-                                            <p className="text-zinc-400 text-[10px] truncate">{featureList[3].desc}</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Discount badge */}
+                                {/* Discount badge only */}
                                 {discount && (
                                     <div className="absolute -top-3 -right-3 z-30 w-16 h-16 rounded-full flex flex-col items-center justify-center border-[3px] border-white shadow-lg bg-rose-600">
                                         <span className="text-white font-black text-sm leading-none">{discount}%</span>
