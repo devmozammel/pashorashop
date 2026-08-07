@@ -335,6 +335,7 @@ model LandingPage {
   discountCode String?
   showTestimonials Boolean @default(false)
   testimonialsJson String? @db.Text
+  featuresJson     String? @db.Text
   
   products LandingPageProduct[]
   
