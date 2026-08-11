@@ -63,7 +63,7 @@ export default async function LandingPage({ params }) {
     let testimonials = [
         { name: "রাফসান আহমেদ", text: "প্রোডাক্টটা একদম অসাধারণ! দ্রুত ডেলিভারি এবং কোয়ালিটি দেখে মুগ্ধ। ১০০% রেকমেন্ড।", rating: 5, city: "ঢাকা" },
         { name: "নাফিসা আক্তার", text: "এত কম দামে এই কোয়ালিটি আর পাইনি। Authentic Bazar সত্যিই বিশ্বস্ত।", rating: 5, city: "চট্টগ্রাম" },
-        { name: "শাকিল ইসলাম", text: "প্যাকেজিং সুন্দর, পণ্য আসল। ক্যাশ অন ডেলিভারিতে পেয়েছি — ভরসা করা যায়।", rating: 5, city: "সিলেট" },
+        { name: "শাকিল ইসলাম", text: "প্যাকেজিং সুন্দর, পণ্য আসল। ক্যাশ অন ডেলিভারিতে পেয়েছি, ভরসা করা যায়।", rating: 5, city: "সিলেট" },
     ];
     if (page.testimonialsJson) {
         try { const p = JSON.parse(page.testimonialsJson); if (Array.isArray(p) && p.length > 0) testimonials = p; } catch { }
@@ -73,7 +73,7 @@ export default async function LandingPage({ params }) {
         { icon: "🚚", title: "ক্যাশ অন ডেলিভারি", desc: "পণ্য হাতে পেয়ে পেমেন্ট", color: "#7c3aed" },
         { icon: "✅", title: "১০০% অরিজিনাল", desc: "নিশ্চিত মানের পণ্য", color: "#059669" },
         { icon: "🔄", title: "সহজ রিটার্ন", desc: "সমস্যা হলে ফেরত নেওয়া হবে", color: "#2563eb" },
-        { icon: "⚡", title: "দ্রুত ডেলিভারি", desc: "ঢাকায় ১-২ দিন, বাইরে ৩-৫ দিন", color: "#d97706" },
+        { icon: "⚡", title: "দ্রুত ডেলিভারি", desc: "ঢাকায় ১ থেকে ২ দিন, বাইরে ৩ থেকে ৫ দিন", color: "#d97706" },
     ];
     if (page.featuresJson) {
         try {
@@ -87,8 +87,9 @@ export default async function LandingPage({ params }) {
     return (
         <>
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-                .lp-v6 { font-family: 'Inter', -apple-system, sans-serif; }
+                @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+                .lp-v6 { font-family: 'Hind Siliguri', 'Inter', -apple-system, sans-serif; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+                .lp-v6 h1, .lp-v6 h2, .lp-v6 h3 { letter-spacing: normal !important; line-height: 1.35 !important; }
 
                 /* Ticker */
                 @keyframes lp-tick { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
@@ -179,17 +180,17 @@ export default async function LandingPage({ params }) {
 
                                 {/* Headline */}
                                 <div>
-                                    <h1 className="text-3xl md:text-4xl lg:text-[2.8rem] font-black text-zinc-950 leading-[1.1] tracking-tight">
+                                    <h1 className="text-3xl md:text-4xl lg:text-[2.75rem] font-bold text-zinc-950 leading-[1.35] tracking-normal">
                                         {page.heroTitle || primaryProduct?.name || page.title}
                                     </h1>
-                                    <div className="mt-3 flex items-center gap-2">
-                                        <div className="h-[3px] w-16 rounded-full bg-emerald-500" />
-                                        <div className="h-[3px] w-5 rounded-full bg-emerald-300" />
+                                    <div className="mt-4 flex items-center gap-2">
+                                        <div className="h-1 w-16 rounded-full bg-emerald-500" />
+                                        <div className="h-1 w-4 rounded-full bg-emerald-300" />
                                     </div>
                                 </div>
 
                                 {page.heroDescription && (
-                                    <p className="text-zinc-500 text-sm md:text-base leading-relaxed">{page.heroDescription}</p>
+                                    <p className="text-zinc-600 text-sm md:text-base leading-relaxed font-normal">{page.heroDescription}</p>
                                 )}
 
                                 {/* Countdown */}
@@ -225,7 +226,7 @@ export default async function LandingPage({ params }) {
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
                                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                                         </svg>
-                                        WhatsApp-এ অর্ডার করুন
+                                        WhatsApp এ অর্ডার করুন
                                     </a>
                                     {primaryProduct && (
                                         <Link href={`/checkout/express/${primaryProduct.id}`}
@@ -349,7 +350,7 @@ export default async function LandingPage({ params }) {
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
                                                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                                             </svg>
-                                            📲 WhatsApp-এ অর্ডার করুন
+                                            📲 WhatsApp এ অর্ডার করুন
                                         </a>
                                     </div>
                                 </div>
@@ -415,10 +416,10 @@ export default async function LandingPage({ params }) {
                             <div>
                                 <span className="inline-block text-[11px] font-black tracking-[0.25em] uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-4 py-1.5 mb-4">সরাসরি অর্ডার</span>
                                 <h2 className="text-2xl md:text-3xl font-black text-zinc-950 leading-tight">
-                                    WhatsApp-এ <span className="text-emerald-600">১ মিনিটে</span> অর্ডার করুন
+                                    WhatsApp এ <span className="text-emerald-600">১ মিনিটে</span> অর্ডার করুন
                                 </h2>
                             </div>
-                            <p className="text-zinc-500 text-sm leading-relaxed">ফর্ম পূরণ করুন — বাটন চাপলেই সম্পূর্ণ অর্ডার বার্তা সহ WhatsApp খুলে যাবে।</p>
+                            <p className="text-zinc-500 text-sm leading-relaxed">ফর্ম পূরণ করুন, বাটন চাপলেই সম্পূর্ণ অর্ডার বার্তা সহ WhatsApp খুলে যাবে।</p>
 
                             {/* Steps */}
                             <div className="space-y-3">
@@ -481,7 +482,7 @@ export default async function LandingPage({ params }) {
                     <div className="relative z-10 max-w-lg mx-auto px-5">
                         <p className="text-4xl mb-4">⚡</p>
                         <h2 className="text-2xl md:text-3xl font-black text-white mb-2">এখনই সুযোগ নিন!</h2>
-                        <p className="text-zinc-400 mb-7 text-sm">Stock সীমিত — দেরি করলে পাবেন না</p>
+                        <p className="text-zinc-400 mb-7 text-sm">Stock সীমিত, দেরি করলে পাবেন না</p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             <a href="#order-form"
                                 className="lp-wa-btn inline-flex items-center justify-center gap-2.5 text-white font-black text-base px-8 py-4 rounded-2xl"
