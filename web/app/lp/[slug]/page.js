@@ -464,6 +464,7 @@ export default async function LandingPage({ params }) {
                                     <span>📝</span> অর্ডার ফর্ম পূরণ করুন
                                 </p>
                                 <WhatsAppOrderForm
+                                    product={primaryProduct}
                                     productName={primaryProduct?.name || page.title}
                                     productPrice={effectivePrice}
                                     productImage={heroImg}

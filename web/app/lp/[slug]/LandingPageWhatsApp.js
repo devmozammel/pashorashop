@@ -1,71 +1,160 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function WhatsAppOrderForm({ productName, productPrice, waNumber = "8801613134043", theme = "dark" }) {
-    const [form, setForm] = useState({ name: "", phone: "", address: "", qty: 1, note: "" });
+export default function WhatsAppOrderForm({
+    product,
+    productName,
+    productPrice = 0,
+    productImage,
+    waNumber = "8801613134043",
+    theme = "dark"
+}) {
+    const [form, setForm] = useState({
+        name: "",
+        phone: "",
+        address: "",
+        area: "inside",
+        qty: 1,
+        note: ""
+    });
+    const [settings, setSettings] = useState({
+        shipping_fee_inside: "70",
+        shipping_fee_outside: "130"
+    });
     const [step, setStep] = useState("form");
     const [errors, setErrors] = useState({});
 
     const isLight = theme === "light";
 
+    useEffect(() => {
+        fetch("/api/settings")
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.shipping_fee_inside || data.shipping_fee_outside) {
+                    setSettings((prev) => ({ ...prev, ...data }));
+                }
+            })
+            .catch((err) => console.error("Failed to load delivery settings", err));
+    }, []);
+
+    const insideFee = Number(settings.shipping_fee_inside || "70");
+    const outsideFee = Number(settings.shipping_fee_outside || "130");
+    const deliveryFee = form.area === "inside" ? insideFee : outsideFee;
+    const subtotal = (productPrice || 0) * form.qty;
+    const grandTotal = subtotal + deliveryFee;
+
     const validate = () => {
         const e = {};
-        if (!form.name.trim()) e.name = "নাম দিন";
-        if (!form.phone.trim() || form.phone.replace(/\D/g, "").length < 11) e.phone = "সঠিক ফোন নম্বর দিন";
-        if (!form.address.trim()) e.address = "ঠিকানা দিন";
+        if (!form.name.trim()) e.name = "আপনার নাম লিখুন";
+        const cleanPhone = form.phone.replace(/\D/g, "");
+        if (!cleanPhone || cleanPhone.length !== 11 || !cleanPhone.startsWith("01")) {
+            e.phone = "সঠিক ১১-সংখ্যার মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)";
+        }
+        if (!form.address.trim()) e.address = "সম্পূর্ণ ডেলিভারি ঠিকানা দিন";
         setErrors(e);
         return Object.keys(e).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
         setStep("sending");
 
-        const total = productPrice > 0
-            ? `৳${productPrice.toLocaleString()} × ${form.qty}টি = ৳${(productPrice * form.qty).toLocaleString()}`
+        const cleanPhone = form.phone.replace(/\D/g, "");
+        let orderNumber = null;
+
+        // Try registering order in database if product object exists
+        if (product?.id) {
+            try {
+                const nameParts = form.name.trim().split(" ");
+                const firstName = nameParts[0];
+                const lastName = nameParts.slice(1).join(" ") || ".";
+
+                const res = await fetch("/api/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        items: [
+                            {
+                                product: {
+                                    id: product.id,
+                                    name: product.name || productName,
+                                    price: product.price || productPrice,
+                                    salePrice: product.salePrice ?? null
+                                },
+                                quantity: form.qty
+                            }
+                        ],
+                        customer: {
+                            firstName,
+                            lastName,
+                            phone: cleanPhone,
+                            address: form.address.trim(),
+                            city: form.area === "inside" ? "Dhaka" : "Outside Dhaka",
+                            shippingArea: form.area,
+                            paymentMethod: "COD"
+                        },
+                        shippingCost: deliveryFee
+                    })
+                });
+
+                const data = await res.json();
+                if (data?.success && data?.orderNumber) {
+                    orderNumber = data.orderNumber;
+                }
+            } catch (err) {
+                console.error("Order API backup error:", err);
+            }
+        }
+
+        const areaLabel = form.area === "inside" ? "ঢাকার ভেতরে" : "ঢাকার বাইরে";
+        const totalText = productPrice > 0
+            ? `৳${grandTotal.toLocaleString()}`
             : "মূল্য নিশ্চিত করুন";
 
         const msg =
 `🛒 *নতুন অর্ডার : Authentic Bazar*
 ━━━━━━━━━━━━━━━━━━━━
-📦 *পণ্য:* ${productName}
-💰 *মূল্য:* ${total}
+${orderNumber ? `🆔 *অর্ডার নম্বর:* ${orderNumber}\n` : ""}📦 *পণ্য:* ${productName}
+🔢 *পরিমাণ:* ${form.qty} টি
+💰 *পণ্যের দাম:* ৳${subtotal.toLocaleString()}
+🚚 *ডেলিভারি চার্জ:* ৳${deliveryFee} (${areaLabel})
+💳 *সর্বমোট:* ${totalText}
 ━━━━━━━━━━━━━━━━━━━━
-👤 *নাম:* ${form.name}
-📱 *ফোন:* ${form.phone}
-📍 *ঠিকানা:* ${form.address}${form.note ? `\n📝 *নোট:* ${form.note}` : ""}
+👤 *নাম:* ${form.name.trim()}
+📱 *ফোন:* ${cleanPhone}
+📍 *ঠিকানা:* ${form.address.trim()}${form.note.trim() ? `\n📝 *নোট:* ${form.note.trim()}` : ""}
 ━━━━━━━━━━━━━━━━━━━━
 ✅ ক্যাশ অন ডেলিভারি | Authentic Bazar`;
 
         setTimeout(() => {
             window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, "_blank");
             setStep("done");
-        }, 800);
+        }, 600);
     };
 
     const border = (field) => errors[field]
-        ? "border-rose-400"
-        : isLight ? "border-zinc-200 focus:border-violet-500" : "border-white/10 focus:border-green-400/60";
+        ? "border-rose-500 ring-1 ring-rose-500"
+        : isLight ? "border-zinc-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" : "border-white/10 focus:border-green-400/60";
 
     const inputBase = isLight
         ? "w-full bg-zinc-50 text-zinc-900 placeholder-zinc-400 rounded-2xl px-4 py-3.5 text-sm outline-none transition-all duration-200 border"
         : "w-full bg-white/5 text-white placeholder-white/30 rounded-2xl px-4 py-3.5 text-sm outline-none transition-all duration-200 border";
 
-    const labelClass = isLight ? "text-zinc-500 text-xs font-black mb-1.5 block tracking-wider uppercase" : "text-white/60 text-xs font-black mb-1.5 block tracking-wider uppercase";
-    const errorClass = "text-rose-500 text-xs mt-1";
+    const labelClass = isLight ? "text-zinc-600 text-xs font-black mb-1.5 block tracking-wider uppercase" : "text-white/70 text-xs font-black mb-1.5 block tracking-wider uppercase";
+    const errorClass = "text-rose-500 text-xs mt-1 font-medium";
 
     if (step === "done") {
         return (
             <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="w-20 h-20 rounded-2xl bg-green-100 border-2 border-green-300 flex items-center justify-center text-4xl mb-5">
+                <div className="w-20 h-20 rounded-2xl bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center text-4xl mb-5 animate-bounce">
                     ✅
                 </div>
                 <h3 className={`text-xl font-black mb-2 ${isLight ? "text-zinc-900" : "text-white"}`}>WhatsApp খুলছে!</h3>
-                <p className={`text-sm max-w-xs ${isLight ? "text-zinc-500" : "text-white/50"}`}>আপনার পূর্ণ অর্ডার বার্তা রেডি আছে — এখন Send করুন।</p>
+                <p className={`text-sm max-w-xs ${isLight ? "text-zinc-500" : "text-white/60"}`}>আপনার অর্ডার বার্তা প্রস্তুত — অনুগ্রহ করে WhatsApp মেসেজটি Send করুন।</p>
                 <button
-                    onClick={() => { setStep("form"); setForm({ name: "", phone: "", address: "", qty: 1, note: "" }); }}
-                    className="mt-7 text-sm border px-6 py-2.5 rounded-xl transition-colors font-semibold border-violet-300 text-violet-600 hover:bg-violet-50"
+                    onClick={() => { setStep("form"); setForm({ name: "", phone: "", address: "", area: "inside", qty: 1, note: "" }); }}
+                    className="mt-7 text-sm border px-6 py-2.5 rounded-xl transition-colors font-bold border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                 >
                     নতুন অর্ডার করুন
                 </button>
@@ -78,62 +167,154 @@ export default function WhatsAppOrderForm({ productName, productPrice, waNumber 
             {/* Name */}
             <div>
                 <label className={labelClass}>আপনার নাম *</label>
-                <input type="text" placeholder="যেমন: মোহাম্মদ আলী" value={form.name}
+                <input
+                    type="text"
+                    placeholder="যেমন: মোহাম্মদ আলী"
+                    value={form.name}
                     onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
-                    className={`${inputBase} ${border("name")}`} />
+                    className={`${inputBase} ${border("name")}`}
+                />
                 {errors.name && <p className={errorClass}>{errors.name}</p>}
             </div>
 
             {/* Phone */}
             <div>
                 <label className={labelClass}>মোবাইল নম্বর *</label>
-                <input type="tel" placeholder="01XXXXXXXXX" value={form.phone}
+                <input
+                    type="tel"
+                    placeholder="01XXXXXXXXX"
+                    value={form.phone}
                     onChange={(e) => { setForm({ ...form, phone: e.target.value }); setErrors({ ...errors, phone: "" }); }}
-                    className={`${inputBase} ${border("phone")}`} />
+                    className={`${inputBase} ${border("phone")}`}
+                />
                 {errors.phone && <p className={errorClass}>{errors.phone}</p>}
             </div>
 
             {/* Address */}
             <div>
                 <label className={labelClass}>ঠিকানা *</label>
-                <textarea rows={2} placeholder="জেলা, উপজেলা, বাড়ি নং..." value={form.address}
+                <textarea
+                    rows={2}
+                    placeholder="জেলা, উপজেলা, বাড়ি নং/রোড নং..."
+                    value={form.address}
                     onChange={(e) => { setForm({ ...form, address: e.target.value }); setErrors({ ...errors, address: "" }); }}
-                    className={`${inputBase} ${border("address")} resize-none`} />
+                    className={`${inputBase} ${border("address")} resize-none`}
+                />
                 {errors.address && <p className={errorClass}>{errors.address}</p>}
+            </div>
+
+            {/* Delivery Area Options */}
+            <div>
+                <label className={labelClass}>ডেলিভারি এলাকা *</label>
+                <div className="grid grid-cols-2 gap-3 mt-1">
+                    <button
+                        type="button"
+                        onClick={() => setForm({ ...form, area: "inside" })}
+                        className={`flex flex-col items-start p-3.5 rounded-2xl border transition-all duration-200 text-left select-none outline-none ${
+                            form.area === "inside"
+                                ? isLight
+                                    ? "border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-1 ring-emerald-600 shadow-sm"
+                                    : "border-emerald-400 bg-emerald-950/40 text-white ring-1 ring-emerald-400 shadow-sm"
+                                : isLight
+                                    ? "border-zinc-200 bg-zinc-50 hover:border-zinc-300 text-zinc-700"
+                                    : "border-white/10 bg-white/5 hover:border-white/20 text-white/80"
+                        }`}
+                    >
+                        <div className="flex items-center justify-between w-full">
+                            <span className="font-bold text-xs">📍 ঢাকার ভেতরে</span>
+                            <span className={`font-black text-xs ${form.area === "inside" ? (isLight ? "text-emerald-700" : "text-emerald-400") : ""}`}>
+                                ৳{insideFee}
+                            </span>
+                        </div>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setForm({ ...form, area: "outside" })}
+                        className={`flex flex-col items-start p-3.5 rounded-2xl border transition-all duration-200 text-left select-none outline-none ${
+                            form.area === "outside"
+                                ? isLight
+                                    ? "border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-1 ring-emerald-600 shadow-sm"
+                                    : "border-emerald-400 bg-emerald-950/40 text-white ring-1 ring-emerald-400 shadow-sm"
+                                : isLight
+                                    ? "border-zinc-200 bg-zinc-50 hover:border-zinc-300 text-zinc-700"
+                                    : "border-white/10 bg-white/5 hover:border-white/20 text-white/80"
+                        }`}
+                    >
+                        <div className="flex items-center justify-between w-full">
+                            <span className="font-bold text-xs">🚚 ঢাকার বাইরে</span>
+                            <span className={`font-black text-xs ${form.area === "outside" ? (isLight ? "text-emerald-700" : "text-emerald-400") : ""}`}>
+                                ৳{outsideFee}
+                            </span>
+                        </div>
+                    </button>
+                </div>
             </div>
 
             {/* Qty */}
             <div>
                 <label className={labelClass}>পরিমাণ</label>
                 <div className={`inline-flex items-center rounded-2xl overflow-hidden border ${isLight ? "border-zinc-200 bg-zinc-50" : "border-white/10 bg-white/5"}`}>
-                    <button type="button" onClick={() => setForm({ ...form, qty: Math.max(1, form.qty - 1) })}
-                        className={`w-12 h-12 flex items-center justify-center text-lg font-black transition-colors ${isLight ? "text-zinc-500 hover:bg-zinc-100" : "text-white/60 hover:bg-white/10"}`}>−</button>
+                    <button
+                        type="button"
+                        onClick={() => setForm({ ...form, qty: Math.max(1, form.qty - 1) })}
+                        className={`w-12 h-12 flex items-center justify-center text-lg font-black transition-colors ${isLight ? "text-zinc-500 hover:bg-zinc-100" : "text-white/60 hover:bg-white/10"}`}
+                    >
+                        −
+                    </button>
                     <span className={`w-12 text-center font-black text-base ${isLight ? "text-zinc-900" : "text-white"}`}>{form.qty}</span>
-                    <button type="button" onClick={() => setForm({ ...form, qty: form.qty + 1 })}
-                        className={`w-12 h-12 flex items-center justify-center text-lg font-black transition-colors ${isLight ? "text-zinc-500 hover:bg-zinc-100" : "text-white/60 hover:bg-white/10"}`}>+</button>
+                    <button
+                        type="button"
+                        onClick={() => setForm({ ...form, qty: form.qty + 1 })}
+                        className={`w-12 h-12 flex items-center justify-center text-lg font-black transition-colors ${isLight ? "text-zinc-500 hover:bg-zinc-100" : "text-white/60 hover:bg-white/10"}`}
+                    >
+                        +
+                    </button>
                 </div>
             </div>
 
             {/* Note */}
             <div>
                 <label className={labelClass}>বিশেষ নির্দেশনা (ঐচ্ছিক)</label>
-                <input type="text" placeholder="রঙ, সাইজ বা যেকোনো নোট..." value={form.note}
+                <input
+                    type="text"
+                    placeholder="রঙ, সাইজ বা যেকোনো নোট..."
+                    value={form.note}
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
-                    className={`${inputBase} ${border("note")}`} />
+                    className={`${inputBase} ${border("note")}`}
+                />
             </div>
 
-            {/* Submit */}
+            {/* Price Breakdown Card */}
+            {productPrice > 0 && (
+                <div className={`p-4 rounded-2xl border space-y-1.5 text-xs ${isLight ? "bg-emerald-50/40 border-emerald-100 text-zinc-700" : "bg-white/5 border-white/10 text-white/80"}`}>
+                    <div className="flex justify-between">
+                        <span>পণ্যের দাম ({form.qty} টি):</span>
+                        <span className="font-semibold">৳{subtotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>ডেলিভারি চার্জ ({form.area === "inside" ? "ঢাকার ভেতরে" : "ঢাকার বাইরে"}):</span>
+                        <span className="font-semibold">৳{deliveryFee.toLocaleString()}</span>
+                    </div>
+                    <div className={`flex justify-between pt-2 border-t font-black text-sm ${isLight ? "border-emerald-200 text-emerald-950" : "border-white/10 text-white"}`}>
+                        <span>সর্বমোট মূল্য:</span>
+                        <span className={isLight ? "text-emerald-600 font-extrabold" : "text-emerald-400 font-extrabold"}>৳{grandTotal.toLocaleString()}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Submit Button */}
             <button
                 type="submit"
                 disabled={step === "sending"}
-                className="w-full flex items-center justify-center gap-3 text-white font-black text-base py-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 mt-2"
+                className="w-full flex items-center justify-center gap-3 text-white font-black text-base py-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 mt-2 shadow-lg cursor-pointer"
                 style={{
                     background: step === "sending" ? "#1a7a38" : "linear-gradient(135deg, #25d366 0%, #128c7e 100%)",
                     boxShadow: "0 8px 30px rgba(37,211,102,0.25)"
                 }}
             >
                 {step === "sending" ? (
-                    <><span className="animate-spin">⏳</span><span>পাঠানো হচ্ছে...</span></>
+                    <><span className="animate-spin">⏳</span><span>প্রসেস করা হচ্ছে...</span></>
                 ) : (
                     <>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
