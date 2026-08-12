@@ -26,7 +26,7 @@ export default function AdminCreateOrderPage() {
     const [orderSource, setOrderSource] = useState("WA"); // WA (WhatsApp), FB (Facebook), PH (Phone), MAN (Manual)
 
     // Financial override states
-    const [deliveryFee, setDeliveryFee] = useState(60); // Default inside Dhaka
+    const [deliveryFee, setDeliveryFee] = useState(70); // Default inside Dhaka (70)
     const [discount, setDiscount] = useState(0);
     const [advancePayment, setAdvancePayment] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState("COD");
@@ -45,7 +45,21 @@ export default function AdminCreateOrderPage() {
 
     useEffect(() => {
         fetchProducts();
+        fetchShippingSettings();
     }, []);
+
+    const [shippingFees, setShippingFees] = useState({ inside: 70, outside: 130 });
+
+    const fetchShippingSettings = async () => {
+        try {
+            const res = await fetch("/api/settings");
+            const data = await res.json();
+            const inside = Number(data.shipping_fee_inside || 70);
+            const outside = Number(data.shipping_fee_outside || 130);
+            setShippingFees({ inside, outside });
+            setDeliveryFee(inside);
+        } catch (_) {}
+    };
 
     const fetchProducts = async () => {
         try {
@@ -66,9 +80,9 @@ export default function AdminCreateOrderPage() {
     const handleDeliveryAreaChange = (val) => {
         setDeliveryArea(val);
         if (val === "INSIDE_DHAKA") {
-            setDeliveryFee(60);
+            setDeliveryFee(shippingFees.inside);
         } else {
-            setDeliveryFee(120);
+            setDeliveryFee(shippingFees.outside);
         }
     };
 

@@ -47,20 +47,19 @@ export function decrypt(text) {
     try {
         const key = getEncryptionKey();
         let textParts = text.split(':');
-        if (textParts.length !== 2) return null;
+        if (textParts.length !== 2) return text;
         let iv = Buffer.from(textParts[0], 'hex');
         let encryptedText = Buffer.from(textParts[1], 'hex');
-        if (iv.length !== IV_LENGTH || encryptedText.length === 0) return null;
+        if (iv.length !== IV_LENGTH || encryptedText.length === 0) return text;
         let decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
         let decrypted = decipher.update(encryptedText);
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         const result = decrypted.toString('utf8');
         if (!result || /^[\u0000-\u0008\u000E-\u001F]/.test(result)) {
-            return null;
+            return text;
         }
         return result;
     } catch (error) {
-        console.error("Decryption error:", error);
-        return null;
+        return text;
     }
 }

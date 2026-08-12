@@ -4,24 +4,7 @@
  * Usage: node scripts/encrypt-key.js "your-api-key-here"
  */
 
-const crypto = require('crypto');
-
-// This must match the key derivation in lib/security.js
-const ALGORITHM = 'aes-256-cbc';
-const ENCRYPTION_KEY_RAW = process.env.ENCRYPTION_KEY || 'auth-bazar-ultra-secure-master-key-2026'; 
-const IV_LENGTH = 16;
-const salt = 'salt';
-
-const key = crypto.pbkdf2Sync(ENCRYPTION_KEY_RAW, salt, 100000, 32, 'sha256');
-
-function encrypt(text) {
-    if (!text) return text;
-    let iv = crypto.randomBytes(IV_LENGTH);
-    let cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-    let encrypted = cipher.update(text);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return iv.toString('hex') + ':' + encrypted.toString('hex');
-}
+const { encrypt } = require('../lib/security');
 
 const rawText = process.argv[2];
 
