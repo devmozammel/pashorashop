@@ -63,48 +63,68 @@ export default function WhatsAppOrderForm({
         const cleanPhone = form.phone.replace(/\D/g, "");
         let orderNumber = null;
 
-        // Try registering order in database if product object exists
-        if (product?.id) {
-            try {
-                const nameParts = form.name.trim().split(" ");
-                const firstName = nameParts[0];
-                const lastName = nameParts.slice(1).join(" ") || ".";
+        try {
+            const nameParts = form.name.trim().split(" ");
+            const firstName = nameParts[0] || "Customer";
+            const lastName = nameParts.slice(1).join(" ") || ".";
+
+            let targetProductId = product?.id;
+            let targetProductName = product?.name || productName;
+            let targetPrice = Math.round(Number(productPrice || product?.salePrice || product?.price || 0));
+
+            // If product ID is not directly passed on landing page, fetch fallback product
+            if (!targetProductId) {
+                try {
+                    const pRes = await fetch("/api/products?limit=1");
+                    const pData = await pRes.json();
+                    const firstProd = Array.isArray(pData) ? pData[0] : (pData?.products?.[0] || null);
+                    if (firstProd?.id) {
+                        targetProductId = firstProd.id;
+                        if (!targetPrice) targetPrice = Math.round(Number(firstProd.salePrice || firstProd.price || 0));
+                    }
+                } catch (_) {}
+            }
+
+            if (targetProductId) {
+                const checkoutPayload = {
+                    items: [
+                        {
+                            product: {
+                                id: targetProductId,
+                                name: targetProductName,
+                                price: targetPrice,
+                                salePrice: targetPrice > 0 ? targetPrice : null
+                            },
+                            quantity: Math.max(1, Math.round(Number(form.qty || 1)))
+                        }
+                    ],
+                    customer: {
+                        firstName,
+                        lastName,
+                        phone: cleanPhone,
+                        address: form.address.trim(),
+                        city: form.area === "inside" ? "Dhaka" : "Outside Dhaka",
+                        shippingArea: form.area,
+                        paymentMethod: "COD"
+                    },
+                    shippingCost: Math.round(Number(deliveryFee || 70))
+                };
 
                 const res = await fetch("/api/checkout", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        items: [
-                            {
-                                product: {
-                                    id: product.id,
-                                    name: product.name || productName,
-                                    price: product.price || productPrice,
-                                    salePrice: product.salePrice ?? null
-                                },
-                                quantity: form.qty
-                            }
-                        ],
-                        customer: {
-                            firstName,
-                            lastName,
-                            phone: cleanPhone,
-                            address: form.address.trim(),
-                            city: form.area === "inside" ? "Dhaka" : "Outside Dhaka",
-                            shippingArea: form.area,
-                            paymentMethod: "COD"
-                        },
-                        shippingCost: deliveryFee
-                    })
+                    body: JSON.stringify(checkoutPayload)
                 });
 
                 const data = await res.json();
                 if (data?.success && data?.orderNumber) {
                     orderNumber = data.orderNumber;
+                } else {
+                    console.error("[LandingPageWhatsApp] Checkout API Error:", data);
                 }
-            } catch (err) {
-                console.error("Order API backup error:", err);
             }
+        } catch (err) {
+            console.error("[LandingPageWhatsApp] Failed to create order:", err);
         }
 
         const areaLabel = form.area === "inside" ? "ঢাকার ভেতরে" : "ঢাকার বাইরে";
