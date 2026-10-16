@@ -77,6 +77,31 @@ export default function ExpressCheckout({ params }) {
                 if (productRes.ok) {
                     const productData = await productRes.json();
                     setProduct(productData);
+
+                    // Track InitiateCheckout for FB & TikTok
+                    const priceVal = Number(productData.salePrice || productData.price || 0);
+                    import("@/lib/fpixel").then(fb => {
+                        fb.event("InitiateCheckout", {
+                            content_name: productData.name,
+                            content_ids: [productData.id],
+                            content_type: "product",
+                            value: priceVal,
+                            currency: "BDT"
+                        });
+                    }).catch(() => {});
+                    import("@/lib/ttpixel").then(tt => {
+                        tt.event("InitiateCheckout", {
+                            contents: [{
+                                content_id: productData.id,
+                                content_type: "product",
+                                content_name: productData.name,
+                                quantity: 1,
+                                price: priceVal
+                            }],
+                            value: priceVal,
+                            currency: "BDT"
+                        });
+                    }).catch(() => {});
                 }
 
                 if (settingsRes.ok) {

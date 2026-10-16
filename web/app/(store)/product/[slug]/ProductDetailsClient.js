@@ -37,7 +37,17 @@ export default function ProductDetailsClient({ product }) {
                 content_ids: [product.id],
                 content_type: 'product',
                 value: product.salePrice || product.price,
-                currency: 'BDT' // Adjust currency
+                currency: 'BDT'
+            });
+        });
+        import("@/lib/ttpixel").then(tt => {
+            tt.event('AddToCart', {
+                content_id: product.id,
+                content_name: product.name,
+                content_type: 'product',
+                quantity: 1,
+                value: Number(product.salePrice || product.price),
+                currency: 'BDT'
             });
         });
     };
@@ -50,6 +60,15 @@ export default function ProductDetailsClient({ product }) {
                 content_ids: [product.id],
                 content_type: 'product',
                 value: product.salePrice || product.price,
+                currency: 'BDT'
+            });
+        });
+        import("@/lib/ttpixel").then(tt => {
+            tt.event('ViewContent', {
+                content_id: product.id,
+                content_name: product.name,
+                content_type: 'product',
+                value: Number(product.salePrice || product.price),
                 currency: 'BDT'
             });
         });

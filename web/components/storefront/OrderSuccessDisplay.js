@@ -30,9 +30,9 @@ export default function OrderSuccessDisplay({ order }) {
             console.error("Facebook Pixel Purchase error:", e);
         }
 
-        // Track TikTok Pixel CompletePayment event
+        // Track TikTok Pixel CompletePayment & PlaceAnOrder events
         try {
-            ttpixel.event("CompletePayment", {
+            const ttPayload = {
                 value: Number(order.total),
                 currency: "BDT",
                 content_type: "product",
@@ -43,7 +43,9 @@ export default function OrderSuccessDisplay({ order }) {
                     quantity: item.quantity,
                     price: Number(item.unitPrice)
                 })) : []
-            });
+            };
+            ttpixel.event("CompletePayment", ttPayload);
+            ttpixel.event("PlaceAnOrder", ttPayload);
         } catch (e) {
             console.error("TikTok Pixel CompletePayment error:", e);
         }

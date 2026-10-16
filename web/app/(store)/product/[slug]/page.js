@@ -178,6 +178,11 @@ export default async function ProductPage(props) {
         ].filter(Boolean)
     };
 
+    // Check if landing page exists for this slug
+    const landingPage = await prisma.landingPage.findUnique({
+        where: { slug: product.slug, isActive: true }
+    });
+
     return (
         <div className="container px-4 py-8 md:px-6 md:py-12 pb-24 md:pb-12">
             <script
@@ -188,6 +193,23 @@ export default async function ProductPage(props) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
             />
+            {landingPage && (
+                <div className="mb-8 p-5 md:p-6 bg-gradient-to-r from-zinc-950 via-emerald-950 to-zinc-950 text-white rounded-3xl shadow-xl border border-emerald-500/40 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl shrink-0 font-bold">
+                            ⚡
+                        </div>
+                        <div>
+                            <span className="inline-block text-[10px] font-black tracking-widest uppercase bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 px-2.5 py-0.5 rounded-full mb-1">স্পেশাল অফার সক্রিয়</span>
+                            <h3 className="font-black text-base md:text-lg text-white">{landingPage.heroTitle || product.name}</h3>
+                            <p className="text-zinc-300 text-xs md:text-sm">বিশেষ অফার, বিস্তারিত ফিচার রিভিউ ও ১-ক্লিক ডেলিভারি অর্ডার সহ আকর্ষণীয় ল্যান্ডিং পেজ দেখুন।</p>
+                        </div>
+                    </div>
+                    <Link href={`/lp/${product.slug}`} className="shrink-0 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm px-6 py-3.5 rounded-2xl transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2">
+                        🚀 ল্যান্ডিং পেজ দেখুন →
+                    </Link>
+                </div>
+            )}
             <ProductView product={product} />
 
             <ProductReviews productId={product.id} />

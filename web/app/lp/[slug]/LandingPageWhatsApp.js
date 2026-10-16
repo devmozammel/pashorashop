@@ -23,8 +23,38 @@ export default function WhatsAppOrderForm({
     });
     const [step, setStep] = useState("form");
     const [errors, setErrors] = useState({});
+    const [hasInitiatedCheckout, setHasInitiatedCheckout] = useState(false);
 
     const isLight = theme === "light";
+
+    const handleFormFocus = () => {
+        if (!hasInitiatedCheckout) {
+            setHasInitiatedCheckout(true);
+            const priceVal = Number(productPrice || product?.salePrice || product?.price || 0);
+            import("@/lib/ttpixel").then(tt => {
+                tt.event("InitiateCheckout", {
+                    contents: [{
+                        content_id: product?.id || "product",
+                        content_type: "product",
+                        content_name: productName || product?.name,
+                        quantity: 1,
+                        price: priceVal
+                    }],
+                    value: priceVal,
+                    currency: "BDT"
+                });
+            }).catch(() => {});
+            import("@/lib/fpixel").then(fb => {
+                fb.event("InitiateCheckout", {
+                    content_name: productName || product?.name,
+                    content_ids: [product?.id || "product"],
+                    content_type: "product",
+                    value: priceVal,
+                    currency: "BDT"
+                });
+            }).catch(() => {});
+        }
+    };
 
     useEffect(() => {
         fetch("/api/settings")
@@ -127,6 +157,41 @@ export default function WhatsAppOrderForm({
             console.error("[LandingPageWhatsApp] Failed to create order:", err);
         }
 
+        // Track Conversion Events for TikTok & Facebook
+        try {
+            const targetProdId = targetProductId || product?.id || "product";
+            const targetProdName = targetProductName || product?.name || productName;
+            import("@/lib/ttpixel").then(tt => {
+                const ttPayload = {
+                    value: Number(grandTotal),
+                    currency: "BDT",
+                    content_type: "product",
+                    contents: [
+                        {
+                            content_id: targetProdId,
+                            content_type: "product",
+                            content_name: targetProdName,
+                            quantity: Number(form.qty || 1),
+                            price: Number(targetPrice || productPrice || 0)
+                        }
+                    ]
+                };
+                tt.event("CompletePayment", ttPayload);
+                tt.event("PlaceAnOrder", ttPayload);
+            }).catch(() => {});
+
+            import("@/lib/fpixel").then(fb => {
+                fb.event("Purchase", {
+                    value: Number(grandTotal),
+                    currency: "BDT",
+                    content_type: "product",
+                    content_ids: [targetProdId]
+                }, orderNumber || undefined);
+            }).catch(() => {});
+        } catch (trackErr) {
+            console.error("LP Tracking error:", trackErr);
+        }
+
         const areaLabel = form.area === "inside" ? "ঢাকার ভেতরে" : "ঢাকার বাইরে";
         const totalText = productPrice > 0
             ? `৳${grandTotal.toLocaleString()}`
@@ -183,7 +248,7 @@ ${orderNumber ? `🆔 *অর্ডার নম্বর:* ${orderNumber}\n` : 
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} onFocus={handleFormFocus} className="space-y-4">
             {/* Name */}
             <div>
                 <label className={labelClass}>আপনার নাম *</label>

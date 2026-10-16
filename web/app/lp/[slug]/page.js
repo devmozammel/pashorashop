@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/utils";
 import LandingPageClient from "./LandingPageClient";
 import LandingPageGallery from "./LandingPageGallery";
 import WhatsAppOrderForm from "./LandingPageWhatsApp";
+import LandingPageTracker from "./LandingPageTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +56,15 @@ export default async function LandingPage({ params }) {
     const productImages = primaryProduct?.productImages?.map((i) => i.url).filter(Boolean).length > 0
         ? primaryProduct.productImages.map((i) => i.url).filter(Boolean)
         : heroImg ? [heroImg] : [];
-    const effectivePrice = primaryProduct?.salePrice ?? primaryProduct?.price ?? 0;
-    const originalPrice = primaryProduct?.price ?? 0;
+    let effectivePrice = primaryProduct?.salePrice ?? primaryProduct?.price ?? 0;
+    let originalPrice = primaryProduct?.price ?? 0;
+    if ((!effectivePrice || effectivePrice === 0) && primaryProduct?.variants?.length > 0) {
+        const vSale = primaryProduct.variants.map((v) => v.salePrice).filter((p) => p && p > 0);
+        const vPrice = primaryProduct.variants.map((v) => v.price).filter((p) => p && p > 0);
+        if (vSale.length > 0) effectivePrice = Math.min(...vSale);
+        else if (vPrice.length > 0) effectivePrice = Math.min(...vPrice);
+        if (vPrice.length > 0) originalPrice = Math.max(...vPrice);
+    }
     const discount = effectivePrice && originalPrice && originalPrice > effectivePrice
         ? Math.round(((originalPrice - effectivePrice) / originalPrice) * 100) : null;
 
@@ -81,6 +89,108 @@ export default async function LandingPage({ params }) {
             if (Array.isArray(f) && f.length > 0) featureList = f.map((x, i) => ({ ...x, color: ["#7c3aed", "#059669", "#2563eb", "#d97706"][i % 4] }));
         } catch { }
     }
+
+    const isPowerBank = slug?.includes("power-bank") || slug?.includes("ven-dens") || slug?.includes("30000mah");
+    const isX73 = slug?.includes("x73") || slug?.includes("retro-camera");
+    const isHoco = slug?.includes("hoco") || slug?.includes("eq34");
+
+    const x73Faqs = [
+        {
+            q: "এটি কি সব ধরণের মোবাইল ফোনে সাপোর্ট করবে?",
+            a: "হ্যাঁ! Android, iPhone, Laptop, Tablet সহ যেকোনো ব্লুটুথ সাপোর্টেড ডিভাইসে X73 খুব সহজে দ্রুত অটো-কানেক্ট হবে।"
+        },
+        {
+            q: "কোন কোন কালার ভ্যারিয়েন্ট পাওয়া যাবে?",
+            a: "X73 TWS ইয়ারবাডস তিনটি ক্লাসিক রেট্রো কালারে এভেলেবেল রয়েছে: Brown (ব্রাউন), Green (গ্রিন) এবং White (হোয়াইট)।"
+        },
+        {
+            q: "সাউন্ড ও বেস কোয়ালিটি কেমন?",
+            a: "Sound by KFG স্পেশাল অডিও টিউনিং থাকার কারণে এটি দেবে ক্রিস্টাল ক্লিয়ার স্টেরিও সাউন্ড, স্পষ্ট ভোকাল এবং ডিপ পাঞ্চি বেস।"
+        },
+        {
+            q: "ডেলিভারি চার্জ কত এবং কতদিনে পাবো?",
+            a: "ঢাকা সিটির ভেতরে ডেলিভারি চার্জ ৭০ টাকা (১-২ দিনে পাবেন) এবং ঢাকার বাইরে ১৩০ টাকা (২-৪ দিনে ডেলিভারি)।"
+        },
+        {
+            q: "ডেলিভারির সময় কি চেক করে টাকা দেওয়া যাবে?",
+            a: "অবশ্যই! আমাদের সম্পূর্ণ ক্যাশ অন ডেলিভারি (Cash on Delivery) সুবিধা রয়েছে। ডেলিভারি ম্যানের সামনে প্যাকেট চেক করে টাকা পরিশোধ করতে পারবেন।"
+        },
+        {
+            q: "পণ্য সমস্যাযুক্ত হলে কী করবো?",
+            a: "আমাদের রয়েছে ৩ দিনের সহজ রিপ্লেসমেন্ট গ্যারান্টি। কোনো সমস্যা পেলে সাথে সাথে কাস্টমার কেয়ারে জানালে রিপ্লেসমেন্ট করে দেওয়া হবে।"
+        }
+    ];
+
+    const powerBankFaqs = [
+        {
+            q: "এটি দিয়ে আমার ফোন কতবার ফুল চার্জ দেওয়া যাবে?",
+            a: "VEN-DENS এর 30,000mAh বিশাল ব্যাটারি দিয়ে সাধারণ যেকোনো স্মার্টফোন (iPhone/Android) ৫ থেকে ৭ বার সম্পূর্ণ ফুল চার্জ দেওয়া সম্ভব।"
+        },
+        {
+            q: "ফাস্ট চার্জিং কি সব ফোনে সাপোর্ট করবে?",
+            a: "হ্যাঁ! এতে রয়েছে হাই-স্পিড ফাস্ট চার্জিং টেকনোলজি যা iPhone, Samsung, Xiaomi, Realme, Vivo সহ যেকোনো ফাস্ট চার্জিং সাপোর্টেড ফোনে দ্রুত চার্জ নিশ্চিত করে।"
+        },
+        {
+            q: "একসাথে একাধিক ডিভাইস চার্জ করা যাবে কি?",
+            a: "হ্যাঁ, এতে একাধিক আউটপুট পোর্ট থাকায় আপনি একসাথে ২ থেকে ৩টি মোবাইল বা গ্যাজেট একযোগে চার্জ করতে পারবেন।"
+        },
+        {
+            q: "চার্জিংয়ের সময় ফোন গরম হওয়া বা ব্যাটারি ক্ষতির ঝুঁকি আছে কি?",
+            a: "একদমই না! এতে রয়েছে স্মার্ট ইন্টেলিজেন্ট চিপসেট যা ওভারহিট, ওভারভোল্টেজ ও শর্ট সার্কিট থেকে আপনার ফোনের ব্যাটারিকে শতভাগ সুরক্ষিত রাখে।"
+        },
+        {
+            q: "ডেলিভারির সময় কি চেক করে টাকা দেওয়া যাবে?",
+            a: "অবশ্যই! আমাদের পুরো ডেলিভারি সিস্টেম সম্পূর্ণ ক্যাশ অন ডেলিভারি (Cash on Delivery)। ডেলিভারি ম্যানের সামনে পণ্য চেক করে টাকা পরিশোধ করতে পারবেন।"
+        },
+        {
+            q: "পণ্য সমস্যাযুক্ত হলে কী করবো?",
+            a: "আমাদের রয়েছে ৩ দিনের সহজ রিপ্লেসমেন্ট গ্যারান্টি। কোনো সমস্যা দেখা দিলে কাস্টমার কেয়ারে জানালেই দ্রুত সমাধান পাবেন।"
+        }
+    ];
+
+    const earbudsFaqs = [
+        {
+            q: "এটি কি সব ধরণের মোবাইল ফোনে সাপোর্ট করবে?",
+            a: "হ্যাঁ! Android, iPhone, Laptop, Tablet সহ যেকোনো ব্লুটুথ সাপোর্টেড ডিভাইসে Hoco EQ34 Plus খুব সহজে কানেক্ট হবে।"
+        },
+        {
+            q: "প্রোডাক্টটি কি আসল (Original)?",
+            a: "১০০% অরিজিনাল Hoco ব্র্যান্ডের পণ্য। প্যাকেটের গায়ে থাকা বারকোড/QR কোড দিয়ে আপনি আসল প্রোডাক্ট ভেরিফাই করতে পারবেন।"
+        },
+        {
+            q: "ডেলিভারি চার্জ কত এবং কতদিনে পাবো?",
+            a: "ঢাকা সিটির ভেতরে ডেলিভারি চার্জ ৭০ টাকা (১-২ দিনে পাবেন) এবং ঢাকার বাইরে ১৩০ টাকা (২-৪ দিনে ডেলিভারি)।"
+        },
+        {
+            q: "ডেলিভারির সময় কি চেক করে টাকা দেওয়া যাবে?",
+            a: "অবশ্যই! আমাদের ডেলিভারি সিস্টেম সম্পূর্ণ ক্যাশ অন ডেলিভারি (Cash on Delivery)। ডেলিভারি ম্যানের সামনে প্যাকেট চেক করে টাকা পরিশোধ করতে পারবেন।"
+        },
+        {
+            q: "পণ্য নষ্ট বা সমস্যা থাকলে কী করবো?",
+            a: "আমাদের রয়েছে ৩ দিনের সহজ রিপ্লেসমেন্ট গ্যারান্টি। কোনো সমস্যা পেলে কাস্টমার কেয়ারে যোগাযোগ করলে সাথে সাথে সমাধান করা হবে।"
+        }
+    ];
+
+    const generalFaqs = [
+        {
+            q: "পণ্যটি কি ১০০% আসল (Original)?",
+            a: "জি হ্যাঁ! Authentic Bazar শুধুমাত্র ১০০% খাঁটি ও জেনুইন কোয়ালিটির পণ্য সরবরাহ করে।"
+        },
+        {
+            q: "ডেলিভারি চার্জ কত এবং কতদিনে পাবো?",
+            a: "ঢাকা সিটিতে ডেলিভারি চার্জ ৭০ টাকা (১-২ দিনে ডেলিভারি) এবং ঢাকার বাইরে ১৩০ টাকা (২-৪ দিনে ডেলিভারি)।"
+        },
+        {
+            q: "ডেলিভারির সময় কি চেক করে টাকা দেওয়া যাবে?",
+            a: "হ্যাঁ! আমাদের সারা বাংলাদেশে ক্যাশ অন ডেলিভারি সুবিধা রয়েছে। পণ্য হাতে পেয়ে চেক করে টাকা দেবেন।"
+        },
+        {
+            q: "পণ্য সমস্যাযুক্ত হলে কী করবো?",
+            a: "আমাদের রয়েছে ৩ দিনের সহজ রিটার্ন ও রিপ্লেসমেন্ট সুবিধা।"
+        }
+    ];
+
+    const currentFaqs = isX73 ? x73Faqs : isPowerBank ? powerBankFaqs : isHoco ? earbudsFaqs : generalFaqs;
 
     const WA_STYLE = { background: "linear-gradient(135deg, #25d366 0%, #128c7e 100%)", boxShadow: "0 10px 30px rgba(37,211,102,0.28)" };
 
@@ -126,6 +236,7 @@ export default async function LandingPage({ params }) {
             `}</style>
 
             <div className="lp-v6 min-h-screen bg-white overflow-x-hidden">
+                <LandingPageTracker product={primaryProduct ? { id: primaryProduct.id, name: primaryProduct.name } : null} price={effectivePrice} />
 
                 {/* ══ TICKER ══ */}
                 <div className="bg-zinc-950 py-2.5 overflow-hidden">
@@ -290,69 +401,413 @@ export default async function LandingPage({ params }) {
                     </div>
                 </div>
 
-                {/* ══ PRODUCT DETAIL ══ */}
-                {primaryProduct && (
-                    <section className="py-16 md:py-20" style={{ background: "#f8f8fc" }}>
-                        <div className="max-w-5xl mx-auto px-4 md:px-10">
-                            <div className="text-center mb-10">
-                                <span className="inline-block text-[11px] font-black tracking-[0.25em] uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-4 py-1.5 mb-3">পণ্যের বিবরণ</span>
-                                <h2 className="text-xl md:text-2xl font-black text-zinc-950 max-w-2xl mx-auto leading-snug">{primaryProduct.name}</h2>
+                {/* ══ FEATURES SHOWCASE ══ */}
+                {featureList && featureList.length > 0 && (
+                    <section className="py-16 md:py-20 bg-white border-t border-zinc-100">
+                        <div className="max-w-6xl mx-auto px-4 md:px-10">
+                            <div className="text-center mb-12">
+                                <span className="inline-block text-[11px] font-black tracking-[0.25em] uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-4 py-1.5 mb-3">
+                                    বিশেষ বৈশিষ্ট্যসমূহ
+                                </span>
+                                <h2 className="text-2xl md:text-3xl font-black text-zinc-950">
+                                    কেন {isPowerBank ? "VEN-DENS 30000mAh" : isX73 ? "X73 TWS Earbuds" : isHoco ? "Hoco EQ34 Plus" : "আমাদের এই পণ্যটি"} আপনার সেরা পছন্দ?
+                                </h2>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {featureList.map((f, idx) => (
+                                    <div key={idx} className="bg-zinc-50 border border-zinc-100 rounded-3xl p-6 flex flex-col gap-3 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-white border border-zinc-100">
+                                            {f.icon || "✨"}
+                                        </div>
+                                        <h3 className="font-black text-zinc-900 text-lg">{f.title}</h3>
+                                        <p className="text-zinc-600 text-sm leading-relaxed">{f.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ══ POWER BANK CAPACITY & PERFORMANCE SHOWCASE ══ */}
+                {isPowerBank && (
+                    <section className="py-16 md:py-20 bg-zinc-950 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                        <div className="max-w-5xl mx-auto px-4 md:px-10 relative z-10">
+                            <div className="text-center mb-12">
+                                <span className="inline-block text-[11px] font-black tracking-[0.2em] uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full px-4 py-1.5 mb-3">
+                                    MONSTER 30000MAH CAPACITY
+                                </span>
+                                <h2 className="text-2xl md:text-4xl font-black text-white mb-3">
+                                    বিশাল ৩০,০০০mAh ব্যাটারির অবিশ্বাস্য পাওয়ার ব্যাকআপ
+                                </h2>
+                                <p className="text-zinc-400 text-sm md:text-base max-w-2xl mx-auto">
+                                    লং ট্যুর, ক্যাম্পিং, লোডশেডিং কিংবা টানা কয়েকদিন বিদ্যুৎহীন পরিবেশেও আপনার সব ফোন সচল থাকবে
+                                </p>
                             </div>
 
-                            <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm overflow-hidden">
-                                <div className="grid md:grid-cols-2 gap-0">
-                                    {/* Gallery */}
-                                    <div className="border-b md:border-b-0 md:border-r border-zinc-100">
-                                        <LandingPageGallery images={productImages} productName={primaryProduct.name} />
+                            {/* Device Charge Breakdown */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                {[
+                                    { icon: "📱", device: "iPhone (13/14/15/16)", count: "৬ - ৭ বার", desc: "সম্পূর্ণ ফুল চার্জ", color: "#34d399" },
+                                    { icon: "🤖", device: "Android Smartphones", count: "৫ - ৬ বার", desc: "সম্পূর্ণ ফুল চার্জ", color: "#60a5fa" },
+                                    { icon: "💻", device: "iPad / Tablets", count: "৩ - ৪ বার", desc: "বিশাল পাওয়ার সাপোর্ট", color: "#fbbf24" },
+                                    { icon: "🎧", device: "Earbuds & Watch", count: "২০+ বার", desc: "অনবরত চার্জিং", color: "#a78bfa" },
+                                ].map((item, idx) => (
+                                    <div key={idx} className="bg-white/5 border border-white/10 rounded-3xl p-5 text-center flex flex-col items-center gap-2 hover:border-amber-500/40 transition-colors">
+                                        <span className="text-3xl">{item.icon}</span>
+                                        <span className="text-xl md:text-2xl font-black text-white" style={{ color: item.color }}>{item.count}</span>
+                                        <p className="font-bold text-zinc-200 text-xs md:text-sm">{item.device}</p>
+                                        <span className="text-[10px] text-zinc-400">{item.desc}</span>
                                     </div>
+                                ))}
+                            </div>
 
-                                    {/* Details */}
-                                    <div className="p-6 md:p-8 flex flex-col gap-5">
-                                        {/* Price */}
-                                        {effectivePrice > 0 && (
-                                            <div className="flex items-end flex-wrap gap-3">
-                                                <span className="text-4xl font-black text-zinc-950 tabular-nums">{formatPrice(effectivePrice)}</span>
-                                                {discount && <><span className="text-xl text-zinc-400 line-through mb-0.5 tabular-nums">{formatPrice(originalPrice)}</span><span className="text-xs font-black text-white bg-rose-600 px-3 py-1 rounded-full mb-0.5">{discount}% OFF</span></>}
-                                            </div>
-                                        )}
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col gap-4 backdrop-blur-sm hover:border-amber-500/50 transition-colors">
+                                    <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl font-bold">
+                                        ⚡
+                                    </div>
+                                    <h3 className="text-xl font-black text-white">Super Fast Charging & Multi-Port Output</h3>
+                                    <p className="text-zinc-300 text-sm leading-relaxed">
+                                        হাই-স্পিড ফাস্ট চার্জিং টেকনোলজি দিয়ে মাত্র ৩০ মিনিটেই যেকোনো স্মার্টফোনে ৫০%+ চার্জ পৌঁছে দেয়। একাধিক আউটপুট পোর্ট থাকায় একসাথে ২-৩টি ডিভাইস একযোগে চার্জ করার পূর্ণ সুবিধা।
+                                    </p>
+                                    <div className="mt-auto pt-3 border-t border-white/10 flex items-center gap-2 text-xs font-bold text-amber-400">
+                                        <span>✓ সুপার ফাস্ট চার্জিং</span>
+                                        <span>•</span>
+                                        <span>✓ মাল্টি-ডিভাইস একযোগে চার্জ</span>
+                                    </div>
+                                </div>
 
-                                        {/* Description — fixed overflow */}
-                                        {primaryProduct.description && (
-                                            <div
-                                                className="text-zinc-600 text-sm leading-relaxed overflow-hidden [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_strong]:text-zinc-900 [&_p]:mb-2 [&_p]:break-words [&_li]:break-words"
-                                                style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
-                                                dangerouslySetInnerHTML={{ __html: primaryProduct.description }}
-                                            />
-                                        )}
+                                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col gap-4 backdrop-blur-sm hover:border-emerald-500/50 transition-colors">
+                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl font-bold">
+                                        🛡️
+                                    </div>
+                                    <h3 className="text-xl font-black text-white">ইন্টেলিজেন্ট সেফটি চিপ ও ডিজিটাল ডিসপ্লে</h3>
+                                    <p className="text-zinc-300 text-sm leading-relaxed">
+                                        স্মার্ট চিপসেটের মাধ্যমে ওভারহিট, ওভারচার্জ ও শর্ট সার্কিট থেকে আপনার ফোনের ব্যাটারিকে সুরক্ষিত রাখে। সাথে থাকা LED ডিজিটাল ডিসপ্লেতে চার্জের নিখুঁত পার্সেন্টেজ দেখা যায়।
+                                    </p>
+                                    <div className="mt-auto pt-3 border-t border-white/10 flex items-center gap-2 text-xs font-bold text-emerald-400">
+                                        <span>✓ ০-১০০% ডিজিটাল ব্যাটারি ডিসপ্লে</span>
+                                        <span>•</span>
+                                        <span>✓ মাল্টি-লেয়ার সেফটি প্রটেকশন</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
 
-                                        {/* Delivery cards with top accent */}
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {[
-                                                { e: "🚚", t: "ঢাকায়", v: "৭০ টাকা", cls: "lp-del-1" },
-                                                { e: "📦", t: "সারাদেশে", v: "১৩০ টাকা", cls: "lp-del-2" },
-                                                { e: "⏰", t: "ডেলিভারি", v: "১-৫ দিন", cls: "lp-del-3" },
-                                                { e: "💳", t: "পেমেন্ট", v: "ক্যাশ অন ডেলিভারি", cls: "lp-del-4" },
-                                            ].map((x) => (
-                                                <div key={x.t} className={`lp-del ${x.cls} bg-zinc-50 rounded-2xl border border-zinc-100 px-4 py-3 flex items-center gap-2.5`}>
-                                                    <span className="text-lg shrink-0">{x.e}</span>
-                                                    <div className="min-w-0">
-                                                        <p className="text-zinc-400 text-[10px] font-semibold uppercase">{x.t}</p>
-                                                        <p className="text-zinc-900 text-xs font-black truncate">{x.v}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
+                {/* ══ POWER BANK COMPARISON TABLE ══ */}
+                {isPowerBank && (
+                    <section className="py-16 md:py-20" style={{ background: "#f8f8fc" }}>
+                        <div className="max-w-4xl mx-auto px-4 md:px-10">
+                            <div className="text-center mb-12">
+                                <span className="inline-block text-[11px] font-black tracking-[0.25em] uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-4 py-1.5 mb-3">
+                                    পার্থক্য দেখুন
+                                </span>
+                                <h2 className="text-2xl md:text-3xl font-black text-zinc-950">
+                                    কেন VEN-DENS 30000mAh সাধারণ পাওয়ার ব্যাংকের চেয়ে সেরা?
+                                </h2>
+                            </div>
+
+                            <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-zinc-100 bg-zinc-50">
+                                                <th className="py-4 px-5 text-xs font-black text-zinc-500 uppercase">ফিচার</th>
+                                                <th className="py-4 px-5 text-sm font-black text-emerald-700 bg-emerald-50/80">VEN-DENS 30000mAh (৳১,৯৪৯)</th>
+                                                <th className="py-4 px-5 text-xs font-black text-zinc-400">সাধারণ কমদামী পাওয়ার ব্যাংক</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-100 text-sm">
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">ব্যাটারি ক্যাপাসিটি</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ জেনুইন 30,000mAh হাই-ডেনসিটি সেল</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ নকল বা মাত্র ১০,০০০mAh ক্যাপাসিটি</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">চার্জিং স্পিড ও আউটপুট</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ সুপার ফাস্ট চার্জিং সাপোর্ট</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ স্লো ৫W/১০W চার্জিং (দেরি হয়)</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">একসাথে ডিভাইস চার্জ</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ একসাথে ২-৩টি ডিভাইস ফুল স্পিডে</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ মাত্র ১টি দুর্বল পোর্ট</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">ব্যাটারি ইন্ডিকেটর সিস্টেম</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ ডিজিটাল LED ব্যাটারি পার্সেন্টেজ (০-১০০%)</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ টিমটিমে দুর্বল ডট লাইট</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">ডিভাইস সেফটি প্রটেকশন</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ স্মার্ট চিপ (ওভারহিট ও শর্ট সার্কিট সেফ)</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ গরম হয়ে ফোনের ব্যাটারি নষ্ট হওয়ার ঝুঁকি</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">বিল্ড ও বডি কোয়ালিটি</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ ফায়ার-রেজিস্ট্যান্ট এবিএস মজবুত বডি</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ নরমাল ভঙ্গুর প্লাস্টিক বডি</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ══ X73 RETRO CAMERA DESIGN & KFG AUDIO SHOWCASE ══ */}
+                {isX73 && (
+                    <section className="py-16 md:py-20 bg-zinc-950 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                        <div className="max-w-5xl mx-auto px-4 md:px-10 relative z-10">
+                            <div className="text-center mb-12">
+                                <span className="inline-block text-[11px] font-black tracking-[0.2em] uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full px-4 py-1.5 mb-3">
+                                    VINTAGE RETRO CAMERA DESIGN
+                                </span>
+                                <h2 className="text-2xl md:text-4xl font-black text-white mb-3">
+                                    ভিন্টেজ রেট্রো ক্যামেরা লুক ও Sound by KFG অডিও
+                                </h2>
+                                <p className="text-zinc-400 text-sm md:text-base max-w-2xl mx-auto">
+                                    সাধারণ প্লাস্টিক লুককে বিদায় দিন — হাতে নিলেই পাবেন প্রিমিয়াম লেদার টেক্সচার ও রেট্রো ক্যামেরার আভিজাত্য
+                                </p>
+                            </div>
+
+                            {/* Color Variants Pills */}
+                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 mb-8 backdrop-blur-sm">
+                                <h3 className="text-lg font-bold text-center text-zinc-200 mb-6 flex items-center justify-center gap-2">
+                                    <span>🎨</span> ৩টি প্রিমিয়াম ক্লাসিক কালার ভ্যারিয়েন্ট
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    {[
+                                        { name: "Brown (ব্রাউন)", desc: "ক্লাসিক ভিন্টেজ লেদার ফিনিশ", bg: "#78350f", badge: "সবচেয়ে জনপ্রিয় 🔥" },
+                                        { name: "Green (গ্রিন)", desc: "মডার্ন রেট্রো ও এলিগেন্ট লুক", bg: "#065f46", badge: "ট্রেন্ডি চয়েস ✨" },
+                                        { name: "White (হোয়াইট)", desc: "ক্লিন, মিনিমাল ও লাক্সারি ভাইব", bg: "#3f3f46", badge: "প্রিমিয়াম স্টাইল 🤍" },
+                                    ].map((col, idx) => (
+                                        <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center text-center gap-2 hover:border-amber-400/50 transition-all">
+                                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white/10 text-amber-300">{col.badge}</span>
+                                            <div className="w-12 h-12 rounded-full border-2 border-white/40 shadow-inner my-1" style={{ backgroundColor: col.bg }} />
+                                            <p className="font-black text-white text-base">{col.name}</p>
+                                            <span className="text-xs text-zinc-400">{col.desc}</span>
                                         </div>
+                                    ))}
+                                </div>
+                            </div>
 
-                                        {/* WhatsApp CTA */}
-                                        <a href="#order-form"
-                                            className="lp-wa-btn flex items-center justify-center gap-2.5 text-white font-black text-base py-4 rounded-2xl"
-                                            style={WA_STYLE}>
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
-                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                            </svg>
-                                            📲 WhatsApp এ অর্ডার করুন
-                                        </a>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col gap-4 backdrop-blur-sm hover:border-amber-500/50 transition-colors">
+                                    <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl font-bold">
+                                        🎵
                                     </div>
+                                    <h3 className="text-xl font-black text-white">Sound by KFG — ক্রিস্টাল ক্লিয়ার হাই-ফাই অডিও</h3>
+                                    <p className="text-zinc-300 text-sm leading-relaxed">
+                                        স্পেশাল Sound by KFG অডিও টিউনিং। প্রতিটি গানে পাবেন ঝকঝকে ভোকাল, সুমধুর ট্রিবল ও নিখুঁত ডিপ বেস। মুভি, গেমিং কিংবা লং মিউজিক সেশনে অনন্য অভিজ্ঞতা।
+                                    </p>
+                                    <div className="mt-auto pt-3 border-t border-white/10 flex items-center gap-2 text-xs font-bold text-amber-400">
+                                        <span>✓ Sound by KFG টিউনিং</span>
+                                        <span>•</span>
+                                        <span>✓ ডিপ বেস & ক্রিস্টাল ভোকাল</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col gap-4 backdrop-blur-sm hover:border-emerald-500/50 transition-colors">
+                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl font-bold">
+                                        📊
+                                    </div>
+                                    <h3 className="text-xl font-black text-white">ডিজিটাল LED ডিসপ্লে & স্মার্ট টাচ কন্ট্রোল</h3>
+                                    <p className="text-zinc-300 text-sm leading-relaxed">
+                                        চার্জিং কেসের ফ্রন্টে ডিজিটাল ডিসপ্লে থাকায় ব্যাটারির সঠিক পার্সেন্টেজ সবসময় দেখতে পারবেন। স্মার্ট টাচ কন্ট্রোলের মাধ্যমে এক স্পর্শেই গান বদলানো ও কল রিসিভ করা যায়।
+                                    </p>
+                                    <div className="mt-auto pt-3 border-t border-white/10 flex items-center gap-2 text-xs font-bold text-emerald-400">
+                                        <span>✓ ডিজিটাল ব্যাটারি পার্সেন্টেজ</span>
+                                        <span>•</span>
+                                        <span>✓ অটো-পেয়ারিং & স্মার্ট টাচ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ══ X73 COMPARISON TABLE ══ */}
+                {isX73 && (
+                    <section className="py-16 md:py-20" style={{ background: "#f8f8fc" }}>
+                        <div className="max-w-4xl mx-auto px-4 md:px-10">
+                            <div className="text-center mb-12">
+                                <span className="inline-block text-[11px] font-black tracking-[0.25em] uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-4 py-1.5 mb-3">
+                                    পার্থক্য দেখুন
+                                </span>
+                                <h2 className="text-2xl md:text-3xl font-black text-zinc-950">
+                                    কেন X73 TWS সাধারণ ইয়ারবাডসের চেয়ে সম্পূর্ণ আলাদা?
+                                </h2>
+                            </div>
+
+                            <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-zinc-100 bg-zinc-50">
+                                                <th className="py-4 px-5 text-xs font-black text-zinc-500 uppercase">ফিচার</th>
+                                                <th className="py-4 px-5 text-sm font-black text-emerald-700 bg-emerald-50/80">X73 TWS Earbuds (৳৬৫০)</th>
+                                                <th className="py-4 px-5 text-xs font-black text-zinc-400">সাধারণ সস্তা ইয়ারবাডস</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-100 text-sm">
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">কেস ডিজাইন & লুক</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ ভিন্টেজ রেট্রো ক্যামেরা স্টাইল লেদার ফিনিশ</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ সাধারণ সস্তা প্লাস্টিক বক্স</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">সাউন্ড কোয়ালিটি</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ Sound by KFG টিউন করা পাঞ্চি ডিপ বেস</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ ফ্ল্যাট ও কর্কশ সাউন্ড</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">ব্যাটারি ইন্ডিকেটর</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ রিয়েল-টাইম ডিজিটাল LED পার্সেন্টেজ ডিসপ্লে</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ কোনো ডিসপ্লে নেই (অনুমান নির্ভর)</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">কন্ট্রোল সিস্টেম</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ সেনসিটিভ স্মার্ট টাচ সেন্সর কন্ট্রোল</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ জটিল বোতাম প্রেস</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">কালার ভ্যারাইটি</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ Brown, Green & White ৩টি ক্লাসিক কালার</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ শুধুমাত্র সাধারণ কালো রঙ</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">অফার মূল্য ও মান</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ মাত্র ৬৫০ টাকায় প্রিমিয়াম লাক্সারি ফিল</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ ১০০০+ টাকা দিয়েও নিম্নমানের বিল্ড</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ══ ANC vs ENC AUDIO SHOWCASE ══ */}
+                {isHoco && (
+                    <section className="py-16 md:py-20 bg-zinc-950 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                        <div className="max-w-5xl mx-auto px-4 md:px-10 relative z-10">
+                            <div className="text-center mb-12">
+                                <span className="inline-block text-[11px] font-black tracking-[0.2em] uppercase bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full px-4 py-1.5 mb-3">
+                                    DUAL NOISE CANCELLATION
+                                </span>
+                                <h2 className="text-2xl md:text-4xl font-black text-white mb-3">
+                                    ANC + ENC ডুয়েল নয়েজ ক্যানসেলেশন
+                                </h2>
+                                <p className="text-zinc-400 text-sm md:text-base max-w-2xl mx-auto">
+                                    গান শোনা হোক কিংবা কথা বলা — বাইরের যেকোনো গোলমাল থেকে পান সম্পূর্ণ ক্লিয়ার সাউন্ড
+                                </p>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col gap-4 backdrop-blur-sm hover:border-emerald-500/50 transition-colors">
+                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl font-bold">
+                                        🎧
+                                    </div>
+                                    <h3 className="text-xl font-black text-white">Active Noise Cancellation (ANC)</h3>
+                                    <p className="text-zinc-300 text-sm leading-relaxed">
+                                        ২৫-৩০dB পর্যন্ত বাইরের হইচই ও ট্রান্সপোর্ট নয়েজ কমানোর ক্ষমতাসম্পন্ন স্মার্ট ANC অ্যালগরিদম। মেস, ড্রাইভ বা ট্রাফিকের আড্ডার মাঝেও ব্যাকগ্রাউন্ড গোলমাল মুক্ত নিবিড় অডিও অভিজ্ঞতা দেয়।
+                                    </p>
+                                    <div className="mt-auto pt-3 border-t border-white/10 flex items-center gap-2 text-xs font-bold text-emerald-400">
+                                        <span>✓ ২৫-৩০dB নয়েজ রিডাকশন</span>
+                                        <span>•</span>
+                                        <span>✓ বাস/ট্রাফিকে নিখুঁত অডিও</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col gap-4 backdrop-blur-sm hover:border-indigo-500/50 transition-colors">
+                                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-3xl font-bold">
+                                        🎙️
+                                    </div>
+                                    <h3 className="text-xl font-black text-white">Environmental Noise Cancellation (ENC)</h3>
+                                    <p className="text-zinc-300 text-sm leading-relaxed">
+                                        ডুয়েল মাইক্রোফোন ও স্মার্ট ভয়েস এলগরিদম। কল করার সময় বাতাস, অনাকাঙ্ক্ষিত শোরগোল বা পেছনের ভয়েস ফিল্টার করে একদম এইচডি কোয়ালিটিতে কথা বলতে সাহায্য করে।
+                                    </p>
+                                    <div className="mt-auto pt-3 border-t border-white/10 flex items-center gap-2 text-xs font-bold text-indigo-400">
+                                        <span>✓ HD ভয়েস কলিং</span>
+                                        <span>•</span>
+                                        <span>✓ নয়েজ-ফ্রি মাইক্রোফোন</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ══ COMPARISON TABLE (HOCO) ══ */}
+                {isHoco && (
+                    <section className="py-16 md:py-20" style={{ background: "#f8f8fc" }}>
+                        <div className="max-w-4xl mx-auto px-4 md:px-10">
+                            <div className="text-center mb-12">
+                                <span className="inline-block text-[11px] font-black tracking-[0.25em] uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-4 py-1.5 mb-3">
+                                    পার্থক্য দেখুন
+                                </span>
+                                <h2 className="text-2xl md:text-3xl font-black text-zinc-950">
+                                    কেন Hoco EQ34 Plus বাজারের অন্যান্য এয়ারবাডসের চেয়ে এগিয়ে?
+                                </h2>
+                            </div>
+
+                            <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-zinc-100 bg-zinc-50">
+                                                <th className="py-4 px-5 text-xs font-black text-zinc-500 uppercase">ফিচার</th>
+                                                <th className="py-4 px-5 text-sm font-black text-emerald-700 bg-emerald-50/80">Hoco EQ34 Plus (৳৯৪৯)</th>
+                                                <th className="py-4 px-5 text-xs font-black text-zinc-400">সাধারণ TWS এয়ারবাডস</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-100 text-sm">
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">Active Noise Cancellation (ANC)</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ ২৫-৩০dB ANC সাপোর্ট</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ কোনো ANC নেই</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">কল নয়েজ ক্যানসেলেশন (ENC)</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ HD ডুয়েল মাইক ENC</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ সাধারণ জিরঝির মাইক</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">ব্লুটুথ ভার্সন & চিপসেট</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ Bluetooth 5.4 (JL AC7003)</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ পোর Bluetooth 5.0/5.1</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">স্পিকার ড্রাইভার সাইজ</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ 13mm Dynamic Driver (Deep Bass)</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ ৮-১০mm ছোট ড্রাইভার</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">অফিসিয়াল অ্যাপ সাপোর্ট</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ Hoco App Config & Touch Edit</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ অ্যাপ সাপোর্ট নেই</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">মোট ব্যাটারি প্লেব্যাক</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ মোট ২৮ ঘণ্টা চার্জ ব্যাকআপ</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ মাত্র ৮-১০ ঘণ্টা</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -402,6 +857,34 @@ export default async function LandingPage({ params }) {
                         </div>
                     </section>
                 )}
+
+                {/* ══ FAQ SECTION ══ */}
+                <section className="py-16 md:py-20 bg-white">
+                    <div className="max-w-3xl mx-auto px-4 md:px-10">
+                        <div className="text-center mb-12">
+                            <span className="inline-block text-[11px] font-black tracking-[0.25em] uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-4 py-1.5 mb-3">
+                                সাধারণ প্রশ্নাবলী
+                            </span>
+                            <h2 className="text-2xl md:text-3xl font-black text-zinc-950">
+                                প্রায়শই জিজ্ঞাসিত প্রশ্ন (FAQ)
+                            </h2>
+                        </div>
+
+                        <div className="space-y-4">
+                            {currentFaqs.map((faq, i) => (
+                                <div key={i} className="bg-zinc-50 border border-zinc-200/80 rounded-2xl p-5 transition-all">
+                                    <h3 className="font-black text-zinc-900 text-base mb-2 flex items-center gap-2">
+                                        <span className="text-emerald-600 font-extrabold text-lg">Q.</span>
+                                        {faq.q}
+                                    </h3>
+                                    <p className="text-zinc-600 text-sm leading-relaxed pl-6">
+                                        {faq.a}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
 
                 {/* ══ WHATSAPP ORDER FORM ══ */}
                 <section id="order-form" className="py-16 md:py-24 relative overflow-hidden" style={{ background: "#f8f8fc" }}>
@@ -500,6 +983,24 @@ export default async function LandingPage({ params }) {
                         </div>
                     </div>
                 </section>
+
+                {/* ══ STICKY MOBILE ORDER BAR ══ */}
+                <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-200 p-3 shadow-2xl flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="text-[10px] text-zinc-400 font-bold uppercase truncate">{primaryProduct?.name || page.title}</p>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-lg font-black text-zinc-950">{formatPrice(effectivePrice)}</span>
+                            {originalPrice > effectivePrice && (
+                                <span className="text-xs text-zinc-400 line-through">{formatPrice(originalPrice)}</span>
+                            )}
+                        </div>
+                    </div>
+                    <a href="#order-form"
+                        className="lp-wa-btn shrink-0 inline-flex items-center justify-center gap-2 font-black text-sm py-3 px-5 rounded-xl text-white"
+                        style={WA_STYLE}>
+                        🛒 এখনই অর্ডার করুন
+                    </a>
+                </div>
 
                 {/* FOOTER */}
                 <footer className="py-5 border-t border-zinc-100 text-center text-xs text-zinc-400 bg-white">
