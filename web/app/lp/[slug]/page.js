@@ -93,6 +93,38 @@ export default async function LandingPage({ params }) {
     const isPowerBank = slug?.includes("power-bank") || slug?.includes("ven-dens") || slug?.includes("30000mah");
     const isX73 = slug?.includes("x73") || slug?.includes("retro-camera");
     const isHoco = slug?.includes("hoco") || slug?.includes("eq34");
+    const isP9 = slug?.includes("p9-pro-max") || slug?.includes("p9");
+
+    const p9Faqs = [
+        {
+            q: "P9 Pro Max হেডফোনটি কি সব ডিভাইসে সাপোর্ট করবে?",
+            a: "হ্যাঁ! Android স্মার্টফোন, iPhone, iPad, Laptop, PC, Smart TV সহ যেকোনো ব্লুটুথ সাপোর্টেড ডিভাইসে এটি মুহূর্তেই কানেক্ট হয়ে যায়।"
+        },
+        {
+            q: "দীর্ঘক্ষণ ব্যবহারে কানে কোনো ব্যথা বা চাপ লাগবে কি?",
+            a: "একদমই না! এতে রয়েছে আল্ট্রা-সফট মেমোরি ফোম ইয়ার কুশন এবং অ্যাডজাস্টেবল হেডব্যান্ড। কানের চারপাশ ঘিরে নরম গ্রিপ থাকে, যার ফলে টানা ৩-৪ ঘণ্টা গান শুনলেও কান ব্যথা করে না।"
+        },
+        {
+            q: "সাউন্ড ও বেস কোয়ালিটি কেমন?",
+            a: "এতে রয়েছে ৪০ মিমি পাওয়ারফুল ডায়নামিক অডিও ড্রাইভার। প্রতিটি মিউজিকে ক্রিস্টাল ক্লিয়ার ভোকাল, ঝকঝকে ট্রিবল এবং ডিপ পাঞ্চি বেস পাবেন।"
+        },
+        {
+            q: "একবার ফুল চার্জে ব্যাটারি কতক্ষণ চলে?",
+            a: "একবার সম্পূর্ণ চার্জে প্রায় ৮ থেকে ১০ ঘণ্টা ননস্টপ গান শোনা ও কল রিসিভ করা যায়। এছাড়া এর স্ট্যান্ডবাই ব্যাকআপ ১২০ ঘণ্টারও বেশি।"
+        },
+        {
+            q: "ফোনে কথা বলার জন্য মাইক্রোফোন আছে কি?",
+            a: "হ্যাঁ! এতে রয়েছে হাই-ডেফিনিশন বিল্ট-ইন মাইক্রোফোন। স্পষ্ট ভয়েসে কল রিসিভ, কথা বলা বা অনলাইন মিটিং করা যাবে।"
+        },
+        {
+            q: "ডেলিভারির সময় কি চেক করে টাকা দেওয়া যাবে?",
+            a: "অবশ্যই! আমাদের রয়েছে ১০০% ক্যাশ অন ডেলিভারি সুবিধা। ডেলিভারি ম্যানের সামনে প্রোডাক্ট দেখে চেক করে সম্পূর্ণ নিশ্চিন্তে টাকা পরিশোধ করতে পারবেন।"
+        },
+        {
+            q: "পণ্য সমস্যাযুক্ত হলে কী করবো?",
+            a: "আমাদের রয়েছে ৩ দিনের সহজ রিটার্ন ও রিপ্লেসমেন্ট গ্যারান্টি। কোনো সমস্যা পেলে সাথে সাথে আমাদের কাস্টমার কেয়ারে জানালে দ্রুত সমাধান করে দেওয়া হবে।"
+        }
+    ];
 
     const x73Faqs = [
         {
@@ -190,7 +222,7 @@ export default async function LandingPage({ params }) {
         }
     ];
 
-    const currentFaqs = isX73 ? x73Faqs : isPowerBank ? powerBankFaqs : isHoco ? earbudsFaqs : generalFaqs;
+    const currentFaqs = isP9 ? p9Faqs : isX73 ? x73Faqs : isPowerBank ? powerBankFaqs : isHoco ? earbudsFaqs : generalFaqs;
 
     const WA_STYLE = { background: "linear-gradient(135deg, #25d366 0%, #128c7e 100%)", boxShadow: "0 10px 30px rgba(37,211,102,0.28)" };
 
@@ -410,7 +442,7 @@ export default async function LandingPage({ params }) {
                                     বিশেষ বৈশিষ্ট্যসমূহ
                                 </span>
                                 <h2 className="text-2xl md:text-3xl font-black text-zinc-950">
-                                    কেন {isPowerBank ? "VEN-DENS 30000mAh" : isX73 ? "X73 TWS Earbuds" : isHoco ? "Hoco EQ34 Plus" : "আমাদের এই পণ্যটি"} আপনার সেরা পছন্দ?
+                                    কেন {isP9 ? "P9 Pro MAX Headphone" : isPowerBank ? "VEN-DENS 30000mAh" : isX73 ? "X73 TWS Earbuds" : isHoco ? "Hoco EQ34 Plus" : "আমাদের এই পণ্যটি"} আপনার সেরা পছন্দ?
                                 </h2>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -689,6 +721,148 @@ export default async function LandingPage({ params }) {
                                                 <td className="py-4 px-5 font-bold text-zinc-900">অফার মূল্য ও মান</td>
                                                 <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ মাত্র ৬৫০ টাকায় প্রিমিয়াম লাক্সারি ফিল</td>
                                                 <td className="py-4 px-5 text-zinc-400">❌ ১০০০+ টাকা দিয়েও নিম্নমানের বিল্ড</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ══ P9 PRO MAX LUXURY DESIGN & OVER-EAR ACOUSTICS SHOWCASE ══ */}
+                {isP9 && (
+                    <section className="py-16 md:py-20 bg-zinc-950 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                        <div className="max-w-5xl mx-auto px-4 md:px-10 relative z-10">
+                            <div className="text-center mb-12">
+                                <span className="inline-block text-[11px] font-black tracking-[0.2em] uppercase bg-white/10 border border-white/20 text-zinc-300 rounded-full px-4 py-1.5 mb-3">
+                                    AESTHETIC OVER-EAR WIRELESS HEADPHONE
+                                </span>
+                                <h2 className="text-2xl md:text-4xl font-black text-white mb-3">
+                                    AirPods Max ইন্সপায়ার্ড লাক্সারি লুক ও ৪০মিমি ডিপ বেস অডিও
+                                </h2>
+                                <p className="text-zinc-400 text-sm md:text-base max-w-2xl mx-auto">
+                                    সাধারণ প্লাস্টিক হেডফোন নয় — কানে দিলেই পাবেন ক্লাসি মেটালিক ফিনিশ, আল্ট্রা-সফট ফোম কুশন ও সিনেমাটিক সাউন্ড অভিজ্ঞতা
+                                </p>
+                            </div>
+
+                            {/* 5 Aesthetic Colors */}
+                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 mb-8 backdrop-blur-sm">
+                                <h3 className="text-lg font-bold text-center text-zinc-200 mb-6 flex items-center justify-center gap-2">
+                                    <span>🎨</span> ৫টি আকর্ষণীয় প্রিমিয়াম কালার ভ্যারিয়েন্ট
+                                </h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+                                    {[
+                                        { name: "Space Black", bn: "কালো", desc: "বোল্ড ও ক্লাসিক স্টাইল", bg: "#18181b", border: "#3f3f46", badge: "সবচেয়ে জনপ্রিয় 🔥" },
+                                        { name: "Silver White", bn: "সিলভার / সাদা", desc: "মিনিমালিস্ট ও লাক্সারি ভাইব", bg: "#e4e4e7", border: "#cbd5e1", textDark: true, badge: "ট্রেন্ডি লুক ✨" },
+                                        { name: "Sky Blue", bn: "স্কাই ব্লু", desc: "কুল ও এলিগেন্ট ভাইব", bg: "#0284c7", border: "#38bdf8", badge: "ইউনিক চয়েস 💎" },
+                                        { name: "Rose Pink", bn: "রোজ পিঙ্ক", desc: "কিউট ও প্রিমিয়াম ফিনিশ", bg: "#f43f5e", border: "#fda4af", badge: "স্টাইলিশ 🌸" },
+                                        { name: "Mint Green", bn: "মিন্ট গ্রিন", desc: "সতেজ ও ফ্রেশ লুক", bg: "#059669", border: "#6ee7b7", badge: "ফ্রেশ কালার 🍃" },
+                                    ].map((col, idx) => (
+                                        <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center text-center gap-2 hover:border-white/40 transition-all">
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-zinc-300">{col.badge}</span>
+                                            <div className="w-11 h-11 rounded-full border-2 shadow-inner my-1" style={{ backgroundColor: col.bg, borderColor: col.border }} />
+                                            <div>
+                                                <p className="font-black text-white text-sm">{col.bn}</p>
+                                                <span className="text-[11px] text-zinc-400 font-medium">{col.name}</span>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-500 mt-0.5">{col.desc}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col gap-4 backdrop-blur-sm hover:border-indigo-500/50 transition-colors">
+                                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-3xl font-bold">
+                                        🔊
+                                    </div>
+                                    <h3 className="text-xl font-black text-white">৪০মিমি পাওয়ারফুল ড্রাইভার — স্টুডিও সাউন্ড ও সুপার বেস</h3>
+                                    <p className="text-zinc-300 text-sm leading-relaxed">
+                                        P9 Pro Max-এ ব্যবহৃত হয়েছে বড় ৪০ মিমি ডায়নামিক অডিও ড্রাইভার। প্রতিটি বিটে পাবেন তীব্র পাঞ্চি বেস, ক্রিস্টাল ক্লিয়ার ভোকাল ও ব্যালান্সড মিউজিক। মুভি দেখতে বা গেমিংয়ে প্রতিটি সাউন্ড ইফেক্ট পাবেন নিখুঁতভাবে।
+                                    </p>
+                                    <div className="mt-auto pt-3 border-t border-white/10 flex items-center gap-2 text-xs font-bold text-indigo-300">
+                                        <span>✓ ৪০ মিমি ডায়নামিক ড্রাইভার</span>
+                                        <span>•</span>
+                                        <span>✓ সিনেমাটিক থিয়েটার বেস</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col gap-4 backdrop-blur-sm hover:border-emerald-500/50 transition-colors">
+                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl font-bold">
+                                        ☁️
+                                    </div>
+                                    <h3 className="text-xl font-black text-white">আল্ট্রা-সফট মেমোরি ফোম — ঘণ্টার পর ঘণ্টা নো-পেইন কমফোর্ট</h3>
+                                    <p className="text-zinc-300 text-sm leading-relaxed">
+                                        দীর্ঘক্ষণ ব্যবহারের জন্য ডিজাইন করা নরম ব্রিদেবল মেশ ও মেমোরি ফোম কুশন কানের ওপর কোনো ধরনের চাপ ফেলে না। অ্যাডজাস্টেবল হেডব্যান্ড যেকোনো সাইজের মাথায় আরামদায়কভাবে ফিট হয়ে যায়।
+                                    </p>
+                                    <div className="mt-auto pt-3 border-t border-white/10 flex items-center gap-2 text-xs font-bold text-emerald-400">
+                                        <span>✓ ব্রিদেবল নরম কুশন</span>
+                                        <span>•</span>
+                                        <span>✓ অ্যাডজাস্টেবল স্টেইনলেস হেডব্যান্ড</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ══ P9 COMPARISON TABLE ══ */}
+                {isP9 && (
+                    <section className="py-16 md:py-20" style={{ background: "#f8f8fc" }}>
+                        <div className="max-w-4xl mx-auto px-4 md:px-10">
+                            <div className="text-center mb-12">
+                                <span className="inline-block text-[11px] font-black tracking-[0.25em] uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-4 py-1.5 mb-3">
+                                    পার্থক্য দেখুন
+                                </span>
+                                <h2 className="text-2xl md:text-3xl font-black text-zinc-950">
+                                    কেন P9 Pro MAX সাধারণ হেডফোনের চেয়ে সেরা?
+                                </h2>
+                            </div>
+
+                            <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-zinc-100 bg-zinc-50">
+                                                <th className="py-4 px-5 text-xs font-black text-zinc-500 uppercase">ফিচার</th>
+                                                <th className="py-4 px-5 text-sm font-black text-emerald-700 bg-emerald-50/80">P9 Pro MAX (৳৫৯৮)</th>
+                                                <th className="py-4 px-5 text-xs font-black text-zinc-400">সাধারণ সস্তা হেডফোন</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-100 text-sm">
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">ডিজাইন ও লুক</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ প্রিমিয়াম মেটালিক ফিনিশ & লাক্সারি লুক</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ সাধারণ সস্তা প্লাস্টিক বডি</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">ইয়ার কুশন কমফোর্ট</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ সফট মেমোরি ফোম (কান ব্যথা করে না)</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ শক্ত প্লাস্টিক/রাবার (কানে ব্যথা করে)</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">সাউন্ড ও বেস ড্রাইভার</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ ৪০মিমি পাওয়ারফুল ডায়নামিক ড্রাইভার</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ কমজোর ড্রাইভার, বেস ছাড়া ফাঁকা আওয়াজ</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">ব্যাটারি ব্যাকআপ</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ ৮-১০ ঘণ্টা ননস্টপ মিউজিক প্লেব্যাক</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ ১-২ ঘণ্টার মাথায় চার্জ শেষ হয়ে যায়</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">কালার কালেকশন</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ ৫টি প্রিমিয়াম ট্রেন্ডি কালার ভ্যারিয়েন্ট</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ ১-২টি রঙে পাওয়া যায়</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-4 px-5 font-bold text-zinc-900">অফার প্রাইস ও ভ্যালু</td>
+                                                <td className="py-4 px-5 font-black text-emerald-600 bg-emerald-50/30">✅ মাত্র ৫৯৮ টাকায় অসাধারণ ভ্যালু ফর মানি</td>
+                                                <td className="py-4 px-5 text-zinc-400">❌ ১০০০+ টাকা দিয়েও বাজে কোয়ালিটি</td>
                                             </tr>
                                         </tbody>
                                     </table>
