@@ -45,9 +45,8 @@ export async function POST(request) {
             const result = await new Promise((resolve, reject) => {
                 const uploadStream = cloudinary.uploader.upload_stream(
                     {
-                        folder: "authentic-bazar",
+                        folder: "pashora-shop",
                         resource_type: "image",
-                        transformation: [{ quality: "auto:good", fetch_format: "auto" }],
                     },
                     (error, result) => {
                         if (error) reject(error);
