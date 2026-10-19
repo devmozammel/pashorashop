@@ -8,6 +8,8 @@ import ProductReviews from "@/components/product/ProductReviews";
 import Link from "next/link";
 import { getProductDisplayImages } from "@/lib/productImages";
 
+export const revalidate = 60; // Cache product page on Edge CDN for 60 seconds
+
 // 1. Dynamic Metadata for SEO
 export async function generateMetadata(props) {
     const params = await props.params;
