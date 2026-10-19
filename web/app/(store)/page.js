@@ -15,7 +15,7 @@ export async function generateMetadata() {
         const config = await prisma.homepageConfig.findFirst();
         const siteSettingsRaw = await prisma.siteSetting.findUnique({ where: { key: 'store_settings' } });
         
-        let siteName = "Authentic Bazar Shop";
+        let siteName = "Pashora Shop";
         if (siteSettingsRaw?.value) {
             try {
                 const parsed = JSON.parse(siteSettingsRaw.value);
@@ -29,14 +29,14 @@ export async function generateMetadata() {
             title: {
                 absolute: siteName
             },
-            description: "Discover premium fashion at Authentic Bazar. We offer a curated collection of authentic, high-quality clothing and accessories for men and women in Bangladesh.",
+            description: "Discover premium fashion & lifestyle products at Pashora Shop. We offer a curated collection of authentic, high-quality clothing and accessories in Bangladesh.",
         };
     } catch (e) {
         return {
             title: {
-                absolute: "Authentic Bazar Shop"
+                absolute: "Pashora Shop"
             },
-            description: "Discover premium fashion at Authentic Bazar. We offer a curated collection of authentic, high-quality clothing and accessories for men and women in Bangladesh.",
+            description: "Discover premium fashion & lifestyle products at Pashora Shop. We offer a curated collection of authentic, high-quality clothing and accessories in Bangladesh.",
         };
     }
 }

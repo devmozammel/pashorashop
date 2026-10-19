@@ -198,7 +198,7 @@ export default function WhatsAppOrderForm({
             : "মূল্য নিশ্চিত করুন";
 
         const msg =
-`🛒 *নতুন অর্ডার : Authentic Bazar*
+`🛒 *নতুন অর্ডার : Pashora Shop*
 ━━━━━━━━━━━━━━━━━━━━
 ${orderNumber ? `🆔 *অর্ডার নম্বর:* ${orderNumber}\n` : ""}📦 *পণ্য:* ${productName}
 🔢 *পরিমাণ:* ${form.qty} টি
@@ -210,7 +210,7 @@ ${orderNumber ? `🆔 *অর্ডার নম্বর:* ${orderNumber}\n` : 
 📱 *ফোন:* ${cleanPhone}
 📍 *ঠিকানা:* ${form.address.trim()}${form.note.trim() ? `\n📝 *নোট:* ${form.note.trim()}` : ""}
 ━━━━━━━━━━━━━━━━━━━━
-✅ ক্যাশ অন ডেলিভারি | Authentic Bazar`;
+✅ ক্যাশ অন ডেলিভারি | Pashora Shop`;
 
         setTimeout(() => {
             window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, "_blank");

@@ -21,17 +21,17 @@ export const metadata = {
         canonical: "./",
     },
     title: {
-        default: "Authentic Bazar | Premium Fashion Store in Bangladesh",
-        template: "%s | Authentic Bazar"
+        default: "Pashora Shop | Premium Online Shopping in Bangladesh",
+        template: "%s | Pashora Shop"
     },
-    description: "Discover premium fashion at Authentic Bazar. We offer a curated collection of authentic, high-quality clothing and accessories for men and women.",
-    keywords: ["fashion", "clothing", "authentic bazar", "premium brands", "bangladesh fashion", "online shopping"],
+    description: "Discover authentic and trending products at Pashora Shop. Premium quality items with fast home delivery and cash on delivery all over Bangladesh.",
+    keywords: ["pashora shop", "online shopping", "bangladesh shopping", "gadgets", "fashion", "lifestyle", "authentic products"],
     manifest: "/favicon_io/site.webmanifest",
     openGraph: {
-        title: "Authentic Bazar | Premium Fashion",
-        description: "Official Authentic Bazar Store - Quality Meets Elegance.",
+        title: "Pashora Shop | Premium Online Shopping",
+        description: "Official Pashora Shop Store - Quality Meets Trust.",
         images: ["/logo.png"],
-        siteName: "Authentic Bazar",
+        siteName: "Pashora Shop",
         locale: "en_BD",
         type: "website",
     },
@@ -79,12 +79,12 @@ export default async function RootLayout({ children }) {
     const orgJsonLd = {
         "@context": "https://schema.org",
         "@type": "Organization",
-        "name": "Authentic Bazar",
+        "name": "Pashora Shop",
         "url": siteUrl,
         "logo": `${siteUrl}/logo.png`,
         "sameAs": [
-            "https://www.facebook.com/authenticbazar",
-            "https://www.instagram.com/authenticbazar"
+            "https://www.facebook.com/pashorashop",
+            "https://www.instagram.com/pashorashop"
         ],
         "contactPoint": {
             "@type": "ContactPoint",
@@ -109,7 +109,7 @@ export default async function RootLayout({ children }) {
     const localBusinessJsonLd = {
         "@context": "https://schema.org",
         "@type": "ClothingStore",
-        "name": "Authentic Bazar",
+        "name": "Pashora Shop",
         "image": `${siteUrl}/logo.png`,
         "@id": `${siteUrl}/#organization`,
         "url": siteUrl,

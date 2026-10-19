@@ -1,7 +1,7 @@
 
 export const metadata = {
-    title: "Frequently Asked Questions | Authentic Bazar",
-    description: "Find answers to the most common questions about tracking orders, return policy, delivery times, and payment methods at Authentic Bazar.",
+    title: "Frequently Asked Questions | Pashora Shop",
+    description: "Find answers to the most common questions about tracking orders, return policy, delivery times, and payment methods at Pashora Shop.",
 };
 
 export default function FAQ() {

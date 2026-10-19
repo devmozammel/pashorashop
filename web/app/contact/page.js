@@ -6,10 +6,10 @@ async function getSiteName() {
         const setting = await prisma.siteSetting.findUnique({ where: { key: "store_settings" } });
         if (setting) {
             const parsed = JSON.parse(setting.value);
-            return parsed.siteName || "Authentic Bazar";
+            return parsed.siteName || "Pashora Shop";
         }
     } catch (_) { }
-    return "Authentic Bazar";
+    return "Pashora Shop";
 }
 
 export async function generateMetadata() {

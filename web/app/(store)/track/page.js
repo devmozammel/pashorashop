@@ -1,7 +1,7 @@
 import TrackClient from "./TrackClient";
 
 export const metadata = {
-    title: "Track Your Order | Authentic Bazar",
+    title: "Track Your Order | Pashora Shop",
     description: "Track your parcel in real-time. Enter your Order ID and phone/email to see live shipping status.",
     alternates: {
         canonical: "/track"

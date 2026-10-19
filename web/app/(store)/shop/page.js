@@ -9,8 +9,8 @@ export async function generateMetadata(props) {
     const subGroupId = searchParams.subGroupId;
     const subItemId = searchParams.subItemId;
 
-    let title = "Shop All Products | Authentic Bazar";
-    let description = "Explore all products at Authentic Bazar. Authentic and premium fashion store in Bangladesh.";
+    let title = "Shop All Products | Pashora Shop";
+    let description = "Explore all products at Pashora Shop. Authentic and trending store in Bangladesh.";
     let canonical = "/shop";
 
     try {
@@ -20,8 +20,8 @@ export async function generateMetadata(props) {
                 include: { group: true }
             });
             if (subItem) {
-                title = `${subItem.name} - ${subItem.group?.name || ""} | Authentic Bazar`;
-                description = `Browse our exclusive ${subItem.name} collection at Authentic Bazar. Best price and quality guaranteed.`;
+                title = `${subItem.name} - ${subItem.group?.name || ""} | Pashora Shop`;
+                description = `Browse our exclusive ${subItem.name} collection at Pashora Shop. Best price and quality guaranteed.`;
                 canonical = `/shop?categoryId=${categoryId}&subGroupId=${subGroupId}&subItemId=${subItemId}`;
             }
         } else if (subGroupId) {
@@ -30,15 +30,15 @@ export async function generateMetadata(props) {
                 include: { category: true }
             });
             if (subGroup) {
-                title = `${subGroup.name} - ${subGroup.category?.name || ""} | Authentic Bazar`;
-                description = `Browse our exclusive ${subGroup.name} collection at Authentic Bazar. Best price and quality guaranteed.`;
+                title = `${subGroup.name} - ${subGroup.category?.name || ""} | Pashora Shop`;
+                description = `Browse our exclusive ${subGroup.name} collection at Pashora Shop. Best price and quality guaranteed.`;
                 canonical = `/shop?categoryId=${categoryId}&subGroupId=${subGroupId}`;
             }
         } else if (categoryId) {
             const category = await prisma.category.findUnique({ where: { id: categoryId } });
             if (category) {
-                title = `${category.name} Collection | Authentic Bazar`;
-                description = `Browse our exclusive ${category.name} collection at Authentic Bazar. Best price and quality guaranteed.`;
+                title = `${category.name} Collection | Pashora Shop`;
+                description = `Browse our exclusive ${category.name} collection at Pashora Shop. Best price and quality guaranteed.`;
                 canonical = `/shop?categoryId=${categoryId}`;
             }
         }

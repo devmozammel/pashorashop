@@ -33,8 +33,8 @@ export async function generateMetadata(props) {
 
     if (!product) return {};
 
-    const title = product.metaTitle || `${product.name} | Authentic Bazar`;
-    const description = product.metaDescription || product.shortDesc || product.description?.substring(0, 160) || `Buy ${product.name} at Authentic Bazar`;
+    const title = product.metaTitle || `${product.name} | Pashora Shop`;
+    const description = product.metaDescription || product.shortDesc || product.description?.substring(0, 160) || `Buy ${product.name} at Pashora Shop`;
     const image = product.productImages[0]?.url || (typeof product.images === 'string' ? JSON.parse(product.images)[0] : product.images?.[0]) || "/logo.png";
     const keywords = product.metaKeywords || "";
 
@@ -144,7 +144,7 @@ export default async function ProductPage(props) {
         "sku": product.sku || product.id,
         "brand": {
             "@type": "Brand",
-            "name": "Authentic Bazar Shop"
+            "name": "Pashora Shop"
         },
         "aggregateRating": totalReviews > 0 ? {
             "@type": "AggregateRating",

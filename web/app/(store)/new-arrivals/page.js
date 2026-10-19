@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 export const metadata = {
-    title: "New Arrivals | Authentic Bazar",
+    title: "New Arrivals | Pashora Shop",
     description: "Discover the latest additions to our collection. Fresh styles added daily.",
 };
 

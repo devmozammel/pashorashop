@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-    title: "Authentic Bazar Admin",
+    title: "Pashora Shop Admin",
     description: "Manage your store",
 };
 

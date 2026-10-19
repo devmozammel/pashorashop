@@ -84,8 +84,8 @@ export default function AdminSidebar({ isOpen }) {
         >
             {/* Logo */}
             <div className="h-16 flex items-center justify-center border-b shrink-0">
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                    Authentic Bazar
+                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-700">
+                    Pashora Shop
                 </span>
             </div>
 

@@ -8,8 +8,8 @@ import { serializePrisma } from "@/lib/serialize";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-    title: "Flash Sale | Authentic Bazar",
-    description: "Incredible deals for a limited time only! Don't miss out on our premium fashion collection at unbeatable prices.",
+    title: "Flash Sale | Pashora Shop",
+    description: "Incredible deals for a limited time only! Don't miss out on our premium collection at unbeatable prices.",
 };
 
 export default async function FlashSalePage() {

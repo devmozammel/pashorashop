@@ -24,9 +24,9 @@ async function getStoreSettings() {
         }
     } catch (_) { }
     return {
-        siteName: "Authentic Bazar Shop",
+        siteName: "Pashora Shop",
         whatsapp: "8801337744458",
-        supportEmail: "support@authenticbazar.shop",
+        supportEmail: "support@pashorashop.com",
         address: "Dhaka, Bangladesh",
         deliveryFeeInside: 70,
         deliveryFeeOutside: 130
@@ -35,7 +35,7 @@ async function getStoreSettings() {
 
 export default async function Footer() {
     const settings = await getStoreSettings();
-    const siteName = settings.siteName || "Authentic Bazar Shop";
+    const siteName = settings.siteName || "Pashora Shop";
     const whatsapp = settings.whatsapp || "8801337744458";
     const cleanPhone = whatsapp.replace(/[^0-9]/g, "");
     const deliveryInside = settings.deliveryFeeInside || 70;
