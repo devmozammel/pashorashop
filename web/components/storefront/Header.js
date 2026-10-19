@@ -206,6 +206,7 @@ export default function Header({ settings }) {
     const cartCount = mounted ? items.length : 0;
     const isSticky = settings?.enable_sticky_header !== "false";
     const supportPhone = settings?.support_phone || "+8801613134043";
+    const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || settings?.whatsapp_number || "8801337744458";
 
     return (
         <>
@@ -725,8 +726,8 @@ export default function Header({ settings }) {
                                     {categories.map((cat) => {
                                         const hasSubs = cat.subcategoryGroups?.length > 0;
                                         const isExpanded = expandedCat === cat.slug;
-                                        const meta = BN_CAT_DATA[cat.slug?.toLowerCase()] || { name: cat.name, icon: ShoppingBag };
-                                        const IconComp = meta.icon;
+                                        const meta = (cat.slug && BN_CAT_DATA[cat.slug.toLowerCase()]) || { name: cat.name, icon: ShoppingBag };
+                                        const IconComp = meta?.icon || ShoppingBag;
 
                                         return (
                                             <li key={cat.id} className="border-b border-gray-50 last:border-0">
