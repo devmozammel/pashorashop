@@ -15,9 +15,15 @@ export async function generateMetadata({ params }) {
     try {
         let { slug } = await params;
         if (slug) slug = slug.replace(/\.+$/, "");
-        const page = await prisma.landingPage.findUnique({ where: { slug } });
-        if (!page) return { title: "Not Found" };
-        return { title: page.heroTitle || page.title, description: page.heroDescription || "", alternates: { canonical: `/lp/${slug}` } };
+        let page = await prisma.landingPage.findUnique({ where: { slug } });
+        if (!page) {
+            const p = await prisma.product.findUnique({ where: { slug }, select: { name: true, shortDesc: true } });
+            if (p) {
+                return { title: `${p.name} | সেরা অফার`, description: p.shortDesc || "", alternates: { canonical: `/lp/${slug}` } };
+            }
+        }
+        if (!page) return { title: "Landing Page" };
+        return { title: `${page.heroTitle || page.title} | সেরা অফার`, description: page.heroDescription || "", alternates: { canonical: `/lp/${slug}` } };
     } catch { return { title: "Landing Page" }; }
 }
 
@@ -31,16 +37,44 @@ export default async function LandingPage({ params }) {
             where: { slug },
             include: { products: { orderBy: { sortOrder: "asc" }, include: { product: { include: { productImages: { orderBy: { sortOrder: "asc" }, take: 8 }, variants: true } } } } }
         });
-    } catch (err) { console.error("[LP]", err.message); notFound(); }
+    } catch (err) { console.error("[LP]", err.message); }
+
+    // Fallback: If no landing page entry exists yet, dynamically resolve from Product directly
+    if (!page) {
+        try {
+            const fallbackProd = await prisma.product.findUnique({
+                where: { slug },
+                include: { productImages: { orderBy: { sortOrder: "asc" }, take: 8 }, variants: true, category: true }
+            });
+            if (fallbackProd) {
+                page = {
+                    id: fallbackProd.id,
+                    title: fallbackProd.name,
+                    slug: fallbackProd.slug,
+                    heroTitle: fallbackProd.name,
+                    heroDescription: fallbackProd.shortDesc || "১০০% প্রিমিয়াম ও অরিজিনাল কোয়ালিটি পণ্য। দ্রুত হোম ডেলিভারি ও সারাদেশে ক্যাশ অন ডেলিভারি সুবিধা।",
+                    heroImageUrl: fallbackProd.productImages?.[0]?.url || (Array.isArray(fallbackProd.images) ? fallbackProd.images[0] : null),
+                    ctaText: "অর্ডার করুন",
+                    showTestimonials: true,
+                    products: [{ product: fallbackProd }]
+                };
+            }
+        } catch (err2) {
+            console.error("[LP Fallback]", err2.message);
+        }
+    }
+
     if (!page) notFound();
 
     const primaryProduct = page.products?.[0]?.product;
     const allProducts = page.products?.map((p) => p.product).filter(Boolean) || [];
 
     let waNumber = "8801613134043";
+    let siteName = "Pashora Shop";
     try {
         const { getDecryptedSettings } = await import("@/lib/settings");
         const s = await getDecryptedSettings();
+        if (s?.store_name) siteName = s.store_name;
         if (s?.whatsapp) { let c = s.whatsapp.replace(/\D/g, ""); if (c.startsWith("0")) c = "88" + c; if (!c.startsWith("88")) c = "88" + c; waNumber = c; }
     } catch { }
 
@@ -70,7 +104,7 @@ export default async function LandingPage({ params }) {
 
     let testimonials = [
         { name: "রাফসান আহমেদ", text: "প্রোডাক্টটা একদম অসাধারণ! দ্রুত ডেলিভারি এবং কোয়ালিটি দেখে মুগ্ধ। ১০০% রেকমেন্ড।", rating: 5, city: "ঢাকা" },
-        { name: "নাফিসা আক্তার", text: "এত কম দামে এই কোয়ালিটি আর পাইনি। Authentic Bazar সত্যিই বিশ্বস্ত।", rating: 5, city: "চট্টগ্রাম" },
+        { name: "নাফিসা আক্তার", text: `এত কম দামে এই কোয়ালিটি আর পাইনি। ${siteName} সত্যিই বিশ্বস্ত।`, rating: 5, city: "চট্টগ্রাম" },
         { name: "শাকিল ইসলাম", text: "প্যাকেজিং সুন্দর, পণ্য আসল। ক্যাশ অন ডেলিভারিতে পেয়েছি, ভরসা করা যায়।", rating: 5, city: "সিলেট" },
     ];
     if (page.testimonialsJson) {
@@ -206,7 +240,7 @@ export default async function LandingPage({ params }) {
     const generalFaqs = [
         {
             q: "পণ্যটি কি ১০০% আসল (Original)?",
-            a: "জি হ্যাঁ! Authentic Bazar শুধুমাত্র ১০০% খাঁটি ও জেনুইন কোয়ালিটির পণ্য সরবরাহ করে।"
+            a: `জি হ্যাঁ! ${siteName} শুধুমাত্র ১০০% খাঁটি ও জেনুইন কোয়ালিটির পণ্য সরবরাহ করে।`
         },
         {
             q: "ডেলিভারি চার্জ কত এবং কতদিনে পাবো?",
@@ -214,15 +248,36 @@ export default async function LandingPage({ params }) {
         },
         {
             q: "ডেলিভারির সময় কি চেক করে টাকা দেওয়া যাবে?",
-            a: "হ্যাঁ! আমাদের সারা বাংলাদেশে ক্যাশ অন ডেলিভারি সুবিধা রয়েছে। পণ্য হাতে পেয়ে চেক করে টাকা দেবেন।"
+            a: "হ্যাঁ! আমাদের সারা বাংলাদেশে ক্যাশ অন ডেলিভারি সুবিধা রয়েছে। ডেলিভারি ম্যানের সামনে পণ্য দেখে চেক করে টাকা পরিশোধ করবেন।"
         },
         {
             q: "পণ্য সমস্যাযুক্ত হলে কী করবো?",
-            a: "আমাদের রয়েছে ৩ দিনের সহজ রিটার্ন ও রিপ্লেসমেন্ট সুবিধা।"
+            a: "আমাদের রয়েছে সহজ রিটার্ন ও রিপ্লেসমেন্ট সুবিধা। কোনো সমস্যা পেলে সাথে সাথে কাস্টমার কেয়ারে জানালে দ্রুত সমাধান করা হবে।"
         }
     ];
 
-    const currentFaqs = isP9 ? p9Faqs : isX73 ? x73Faqs : isPowerBank ? powerBankFaqs : isHoco ? earbudsFaqs : generalFaqs;
+    let productCustomFaqs = null;
+    if (primaryProduct?.faqs) {
+        try {
+            const parsed = typeof primaryProduct.faqs === "string" ? JSON.parse(primaryProduct.faqs) : primaryProduct.faqs;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                productCustomFaqs = parsed.map(f => ({
+                    q: f.question || f.q || f.title,
+                    a: f.answer || f.a || f.desc
+                })).filter(f => f.q && f.a);
+            }
+        } catch (e) {
+            console.error("Error parsing product FAQs", e);
+        }
+    }
+
+    const currentFaqs = (productCustomFaqs && productCustomFaqs.length > 0)
+        ? productCustomFaqs
+        : isP9 ? p9Faqs 
+        : isX73 ? x73Faqs 
+        : isPowerBank ? powerBankFaqs 
+        : isHoco ? earbudsFaqs 
+        : generalFaqs;
 
     const WA_STYLE = { background: "linear-gradient(135deg, #25d366 0%, #128c7e 100%)", boxShadow: "0 10px 30px rgba(37,211,102,0.28)" };
 
@@ -395,17 +450,23 @@ export default async function LandingPage({ params }) {
                                 <div className="absolute inset-4 rounded-[2rem] blur-[70px] opacity-15"
                                     style={{ background: "linear-gradient(135deg,#25d366,#7c3aed)" }} />
 
-                                {/* Product card — bigger, full width */}
-                                <div className="relative rounded-[2.5rem] overflow-hidden border border-zinc-100 shadow-[0_28px_90px_rgba(0,0,0,0.13)] bg-white" style={{ aspectRatio: "1/1", minHeight: 320 }}>
-                                    {heroImg ? (
-                                        <Image src={heroImg} alt={primaryProduct?.name || page.title} fill priority className="object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-8xl bg-zinc-50">📦</div>
-                                    )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none" />
-                                </div>
+                                {/* Product image / interactive gallery */}
+                                {productImages && productImages.length > 1 ? (
+                                    <div className="relative z-10 w-full">
+                                        <LandingPageGallery images={productImages} productName={primaryProduct?.name || page.title} />
+                                    </div>
+                                ) : (
+                                    <div className="relative rounded-[2.5rem] overflow-hidden border border-zinc-100 shadow-[0_28px_90px_rgba(0,0,0,0.13)] bg-white" style={{ aspectRatio: "1/1", minHeight: 320 }}>
+                                        {heroImg ? (
+                                            <Image src={heroImg} alt={primaryProduct?.name || page.title} fill priority className="object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-8xl bg-zinc-50">📦</div>
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none" />
+                                    </div>
+                                )}
 
-                                {/* Discount badge only */}
+                                {/* Discount badge */}
                                 {discount && (
                                     <div className="absolute -top-3 -right-3 z-30 w-16 h-16 rounded-full flex flex-col items-center justify-center border-[3px] border-white shadow-lg bg-rose-600">
                                         <span className="text-white font-black text-sm leading-none">{discount}%</span>
@@ -455,6 +516,29 @@ export default async function LandingPage({ params }) {
                                         <p className="text-zinc-600 text-sm leading-relaxed">{f.desc}</p>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ══ RICH PRODUCT DETAILS & BENIFITS SHOWCASE ══ */}
+                {primaryProduct?.description && (
+                    <section className="py-14 md:py-20 bg-white border-t border-zinc-100">
+                        <div className="max-w-4xl mx-auto px-4 md:px-8">
+                            <div className="text-center mb-10">
+                                <span className="inline-block text-[11px] font-black tracking-[0.25em] uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-4 py-1.5 mb-3">
+                                    পণ্যের বিস্তারিত তথ্য ও বৈশিষ্ট্য
+                                </span>
+                                <h2 className="text-2xl md:text-3xl font-black text-zinc-950">
+                                    কেন এই পণ্যটি আপনার জন্য সেরা পছন্দ?
+                                </h2>
+                            </div>
+
+                            <div className="bg-zinc-50 border border-zinc-200/80 rounded-3xl p-6 md:p-10 shadow-sm leading-relaxed">
+                                <div 
+                                    className="prose prose-zinc max-w-none text-zinc-700 text-sm md:text-base space-y-4"
+                                    dangerouslySetInnerHTML={{ __html: primaryProduct.description }}
+                                />
                             </div>
                         </div>
                     </section>
@@ -1178,7 +1262,7 @@ export default async function LandingPage({ params }) {
 
                 {/* FOOTER */}
                 <footer className="py-5 border-t border-zinc-100 text-center text-xs text-zinc-400 bg-white">
-                    <p>© {new Date().getFullYear()} {process.env.NEXT_PUBLIC_SITE_NAME || "Authentic Bazar"}. সর্বস্বত্ব সংরক্ষিত।</p>
+                    <p>© {new Date().getFullYear()} {siteName || process.env.NEXT_PUBLIC_SITE_NAME || "Pashora Shop"}. সর্বস্বত্ব সংরক্ষিত।</p>
                     <div className="flex justify-center gap-4 mt-2">
                         <Link href="/privacy-policy" className="hover:text-zinc-700 transition-colors">Privacy Policy</Link>
                         <Link href="/terms" className="hover:text-zinc-700 transition-colors">Terms</Link>

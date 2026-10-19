@@ -83,6 +83,7 @@ model Product {
   sku           String?
   stock         Int      @default(0)
   images        Json?    // Legacy JSON images
+  faqs          Json?    // Structured FAQs from source
   
   categoryId    String?
   category      Category? @relation(fields: [categoryId], references: [id])
@@ -325,7 +326,7 @@ model LandingPage {
   isActive  Boolean  @default(true)
   
   heroTitle String?
-  heroDescription   String?
+  heroDescription   String? @db.Text
   heroBtn   String?
   heroLink  String?
   heroImageUrl String?

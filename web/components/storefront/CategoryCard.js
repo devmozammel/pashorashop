@@ -12,69 +12,100 @@ import {
     Home,
     Watch,
     ShoppingBag,
-    Footprints,
-    Heart,
     Flame,
     Crown,
     Gamepad2,
-    Dog
+    Dog,
+    CookingPot,
+    HeartPulse
 } from "lucide-react";
 
-// Fallback vector icons if image fails
+// Clean, concise Bengali labels (No redundant subtitles, zero ugly truncation)
+const BN_NAMES = {
+    "rice-cooker": "রাইস কুকার",
+    "gadgets": "স্মার্ট গ্যাজেট",
+    "phones-gadgets": "ফোন ও গ্যাজেট",
+    "skincare-grooming": "স্কিনকেয়ার",
+    "beauty-skincare": "বিউটি কেয়ার",
+    "fitness": "ফিটনেস",
+    "sports": "স্পোর্টস",
+    "grocery": "গ্রোসারি",
+    "sunnah-store": "সুন্নাহ স্টোর",
+    "lifestyle": "লাইফস্টাইল",
+    "men": "ছেলেদের ফ্যাশন",
+    "women": "মেয়েদের ফ্যাশন",
+    "teens": "তরুণদের ফ্যাশন",
+    "kids": "বাচ্চাদের কালেকশন",
+    "home-living": "হোম ও কিচেন",
+    "bags-backpacks": "ব্যাগ ও লাগেজ",
+    "perfumes-fragrances": "পারফিউম ও আতর",
+    "accessories": "ফ্যাশন এক্সেসরিজ",
+    "fashion-accessories": "ফ্যাশন এক্সেসরিজ",
+    "gaming-pc-gear": "গেমিং গিয়ার",
+    "pet-care-accessories": "পেট কেয়ার"
+};
+
 const FALLBACK_ICONS = {
-    "beauty-skincare": Sparkles,
-    "bags-backpacks": ShoppingBag,
-    "perfumes-fragrances": Flame,
-    "gaming-pc-gear": Gamepad2,
-    "pet-care-accessories": Dog,
+    "rice-cooker": CookingPot,
+    "gadgets": Smartphone,
     "phones-gadgets": Smartphone,
+    "skincare-grooming": Sparkles,
+    "beauty-skincare": Sparkles,
+    "fitness": Dumbbell,
+    "sports": Dumbbell,
     "men": Shirt,
     "women": Crown,
     "teens": Zap,
     "kids": Baby,
-    "sports": Dumbbell,
     "home-living": Home,
-    "accessories": Watch
+    "accessories": Watch,
+    "fashion-accessories": Watch,
+    "perfumes-fragrances": Flame,
+    "gaming-pc-gear": Gamepad2,
+    "pet-care-accessories": Dog
 };
 
 export default function CategoryCard({ cat }) {
-    const [imgError, setImgError] = useState(false);
     const slugKey = cat.slug?.toLowerCase() || "";
+    const displayName = BN_NAMES[slugKey] || cat.name;
+    const localImgPath = `/images/categories/${slugKey}.jpg`;
 
-    // Path to realistic 3D rendered icon
-    const icon3dPath = `/images/categories/${slugKey}.jpg`;
+    const [imgSrc, setImgSrc] = useState(localImgPath);
+    const [imgError, setImgError] = useState(false);
+
     const FallbackIcon = FALLBACK_ICONS[slugKey] || ShoppingBag;
+
+    const handleImgError = () => {
+        if (imgSrc === localImgPath && cat.image && cat.image !== localImgPath) {
+            setImgSrc(cat.image);
+        } else {
+            setImgError(true);
+        }
+    };
 
     return (
         <Link
-            href={`/category/${cat.slug}`}
-            className="group relative flex flex-col items-center justify-between p-4 sm:p-5 rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_14px_35px_rgba(0,0,0,0.09)] hover:-translate-y-1.5 transition-all duration-300 overflow-hidden"
+            href={`/shop?category=${cat.slug}`}
+            className="group bg-white rounded-2xl border border-gray-200/90 hover:border-emerald-600 hover:shadow-sm transition-all p-3 sm:p-4 flex flex-col items-center text-center justify-between min-h-[140px] sm:min-h-[155px]"
         >
-            {/* Ambient subtle glow background */}
-            <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 pointer-events-none" />
-
-            {/* 3D Realistic Icon Container */}
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-gray-50 to-gray-100/80 dark:from-gray-800/90 dark:to-gray-800 border border-gray-100/80 dark:border-gray-700/60 flex items-center justify-center overflow-hidden p-1.5 shadow-sm group-hover:scale-105 group-hover:border-gray-200 transition-all duration-300">
+            {/* Circular Image Container (Clean & Professional) */}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 border border-gray-100/90 flex items-center justify-center overflow-hidden p-2 group-hover:scale-105 transition-transform shrink-0 shadow-2xs">
                 {!imgError ? (
                     <img
-                        src={icon3dPath}
-                        alt={cat.name}
-                        className="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-300"
-                        onError={() => setImgError(true)}
+                        src={imgSrc}
+                        alt={displayName}
+                        className="w-full h-full object-contain"
+                        onError={handleImgError}
                     />
                 ) : (
-                    <FallbackIcon className="w-8 h-8 sm:w-9 sm:h-9 text-gray-800 dark:text-gray-200 stroke-[2]" />
+                    <FallbackIcon className="w-8 h-8 sm:w-9 sm:h-9 text-emerald-700 stroke-[1.8]" />
                 )}
             </div>
 
-            {/* Title & Explore Hint */}
-            <div className="mt-3.5 flex flex-col items-center text-center w-full z-10">
-                <span className="text-xs sm:text-sm font-extrabold text-gray-900 dark:text-gray-100 group-hover:text-black dark:group-hover:text-white transition-colors line-clamp-1">
-                    {cat.name}
-                </span>
-
-                <span className="mt-1 text-[10px] font-bold tracking-wider uppercase text-gray-400 dark:text-gray-500 group-hover:text-black dark:group-hover:text-gray-200 transition-colors flex items-center gap-1">
-                    Explore &rarr;
+            {/* Single Clean Title (No duplicate subtitle, natural 2-line wrap) */}
+            <div className="mt-2.5 flex items-center justify-center w-full min-h-[34px]">
+                <span className="text-xs sm:text-[13px] font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors text-center leading-tight line-clamp-2 px-0.5">
+                    {displayName}
                 </span>
             </div>
         </Link>

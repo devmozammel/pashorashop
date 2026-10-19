@@ -37,6 +37,32 @@
   }
 }
 
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.offer-gradient {
+  background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+}
+
 /* ============================================
    BASE (CSS Variables)
    ============================================ */

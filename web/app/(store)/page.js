@@ -148,26 +148,30 @@ export default async function HomePage() {
 
 
     return (
-        <div className="flex flex-col gap-16 pb-16">
+        <div className="flex flex-col gap-10 md:gap-12 pb-16">
             {/* ── HERO SECTION ── */}
             <Hero config={config} />
 
-            {/* ── CATEGORIES — Mobile scroll + Desktop grid ── */}
+            {/* ── CATEGORIES ── */}
             {categories.length > 0 && (
                 <section className="container px-4">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                                Shop by Category
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1 h-4 sm:h-5 bg-emerald-600 rounded-full" />
+                            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
+                                ক্যাটাগরি
                             </h2>
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Browse authentic collections by top categories
-                            </p>
                         </div>
+                        <Link
+                            href="/shop"
+                            className="text-xs sm:text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                        >
+                            সকল ক্যাটাগরি →
+                        </Link>
                     </div>
 
                     {/* Mobile: horizontal scroll */}
-                    <div className="flex sm:hidden overflow-x-auto gap-3.5 pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
+                    <div className="flex sm:hidden overflow-x-auto gap-3 pb-2 no-scrollbar scroll-smooth -mx-4 px-4">
                         {categories.map((cat) => (
                             <div key={cat.id} className="flex-shrink-0 w-28">
                                 <CategoryCard cat={cat} />
@@ -176,7 +180,7 @@ export default async function HomePage() {
                     </div>
 
                     {/* Tablet & Desktop: grid */}
-                    <div className="hidden sm:grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-5">
+                    <div className="hidden sm:grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 sm:gap-4">
                         {categories.map((cat) => (
                             <CategoryCard key={cat.id} cat={cat} />
                         ))}
@@ -187,53 +191,117 @@ export default async function HomePage() {
             {/* ── HOT PRODUCTS SECTION ── */}
             {hotProducts.length > 0 && (
                 <section id="hot-products" className="container px-4 scroll-mt-24">
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-red-500/10 p-5 md:p-8 border border-orange-200/60 dark:border-orange-500/20 shadow-sm">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 bg-gradient-to-tr from-orange-500 to-red-600 text-white rounded-2xl shadow-lg shadow-orange-500/30 flex items-center justify-center animate-pulse">
-                                    <Flame className="w-6 h-6 fill-white" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h2 className="text-2xl md:text-3xl font-black tracking-tight text-gray-900 dark:text-white">
-                                            Hot Products
-                                        </h2>
-                                        <span className="bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow-sm">
-                                            🔥 HOT DEALS
-                                        </span>
-                                    </div>
-                                    <p className="text-xs md:text-sm text-muted-foreground mt-0.5 font-medium">
-                                        সবচেয়ে জনপ্রিয় ও হট অফারের সেরা পণ্যসমূহ
-                                    </p>
-                                </div>
-                            </div>
-                            <Link 
-                                href="/shop?featured=true" 
-                                className="inline-flex items-center gap-1.5 text-xs md:text-sm font-bold text-red-600 hover:text-red-700 bg-white dark:bg-card px-4 py-2 rounded-full border border-red-100 shadow-sm hover:shadow transition-all self-start sm:self-auto"
-                            >
-                                View All Deals →
-                            </Link>
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1 h-4 sm:h-5 bg-rose-600 rounded-full" />
+                            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
+                                হট ও ট্রেন্ডিং প্রোডাক্ট
+                            </h2>
                         </div>
+                        <Link 
+                            href="/shop?featured=true" 
+                            className="text-xs sm:text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                        >
+                            সব দেখুন →
+                        </Link>
+                    </div>
 
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-                            {hotProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} isHot={true} />
-                            ))}
-                        </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+                        {hotProducts.map((product) => (
+                            <ProductCard key={product.id} product={product} isHot={true} />
+                        ))}
                     </div>
                 </section>
             )}
 
-            {/* Featured */}
+            {/* ── PROMOTIONAL DUAL BANNER STRIP ── */}
+            <section className="container px-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Banner 1: Organic Green Tea */}
+                    <div className="relative overflow-hidden rounded-xl border border-emerald-150 bg-gradient-to-r from-emerald-50/80 via-teal-50/40 to-white p-5 sm:p-6 flex items-center justify-between group hover:shadow-xs transition-all">
+                        <div className="relative z-10 max-w-[62%] sm:max-w-[65%] space-y-1.5">
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-700 text-white">
+                                ১০০% অর্গানিক চা
+                            </span>
+                            <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+                                প্রিমিয়াম কাজী &amp; কাজী গ্রিন টি
+                            </h3>
+                            <p className="text-xs text-gray-600 line-clamp-2">
+                                সতেজতা ও সুস্বাস্থ্যের নির্ভরযোগ্য সঙ্গী — শতভাগ খাঁটি ও তরতাজা টি পাতার কালেকশন।
+                            </p>
+                            <div className="pt-1.5">
+                                <Link
+                                    href="/shop"
+                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-white border border-emerald-200 hover:bg-emerald-600 hover:text-white px-3.5 py-2 rounded-lg transition-colors shadow-xs"
+                                >
+                                    অর্ডার করুন →
+                                </Link>
+                            </div>
+                        </div>
+                        <div className="relative w-28 sm:w-36 h-28 sm:h-36 shrink-0 flex items-center justify-center">
+                            <img
+                                src="https://res.cloudinary.com/dqijzckfb/image/upload/v1781383822/authentic-bazar/xenfatvpgitkyfi85qie.jpg"
+                                alt="কাজী & কাজী গ্রিন টি"
+                                className="w-full h-full object-contain rounded-lg drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Banner 2: Kids Die-cast Racing Cars */}
+                    <div className="relative overflow-hidden rounded-xl border border-gray-200/90 bg-gradient-to-r from-slate-50 via-zinc-50/60 to-white p-5 sm:p-6 flex items-center justify-between group hover:shadow-xs transition-all">
+                        <div className="relative z-10 max-w-[62%] sm:max-w-[65%] space-y-1.5">
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-600 text-white">
+                                বাচ্চাদের বিশেষ উপহার
+                            </span>
+                            <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+                                মেটাল ডাই-কাস্ট রেসিং কার
+                            </h3>
+                            <p className="text-xs text-gray-600 line-clamp-2">
+                                প্রিমিয়াম ফিনিশ ও মজবুত মেটাল বডি — আকর্ষণীয় স্পোর্টস সুপারকার মডেল সিরিজ।
+                            </p>
+                            <div className="pt-1.5">
+                                <Link
+                                    href="/shop"
+                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-800 bg-white border border-gray-200 hover:bg-rose-600 hover:text-white px-3.5 py-2 rounded-lg transition-colors shadow-xs"
+                                >
+                                    কালেকশন দেখুন →
+                                </Link>
+                            </div>
+                        </div>
+                        <div className="relative w-28 sm:w-36 h-28 sm:h-36 shrink-0 flex items-center justify-center">
+                            <img
+                                src="https://res.cloudinary.com/dqijzckfb/image/upload/v1781179124/authentic-bazar/gnommxeb4blm3fs60eow.jpg"
+                                alt="মেটাল ডাই-কাস্ট রেসিং কার"
+                                className="w-full h-full object-contain rounded-lg drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── FLASH SALE (If Active) ── */}
+            {config?.showFlashSale !== false && flashSale && flashSaleProducts.length > 0 && (
+                <FlashSale products={flashSaleProducts} endTime={flashSale.endsAt} title={flashSale.title} />
+            )}
+
+            {/* ── FEATURED PRODUCTS ── */}
             {config?.showFeatured !== false && featuredProducts.length > 0 && (
                 <section className="container px-4">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-2xl font-bold tracking-tight">Featured Products</h2>
-                        <Link href="/shop?featured=true" className="text-sm font-medium underline underline-offset-4 text-purple-700">
-                            View All
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1 h-4 sm:h-5 bg-emerald-600 rounded-full" />
+                            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
+                                ফিচার্ড প্রোডাক্ট
+                            </h2>
+                        </div>
+                        <Link 
+                            href="/shop?featured=true" 
+                            className="text-xs sm:text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                        >
+                            সব দেখুন →
                         </Link>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
                         {featuredProducts.map((product) => (
                             <ProductCard key={product.id} product={product} />
                         ))}
@@ -241,21 +309,24 @@ export default async function HomePage() {
                 </section>
             )}
 
-            {/* Flash Sale */}
-            {config?.showFlashSale !== false && flashSale && flashSaleProducts.length > 0 && (
-                <FlashSale products={flashSaleProducts} endTime={flashSale.endsAt} title={flashSale.title} />
-            )}
-
-            {/* New Arrivals */}
+            {/* ── NEW ARRIVALS ── */}
             {config?.showNewArrivals !== false && newArrivals.length > 0 && (
                 <section className="container px-4">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-2xl font-bold tracking-tight">New Arrivals</h2>
-                        <Link href="/shop?sort=newest" className="text-sm font-medium underline underline-offset-4 text-purple-700">
-                            View All
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1 h-4 sm:h-5 bg-blue-600 rounded-full" />
+                            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
+                                নতুন পণ্য (New Arrivals)
+                            </h2>
+                        </div>
+                        <Link 
+                            href="/shop?sort=newest" 
+                            className="text-xs sm:text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                        >
+                            সব দেখুন →
                         </Link>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
                         {newArrivals.map((product) => (
                             <ProductCard key={product.id} product={product} />
                         ))}

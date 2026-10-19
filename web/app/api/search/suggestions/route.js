@@ -23,12 +23,14 @@ export async function GET(request) {
                 { description: { contains: term } },
                 { sku: { contains: term } },
                 { slug: { contains: term } },
+                { metaKeywords: { contains: term } },
+                { metaTitle: { contains: term } },
                 { category: { name: { contains: term } } },
                 { subcategoryGroup: { name: { contains: term } } },
             ]
         }));
 
-        const [products, categories] = await Promise.all([
+        const [rawProducts, categories] = await Promise.all([
             prisma.product.findMany({
                 where: {
                     AND: [
@@ -52,7 +54,7 @@ export async function GET(request) {
                     category: { select: { name: true, slug: true } },
                 },
                 orderBy: { createdAt: 'desc' },
-                take: 8
+                take: 16
             }),
 
             prisma.category.findMany({
@@ -64,9 +66,27 @@ export async function GET(request) {
                     isActive: true
                 },
                 select: { id: true, name: true, slug: true },
-                take: 4
+                take: 5
             })
         ]);
+
+        // Prioritize products whose name starts with or directly contains the search query
+        const qLower = query.toLowerCase();
+        const products = [...rawProducts].sort((a, b) => {
+            const aName = (a.name || '').toLowerCase();
+            const bName = (b.name || '').toLowerCase();
+            const aStarts = aName.startsWith(qLower);
+            const bStarts = bName.startsWith(qLower);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+
+            const aIncludes = aName.includes(qLower);
+            const bIncludes = bName.includes(qLower);
+            if (aIncludes && !bIncludes) return -1;
+            if (!aIncludes && bIncludes) return 1;
+
+            return 0;
+        }).slice(0, 10);
 
         return NextResponse.json({ products, categories });
     } catch (error) {
@@ -74,3 +94,4 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+

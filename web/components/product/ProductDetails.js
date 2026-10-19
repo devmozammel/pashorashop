@@ -246,13 +246,6 @@ export default function ProductDetails({
             return;
         }
 
-        // Auth Guard: Check session before proceeding to checkout
-        if (!session) {
-            toast.error("Please login to complete your purchase");
-            router.push("/auth/login?callbackUrl=/checkout");
-            return;
-        }
-
         addItem(product, selectedVariant, quantity);
         router.push("/checkout");
     };
@@ -353,43 +346,46 @@ export default function ProductDetails({
             )}
 
             {/* Actions */}
-            <div className="flex flex-col gap-4">
-                <div className="flex gap-4">
+            <div className="flex flex-col gap-3">
+                {/* Quantity + Add to Cart Row */}
+                <div className="flex gap-3">
                     {/* Quantity */}
-                    <div className="flex items-center border border-border rounded-md shadow-sm">
+                    <div className="flex items-center border border-gray-200 rounded-xl bg-gray-50/50">
                         <button
                             onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                            className="p-3 hover:bg-secondary transition-colors"
+                            className="p-3 hover:bg-gray-100 transition-colors rounded-l-xl text-gray-700"
                             aria-label="Decrease quantity"
                         >
                             <Minus className="w-4 h-4" />
                         </button>
-                        <span className="w-12 text-center font-semibold text-lg">{quantity}</span>
+                        <span className="w-10 text-center font-bold text-base text-gray-900">{quantity}</span>
                         <button
                             onClick={() => setQuantity(q => q + 1)}
-                            className="p-3 hover:bg-secondary transition-colors"
+                            className="p-3 hover:bg-gray-100 transition-colors rounded-r-xl text-gray-700"
                             aria-label="Increase quantity"
                         >
                             <Plus className="w-4 h-4" />
                         </button>
                     </div>
 
-                    {/* Add to Cart (Desktop) */}
+                    {/* Add to Cart */}
                     <Button
                         size="lg"
+                        variant="outline"
                         onClick={handleAddToCart}
-                        className="flex-1 text-base font-bold bg-primary hover:bg-primary/90 shadow-md h-auto py-3 md:flex hidden"
+                        className="flex-1 text-sm md:text-base font-bold border-gray-300 hover:bg-gray-50 text-gray-800 rounded-xl h-12 flex items-center justify-center gap-2"
                     >
-                        <ShoppingCart className="w-5 h-5 mr-2" />
-                        Add to Cart
+                        <ShoppingCart className="w-4 h-4" />
+                        কার্টে যোগ করুন
                     </Button>
 
+                    {/* Wishlist */}
                     <Button
                         size="icon"
                         variant="outline"
                         className={cn(
-                            "h-auto w-12 border-border hover:bg-secondary md:flex hidden",
-                            isInWishlist && "text-red-500 hover:text-red-600 border-red-200 bg-red-50 hover:bg-red-100"
+                            "h-12 w-12 border-gray-200 rounded-xl hover:bg-gray-50 shrink-0",
+                            isInWishlist && "text-rose-600 border-rose-200 bg-rose-50 hover:bg-rose-100"
                         )}
                         onClick={toggleWishlist}
                         disabled={isWishlistLoading}
@@ -398,74 +394,81 @@ export default function ProductDetails({
                     </Button>
                 </div>
 
+                {/* Primary Buy Now / অর্ডার করুন Button */}
+                <Button
+                    size="lg"
+                    className="w-full text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg rounded-xl h-12 transition-all flex items-center justify-center gap-2"
+                    onClick={handleBuyNow}
+                >
+                    <CheckCircle2 className="w-5 h-5" />
+                    {product.isPreOrder ? "প্রি-অর্ডার করুন" : "অর্ডার করুন (ক্যাশ অন ডেলিভারি)"}
+                </Button>
+
                 {/* WhatsApp Order Button */}
                 {((selectedVariant ? selectedVariant.stock : product.stock) > 0) && (
                     <Button
                         size="lg"
-                        className="w-full text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm h-12 flex items-center justify-center gap-2"
+                        variant="outline"
+                        className="w-full text-sm font-semibold border-emerald-200 text-emerald-800 bg-emerald-50/60 hover:bg-emerald-100/80 rounded-xl h-11 flex items-center justify-center gap-2 transition-colors"
                         onClick={onWhatsAppOrderInit}
                     >
-                        <svg className="w-5 h-5 fill-current" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-4 h-4 fill-emerald-600" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
                             <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
                         </svg>
-                        হোয়াটসঅ্যাপে অর্ডার করুন
+                        হোয়াটসঅ্যাপে সরাসরি অর্ডার
                     </Button>
                 )}
-
-                {/* Buy Now - No Link wrapper, onClick push router */}
-                <Button
-                    size="lg"
-                    variant="secondary"
-                    className="w-full text-base font-bold bg-green-600 hover:bg-green-700 text-white shadow-sm h-12"
-                    onClick={handleBuyNow}
-                >
-                    {product.isPreOrder ? "Pre-Order Now" : "Buy Now"}
-                </Button>
             </div>
 
-            <div className="border-t border-border mt-4 pt-6 text-sm text-muted-foreground flex justify-between items-center">
-                <span>SKU: <span className="font-mono text-foreground">{selectedVariant?.sku || product.sku || 'N/A'}</span></span>
-                <button onClick={handleShare} className="md:hidden flex items-center gap-1 hover:text-foreground">
-                    <Share2 className="w-4 h-4" /> Share
+            <div className="border-t border-gray-150 pt-4 text-xs text-gray-500 flex justify-between items-center">
+                <span>প্রোডাক্ট কোড (SKU): <span className="font-mono text-gray-900 font-semibold">{selectedVariant?.sku || product.sku || product.id.slice(-8)}</span></span>
+                <button onClick={handleShare} className="flex items-center gap-1.5 hover:text-gray-900 font-medium">
+                    <Share2 className="w-3.5 h-3.5" /> শেয়ার করুন
                 </button>
             </div>
 
-            {/* Premium Trust & Info Blocks */}
-            <div className="mt-6 border-t border-b border-gray-100 py-4 grid grid-cols-3 gap-2 md:gap-4">
-                {/* Delivery */}
-                <div className="flex flex-col items-center text-center p-1">
-                    <Truck className="w-5 h-5 text-gray-600 mb-1.5" />
-                    <h5 className="font-bold text-gray-900 text-[11px] md:text-xs">Fast Delivery</h5>
-                    <p className="text-[10px] text-gray-500 mt-1 leading-normal hidden md:block">
-                        Dhaka: 2-3 days (70 BDT)<br />Outside: 3-5 days (130 BDT)
-                    </p>
-                    <p className="text-[9px] text-gray-400 mt-0.5 leading-tight md:hidden">
-                        2-5 Days Delivery
-                    </p>
-                </div>
+            {/* 4 Trust & Guarantee Highlights (Shobkichu Style) */}
+            <div className="rounded-xl border border-gray-200/90 bg-gray-50/60 p-4 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex items-start gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 shrink-0 mt-0.5">
+                            <Truck className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h5 className="font-bold text-gray-900 text-xs">দ্রুত হোম ডেলিভারি</h5>
+                            <p className="text-[11px] text-gray-500 leading-snug">ঢাকায় ২৪ ঘণ্টা, সারাদেশে ২-৩ দিন</p>
+                        </div>
+                    </div>
 
-                {/* Returns */}
-                <div className="flex flex-col items-center text-center p-1 border-l border-r border-gray-100">
-                    <RotateCcw className="w-5 h-5 text-gray-600 mb-1.5" />
-                    <h5 className="font-bold text-gray-900 text-[11px] md:text-xs">2 Days Returns</h5>
-                    <p className="text-[10px] text-gray-500 mt-1 leading-normal hidden md:block">
-                        Easy replacement. Return charge paid by customer.
-                    </p>
-                    <p className="text-[9px] text-gray-400 mt-0.5 leading-tight md:hidden">
-                        Return charge by customer
-                    </p>
-                </div>
+                    <div className="flex items-start gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 shrink-0 mt-0.5">
+                            <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h5 className="font-bold text-gray-900 text-xs">ক্যাশ অন ডেলিভারি</h5>
+                            <p className="text-[11px] text-gray-500 leading-snug">পণ্য হাতে পেয়ে চেক করে মূল্য দিন</p>
+                        </div>
+                    </div>
 
-                {/* Quality */}
-                <div className="flex flex-col items-center text-center p-1">
-                    <ShieldCheck className="w-5 h-5 text-gray-600 mb-1.5" />
-                    <h5 className="font-bold text-gray-900 text-[11px] md:text-xs">100% Authentic</h5>
-                    <p className="text-[10px] text-gray-500 mt-1 leading-normal hidden md:block">
-                        We guarantee the premium quality of every product.
-                    </p>
-                    <p className="text-[9px] text-gray-400 mt-0.5 leading-tight md:hidden">
-                        Guaranteed Quality
-                    </p>
+                    <div className="flex items-start gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 shrink-0 mt-0.5">
+                            <RotateCcw className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h5 className="font-bold text-gray-900 text-xs">৭ দিনের রিটার্ন</h5>
+                            <p className="text-[11px] text-gray-500 leading-snug">সহজ ও দ্রুত রিপ্লেসমেন্ট নিশ্চয়তা</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 shrink-0 mt-0.5">
+                            <ShieldCheck className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h5 className="font-bold text-gray-900 text-xs">১০০% অরিজিনাল</h5>
+                            <p className="text-[11px] text-gray-500 leading-snug">অথেন্টিক ও প্রিমিয়াম কোয়ালিটি</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 

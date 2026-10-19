@@ -26,7 +26,7 @@ export default async function StoreLayout({ children }) {
             <Header settings={settings} />
             <CartDrawer />
 
-            <main className="flex-1 container mx-auto px-4 py-8 pb-32 md:pb-12">
+            <main className="flex-1 w-full pb-28 md:pb-12">
                 {children}
             </main>
 

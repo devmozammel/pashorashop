@@ -11,6 +11,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'graph.facebook.com' },
       // Steadfast courier portal
       { protocol: 'https', hostname: 'portal.packzy.com' },
+      // Shobkichu CDN & Assets
+      { protocol: 'https', hostname: 'db.shobkichu.com.bd' },
+      { protocol: 'https', hostname: 'shobkichu.com.bd' },
     ],
   },
   async redirects() {

@@ -184,7 +184,7 @@ export default async function ProductPage(props) {
     });
 
     return (
-        <div className="container px-4 py-8 md:px-6 md:py-12 pb-24 md:pb-12">
+        <div className="container px-4 py-4 md:px-6 md:py-8 pb-24 md:pb-12 max-w-7xl mx-auto">
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -193,6 +193,21 @@ export default async function ProductPage(props) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
             />
+
+            {/* Breadcrumb Navigation (Shobkichu Style) */}
+            <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-1.5 text-xs text-gray-500 overflow-x-auto no-scrollbar py-1">
+                <Link href="/" className="hover:text-emerald-700 transition-colors shrink-0">হোম</Link>
+                <span>/</span>
+                {product.category && (
+                    <>
+                        <Link href={`/shop?category=${product.category.slug}`} className="hover:text-emerald-700 transition-colors shrink-0">
+                            {product.category.name}
+                        </Link>
+                        <span>/</span>
+                    </>
+                )}
+                <span className="text-gray-900 font-medium truncate max-w-xs sm:max-w-md">{product.name}</span>
+            </nav>
             {landingPage && (
                 <div className="mb-8 p-5 md:p-6 bg-gradient-to-r from-zinc-950 via-emerald-950 to-zinc-950 text-white rounded-3xl shadow-xl border border-emerald-500/40 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4">

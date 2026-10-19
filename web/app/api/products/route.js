@@ -14,7 +14,7 @@ export async function GET(req) {
         const subItemId = searchParams.get("subItemId");
         const minPrice = searchParams.get("minPrice");
         const maxPrice = searchParams.get("maxPrice");
-        const search = searchParams.get("search"); // name or sku
+        const search = searchParams.get("search") || searchParams.get("q"); // name, sku or description
         const size = searchParams.get("size");
         const color = searchParams.get("color");
         const isFeatured = searchParams.get("isFeatured");
