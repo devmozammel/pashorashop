@@ -24,7 +24,7 @@ export default function Hero({ config }) {
             id: 3,
             title: "B72-B ট্রু ওয়্যারলেস ব্লুটুথ ইয়ারবাডস",
             link: "/product/b72-b-true-wireless-bluetooth-earbuds",
-            bannerImage: "/banners/banner-b72-earbuds.png",
+            bannerImage: "/banners/banner-b72-earbuds.jpg",
         }
     ];
 
