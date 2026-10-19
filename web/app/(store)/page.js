@@ -219,61 +219,61 @@ export default async function HomePage() {
             {/* ── PROMOTIONAL DUAL BANNER STRIP ── */}
             <section className="container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Banner 1: Organic Green Tea */}
-                    <div className="relative overflow-hidden rounded-xl border border-emerald-150 bg-gradient-to-r from-emerald-50/80 via-teal-50/40 to-white p-5 sm:p-6 flex items-center justify-between group hover:shadow-xs transition-all">
+                    {/* Banner 1: Electric Cooker & Grinder Combo */}
+                    <div className="relative overflow-hidden rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-white p-5 sm:p-6 flex items-center justify-between group hover:shadow-xs transition-all">
                         <div className="relative z-10 max-w-[62%] sm:max-w-[65%] space-y-1.5">
-                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-700 text-white">
-                                ১০০% অর্গানিক চা
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-600 text-white">
+                                মেগা কম্বো ৩৫% ছাড়
                             </span>
                             <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-                                প্রিমিয়াম কাজী &amp; কাজী গ্রিন টি
+                                ইলেকট্রিক কুকার ও গ্রাইন্ডার কম্বো
                             </h3>
                             <p className="text-xs text-gray-600 line-clamp-2">
-                                সতেজতা ও সুস্বাস্থ্যের নির্ভরযোগ্য সঙ্গী — শতভাগ খাঁটি ও তরতাজা টি পাতার কালেকশন।
+                                ঝটপট রান্না ও মসলা গুঁড়ো করার সুপার কম্বো — প্রিমিয়াম কোয়ালিটি ও বিদ্যুৎ সাশ্রয়ী!
                             </p>
                             <div className="pt-1.5">
                                 <Link
-                                    href="/shop"
-                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-white border border-emerald-200 hover:bg-emerald-600 hover:text-white px-3.5 py-2 rounded-lg transition-colors shadow-xs"
+                                    href="/product/electric-cooker-and-grinder-combo-offer"
+                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-900 bg-white border border-amber-200 hover:bg-amber-600 hover:text-white px-3.5 py-2 rounded-lg transition-colors shadow-xs"
                                 >
-                                    অর্ডার করুন →
+                                    অর্ডার করুন (৳১,৪৯৯) →
                                 </Link>
                             </div>
                         </div>
                         <div className="relative w-28 sm:w-36 h-28 sm:h-36 shrink-0 flex items-center justify-center">
                             <img
-                                src="https://res.cloudinary.com/dqijzckfb/image/upload/v1781383822/authentic-bazar/xenfatvpgitkyfi85qie.jpg"
-                                alt="কাজী & কাজী গ্রিন টি"
+                                src="https://db.shobkichu.com.bd/storage/v1/object/public/products/98ce9945-816c-422d-8ade-fec4bb4291d4.wm.webp"
+                                alt="ইলেকট্রিক কুকার ও গ্রাইন্ডার কম্বো"
                                 className="w-full h-full object-contain rounded-lg drop-shadow-md group-hover:scale-105 transition-transform duration-300"
                             />
                         </div>
                     </div>
 
-                    {/* Banner 2: Kids Die-cast Racing Cars */}
-                    <div className="relative overflow-hidden rounded-xl border border-gray-200/90 bg-gradient-to-r from-slate-50 via-zinc-50/60 to-white p-5 sm:p-6 flex items-center justify-between group hover:shadow-xs transition-all">
+                    {/* Banner 2: Prestige Electric Cooker */}
+                    <div className="relative overflow-hidden rounded-xl border border-emerald-200/90 bg-gradient-to-r from-emerald-50/90 via-teal-50/40 to-white p-5 sm:p-6 flex items-center justify-between group hover:shadow-xs transition-all">
                         <div className="relative z-10 max-w-[62%] sm:max-w-[65%] space-y-1.5">
-                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-600 text-white">
-                                বাচ্চাদের বিশেষ উপহার
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-600 text-white">
+                                হট ডিল ৩৩% ছাড়
                             </span>
                             <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-                                মেটাল ডাই-কাস্ট রেসিং কার
+                                প্রেস্টিজ মাল্টি ইলেকট্রিক কুকার
                             </h3>
                             <p className="text-xs text-gray-600 line-clamp-2">
-                                প্রিমিয়াম ফিনিশ ও মজবুত মেটাল বডি — আকর্ষণীয় স্পোর্টস সুপারকার মডেল সিরিজ।
+                                ভাত, স্যুপ, নুডুলস ও ডিম সেদ্ধ করুন এক নিমিষেই — নিরাপদ অটো-কাট ও নন-স্টিক পট!
                             </p>
                             <div className="pt-1.5">
                                 <Link
-                                    href="/shop"
-                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-800 bg-white border border-gray-200 hover:bg-rose-600 hover:text-white px-3.5 py-2 rounded-lg transition-colors shadow-xs"
+                                    href="/product/prestige-electric-cooker"
+                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-900 bg-white border border-emerald-200 hover:bg-emerald-600 hover:text-white px-3.5 py-2 rounded-lg transition-colors shadow-xs"
                                 >
-                                    কালেকশন দেখুন →
+                                    অর্ডার করুন (৳৯৯৯) →
                                 </Link>
                             </div>
                         </div>
                         <div className="relative w-28 sm:w-36 h-28 sm:h-36 shrink-0 flex items-center justify-center">
                             <img
-                                src="https://res.cloudinary.com/dqijzckfb/image/upload/v1781179124/authentic-bazar/gnommxeb4blm3fs60eow.jpg"
-                                alt="মেটাল ডাই-কাস্ট রেসিং কার"
+                                src="https://db.shobkichu.com.bd/storage/v1/object/public/products/3b1d001b-68c0-410e-a9c3-d35a1aab12b8.wm.webp"
+                                alt="প্রেস্টিজ মাল্টি ইলেকট্রিক কুকার"
                                 className="w-full h-full object-contain rounded-lg drop-shadow-md group-hover:scale-105 transition-transform duration-300"
                             />
                         </div>
