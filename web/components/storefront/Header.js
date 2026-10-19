@@ -216,23 +216,7 @@ export default function Header({ settings }) {
                     "bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] border-b border-gray-100"
                 )}
             >
-                {/* ── TIER 1: Top Announcement Marquee Ticker ── */}
-                <div className="hidden md:flex bg-gray-900 text-gray-100 text-[11px] border-b border-gray-800 h-8 items-center overflow-hidden">
-                    <div className="flex-1 overflow-hidden relative">
-                        <div className="flex whitespace-nowrap animate-marquee gap-14 font-medium tracking-wide">
-                            <span className="text-gray-200">🛵 দেশজুড়ে ক্যাশ অন ডেলিভারি</span>
-                            <span className="text-gray-200">✅ ১০০% অরিজিনাল প্রোডাক্টের গ্যারান্টি</span>
-                            <span className="text-gray-200">⚡ দ্রুত ডেলিভারি — ঢাকায় ২৪ ঘণ্টা</span>
-                            <span className="text-gray-200">🎁 ৳৯৯৯+ অর্ডারে ফ্রি ডেলিভারি</span>
-                            <span className="text-gray-200">🔒 নিরাপদ পেমেন্ট — বিকাশ, নগদ ও কার্ড গ্রহণযোগ্য</span>
-                            <span className="text-gray-200">🛵 দেশজুড়ে ক্যাশ অন ডেলিভারি</span>
-                            <span className="text-gray-200">✅ ১০০% অরিজিনাল প্রোডাক্টের গ্যারান্টি</span>
-                            <span className="text-gray-200">⚡ দ্রুত ডেলিভারি — ঢাকায় ২৪ ঘণ্টা</span>
-                            <span className="text-gray-200">🎁 ৳৯৯৯+ অর্ডারে ফ্রি ডেলিভারি</span>
-                            <span className="text-gray-200">🔒 নিরাপদ পেমেন্ট — বিকাশ, নগদ ও কার্ড গ্রহণযোগ্য</span>
-                        </div>
-                    </div>
-                </div>
+
 
                 {/* ── TIER 2: Main Header Row ── */}
                 <div className={cn(
