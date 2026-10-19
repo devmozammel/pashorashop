@@ -219,31 +219,31 @@ export default async function HomePage() {
             {/* ── PROMOTIONAL DUAL BANNER STRIP ── */}
             <section className="container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Banner 1: Electric Cooker & Grinder Combo */}
+                    {/* Banner 1: Silver Crest Electric Grinder */}
                     <div className="relative overflow-hidden rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-white p-5 sm:p-6 flex items-center justify-between group hover:shadow-xs transition-all">
                         <div className="relative z-10 max-w-[62%] sm:max-w-[65%] space-y-1.5">
                             <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-600 text-white">
-                                মেগা কম্বো ৩৫% ছাড়
+                                ধামাকা অফার
                             </span>
                             <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-                                ইলেকট্রিক কুকার ও গ্রাইন্ডার কম্বো
+                                সিলভার ক্রেস্ট ইলেকট্রিক গ্রাইন্ডার
                             </h3>
                             <p className="text-xs text-gray-600 line-clamp-2">
-                                ঝটপট রান্না ও মসলা গুঁড়ো করার সুপার কম্বো — প্রিমিয়াম কোয়ালিটি ও বিদ্যুৎ সাশ্রয়ী!
+                                ২০০০ ওয়াট হাই পাওয়ার মোটর ও স্টেইনলেস স্টিল বডি — সহজে সব ধরণের মসলা ও কফি ব্লেন্ড করুন!
                             </p>
                             <div className="pt-1.5">
                                 <Link
-                                    href="/product/electric-cooker-and-grinder-combo-offer"
+                                    href="/product/silver-crest-hr-2026-2000w-electric-grinder"
                                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-900 bg-white border border-amber-200 hover:bg-amber-600 hover:text-white px-3.5 py-2 rounded-lg transition-colors shadow-xs"
                                 >
-                                    অর্ডার করুন (৳১,৪৯৯) →
+                                    অর্ডার করুন (৳৯৫০) →
                                 </Link>
                             </div>
                         </div>
                         <div className="relative w-28 sm:w-36 h-28 sm:h-36 shrink-0 flex items-center justify-center">
                             <img
-                                src="https://db.shobkichu.com.bd/storage/v1/object/public/products/98ce9945-816c-422d-8ade-fec4bb4291d4.wm.webp"
-                                alt="ইলেকট্রিক কুকার ও গ্রাইন্ডার কম্বো"
+                                src="/banners/banner-silvercrest-grinder.jpg"
+                                alt="সিলভার ক্রেস্ট ইলেকট্রিক গ্রাইন্ডার"
                                 className="w-full h-full object-contain rounded-lg drop-shadow-md group-hover:scale-105 transition-transform duration-300"
                             />
                         </div>
@@ -253,10 +253,10 @@ export default async function HomePage() {
                     <div className="relative overflow-hidden rounded-xl border border-emerald-200/90 bg-gradient-to-r from-emerald-50/90 via-teal-50/40 to-white p-5 sm:p-6 flex items-center justify-between group hover:shadow-xs transition-all">
                         <div className="relative z-10 max-w-[62%] sm:max-w-[65%] space-y-1.5">
                             <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-600 text-white">
-                                হট ডিল ৩৩% ছাড়
+                                ধামাকা অফার
                             </span>
                             <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-                                প্রেস্টিজ মাল্টি ইলেকট্রিক কুকার
+                                প্রেস্টিজ মাল্টি ফাংশন কুকার
                             </h3>
                             <p className="text-xs text-gray-600 line-clamp-2">
                                 ভাত, স্যুপ, নুডুলস ও ডিম সেদ্ধ করুন এক নিমিষেই — নিরাপদ অটো-কাট ও নন-স্টিক পট!
@@ -266,14 +266,14 @@ export default async function HomePage() {
                                     href="/product/prestige-electric-cooker"
                                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-900 bg-white border border-emerald-200 hover:bg-emerald-600 hover:text-white px-3.5 py-2 rounded-lg transition-colors shadow-xs"
                                 >
-                                    অর্ডার করুন (৳৯৯৯) →
+                                    অর্ডার করুন (৳৯৫০) →
                                 </Link>
                             </div>
                         </div>
                         <div className="relative w-28 sm:w-36 h-28 sm:h-36 shrink-0 flex items-center justify-center">
                             <img
-                                src="https://db.shobkichu.com.bd/storage/v1/object/public/products/3b1d001b-68c0-410e-a9c3-d35a1aab12b8.wm.webp"
-                                alt="প্রেস্টিজ মাল্টি ইলেকট্রিক কুকার"
+                                src="/banners/banner-prestige-cooker.jpg"
+                                alt="প্রেস্টিজ মাল্টি ফাংশন কুকার"
                                 className="w-full h-full object-contain rounded-lg drop-shadow-md group-hover:scale-105 transition-transform duration-300"
                             />
                         </div>

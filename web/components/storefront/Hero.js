@@ -10,36 +10,21 @@ export default function Hero({ config }) {
     const slides = [
         {
             id: 1,
-            title: "ইলেকট্রিক কুকার ও গ্রাইন্ডার মেগা কম্বো অফার",
-            subtitle: "রান্না ও মসলা গুঁড়ো করার ঝামেলা শেষ এক নিমেষেই — প্রিমিয়াম কোয়ালিটি, হাই পাওয়ার মোটর ও বিদ্যুৎ সাশ্রয়ী!",
-            badge: "মেগা কম্বো ৩৫% ছাড়",
-            priceText: "৳২,৩০০ এর জায়গায় মাত্র ৳১,৪৯৯",
-            buttonText: "অর্ডার করুন",
-            link: "/product/electric-cooker-and-grinder-combo-offer",
-            bgClass: "bg-gradient-to-r from-amber-950 via-zinc-900 to-slate-900",
-            image: "https://db.shobkichu.com.bd/storage/v1/object/public/products/98ce9945-816c-422d-8ade-fec4bb4291d4.wm.webp",
+            title: "Prestige মাল্টি ফাংশন ইলেকট্রিক কুকার",
+            link: "/product/prestige-electric-cooker",
+            bannerImage: "/banners/banner-prestige-cooker.jpg",
         },
         {
             id: 2,
-            title: "প্রেস্টিজ মাল্টিফাংশনাল ইলেকট্রিক কুকার",
-            subtitle: "ভাত, স্যুপ, নুডুলস ও ডিম সেদ্ধ করুন দ্রুত ও সহজে — নন-স্টিক কোটিং ও নিরাপদ অটো-কাট ফিচার!",
-            badge: "হট ডিল ৩৩% ছাড়",
-            priceText: "সীমিত সময়ের জন্য মাত্র ৳৯৯৯",
-            buttonText: "অর্ডার করুন",
-            link: "/product/prestige-electric-cooker",
-            bgClass: "bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900",
-            image: "https://db.shobkichu.com.bd/storage/v1/object/public/products/3b1d001b-68c0-410e-a9c3-d35a1aab12b8.wm.webp",
+            title: "SILVER CREST ইলেকট্রিক গ্রাইন্ডার",
+            link: "/product/silver-crest-hr-2026-2000w-electric-grinder",
+            bannerImage: "/banners/banner-silvercrest-grinder.jpg",
         },
         {
             id: 3,
-            title: "প্রিমিয়াম প্লেয়ার এডিশন স্পোর্টস জার্সি",
-            subtitle: "১০০% ব্রিদেবল আরামদায়ক ফেব্রিক ও আকর্ষণীয় অফিশিয়াল ডিজাইন — সীমিত স্টক!",
-            badge: "নতুন কালেকশন",
-            priceText: "দেশজুড়ে ক্যাশ অন ডেলিভারি",
-            buttonText: "কালেকশন দেখুন",
-            link: "/shop",
-            bgClass: "bg-gradient-to-r from-slate-950 via-slate-900 to-slate-850",
-            image: "https://res.cloudinary.com/dqijzckfb/image/upload/v1781631472/authentic-bazar/kmixrneu3uadlvhar0gj.jpg",
+            title: "B72-B ট্রু ওয়্যারলেস ব্লুটুথ ইয়ারবাডস",
+            link: "/product/b72-b-true-wireless-bluetooth-earbuds",
+            bannerImage: "/banners/banner-b72-earbuds.png",
         }
     ];
 
@@ -61,7 +46,7 @@ export default function Hero({ config }) {
     return (
         <section aria-label="Hero and Trust Highlights" className="w-full space-y-3.5">
             {/* ── BANNER CAROUSEL ── */}
-            <div className="relative w-full overflow-hidden rounded-2xl border border-gray-100 shadow-xs group">
+            <div className="relative w-full overflow-hidden rounded-2xl border border-gray-100 shadow-sm group">
                 <div 
                     className="flex transition-transform duration-500 ease-out"
                     style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -69,47 +54,16 @@ export default function Hero({ config }) {
                     {slides.map((slide) => (
                         <div
                             key={slide.id}
-                            className={`w-full shrink-0 relative aspect-[16/7] min-h-[200px] sm:min-h-[260px] md:min-h-[320px] ${slide.bgClass} flex items-center justify-between p-6 sm:p-10 md:p-12 text-white overflow-hidden`}
+                            className="w-full shrink-0 relative aspect-[1024/338] bg-slate-900 overflow-hidden"
                         >
-                            {/* Text Content */}
-                            <div className="relative z-10 max-w-xl space-y-2 sm:space-y-3">
-                                <span className="inline-block px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-600/90 text-white tracking-wide">
-                                    {slide.badge}
-                                </span>
-
-                                <h2 className="text-xl sm:text-3xl md:text-4xl font-bold leading-tight text-white tracking-tight">
-                                    {slide.title}
-                                </h2>
-
-                                <p className="text-xs sm:text-sm text-gray-300 line-clamp-2 max-w-md leading-relaxed">
-                                    {slide.subtitle}
-                                </p>
-
-                                <div className="pt-2 flex items-center gap-3 flex-wrap">
-                                    <Link
-                                        href={slide.link}
-                                        className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-lg transition-colors shadow-xs"
-                                    >
-                                        {slide.buttonText} →
-                                    </Link>
-                                    <span className="text-xs sm:text-sm text-gray-300 font-medium">
-                                        {slide.priceText}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Slide image if provided */}
-                            {slide.image && (
-                                <div className="relative z-10 w-28 sm:w-52 md:w-64 lg:w-80 h-28 sm:h-52 md:h-64 lg:h-72 shrink-0 flex items-center justify-center">
-                                    <div className="relative w-full h-full p-1 sm:p-2 flex items-center justify-center">
-                                        <img
-                                            src={slide.image}
-                                            alt={slide.title}
-                                            className="max-h-full max-w-full object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)] rounded-lg transition-transform duration-500 hover:scale-105"
-                                        />
-                                    </div>
-                                </div>
-                            )}
+                            <Link href={slide.link} className="block w-full h-full group/slide relative">
+                                <img
+                                    src={slide.bannerImage}
+                                    alt={slide.title}
+                                    className="w-full h-full object-cover sm:object-fill transition-transform duration-500 group-hover/slide:scale-[1.01]"
+                                    loading="eager"
+                                />
+                            </Link>
                         </div>
                     ))}
                 </div>
