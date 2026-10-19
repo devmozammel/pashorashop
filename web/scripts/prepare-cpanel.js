@@ -96,8 +96,8 @@ ADMIN_EMAIL="admin@yoursite.com"
 ADMIN_PASSWORD="your_admin_password_here"
 
 # Steadfast Courier Credentials
-STEADFAST_API_KEY="ggstmv0g9qbyplpueeyptlre4w6ba8aj"
-STEADFAST_SECRET_KEY="ca6bc3lttmy68nybeaw96mup"
+STEADFAST_API_KEY="your_steadfast_api_key_here"
+STEADFAST_SECRET_KEY="your_steadfast_secret_key_here"
 
 # WhatsApp Configuration
 NEXT_PUBLIC_WHATSAPP_NUMBER="880XXXXXXXXXX"
