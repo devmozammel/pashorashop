@@ -74,7 +74,7 @@ export default async function HomePage() {
                 { discountPrice: { not: null } }
             ]
         },
-        take: 8,
+        take: 10,
         orderBy: [{ isHot: 'desc' }, { isFeatured: 'desc' }, { createdAt: 'desc' }],
         include: { variants: true }
     });
@@ -82,7 +82,7 @@ export default async function HomePage() {
     const featuredPromise = showFeatured
         ? prisma.product.findMany({
               where: { isActive: true, isFeatured: true },
-              take: 8,
+              take: 10,
               orderBy: { createdAt: 'desc' },
               include: { variants: true }
           })
@@ -91,7 +91,7 @@ export default async function HomePage() {
     const newArrivalsPromise = showNewArrivals
         ? prisma.product.findMany({
               where: { isActive: true },
-              take: 8,
+              take: 10,
               orderBy: { createdAt: 'desc' },
               include: { variants: true }
           })
@@ -148,13 +148,15 @@ export default async function HomePage() {
 
 
     return (
-        <div className="flex flex-col gap-10 md:gap-12 pb-16">
+        <div className="flex flex-col gap-8 md:gap-10 pb-16">
             {/* ── HERO SECTION ── */}
-            <Hero config={config} />
+            <div className="container mx-auto px-4 pt-3 sm:pt-4">
+                <Hero config={config} />
+            </div>
 
             {/* ── CATEGORIES ── */}
             {categories.length > 0 && (
-                <section className="container px-4">
+                <section className="container mx-auto px-4">
                     <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
                         <div className="flex items-center gap-2">
                             <span className="w-1 h-4 sm:h-5 bg-emerald-600 rounded-full" />
@@ -190,7 +192,7 @@ export default async function HomePage() {
 
             {/* ── HOT PRODUCTS SECTION ── */}
             {hotProducts.length > 0 && (
-                <section id="hot-products" className="container px-4 scroll-mt-24">
+                <section id="hot-products" className="container mx-auto px-4 scroll-mt-24">
                     <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
                         <div className="flex items-center gap-2">
                             <span className="w-1 h-4 sm:h-5 bg-rose-600 rounded-full" />
@@ -206,7 +208,7 @@ export default async function HomePage() {
                         </Link>
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
                         {hotProducts.map((product) => (
                             <ProductCard key={product.id} product={product} isHot={true} />
                         ))}
@@ -215,7 +217,7 @@ export default async function HomePage() {
             )}
 
             {/* ── PROMOTIONAL DUAL BANNER STRIP ── */}
-            <section className="container px-4">
+            <section className="container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Banner 1: Organic Green Tea */}
                     <div className="relative overflow-hidden rounded-xl border border-emerald-150 bg-gradient-to-r from-emerald-50/80 via-teal-50/40 to-white p-5 sm:p-6 flex items-center justify-between group hover:shadow-xs transition-all">
@@ -286,7 +288,7 @@ export default async function HomePage() {
 
             {/* ── FEATURED PRODUCTS ── */}
             {config?.showFeatured !== false && featuredProducts.length > 0 && (
-                <section className="container px-4">
+                <section className="container mx-auto px-4">
                     <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
                         <div className="flex items-center gap-2">
                             <span className="w-1 h-4 sm:h-5 bg-emerald-600 rounded-full" />
@@ -301,7 +303,7 @@ export default async function HomePage() {
                             সব দেখুন →
                         </Link>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
                         {featuredProducts.map((product) => (
                             <ProductCard key={product.id} product={product} />
                         ))}
@@ -311,7 +313,7 @@ export default async function HomePage() {
 
             {/* ── NEW ARRIVALS ── */}
             {config?.showNewArrivals !== false && newArrivals.length > 0 && (
-                <section className="container px-4">
+                <section className="container mx-auto px-4">
                     <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
                         <div className="flex items-center gap-2">
                             <span className="w-1 h-4 sm:h-5 bg-blue-600 rounded-full" />
@@ -326,7 +328,7 @@ export default async function HomePage() {
                             সব দেখুন →
                         </Link>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
                         {newArrivals.map((product) => (
                             <ProductCard key={product.id} product={product} />
                         ))}

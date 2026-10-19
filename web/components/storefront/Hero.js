@@ -61,7 +61,7 @@ export default function Hero({ config }) {
     return (
         <section aria-label="Hero and Trust Highlights" className="w-full space-y-3.5">
             {/* ── BANNER CAROUSEL ── */}
-            <div className="relative w-full overflow-hidden rounded-xl shadow-xs group">
+            <div className="relative w-full overflow-hidden rounded-2xl border border-gray-100 shadow-xs group">
                 <div 
                     className="flex transition-transform duration-500 ease-out"
                     style={{ transform: `translateX(-${currentSlide * 100}%)` }}
