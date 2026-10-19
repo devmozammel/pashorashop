@@ -10,9 +10,9 @@ export default function Logo({ className, variant = "header" }) {
             <Image
                 src="/logo.png"
                 alt="Pashora Shop"
-                width={isFooter ? 50 : 40}
-                height={isFooter ? 50 : 40}
-                className={cn("object-contain", isFooter ? "" : "w-8 h-8 md:w-10 md:h-10")}
+                width={isFooter ? 48 : 38}
+                height={isFooter ? 48 : 38}
+                className={cn("object-contain rounded-xl shadow-xs border border-gray-200/60 dark:border-white/10", isFooter ? "w-10 h-10 md:w-11 md:h-11" : "w-8 h-8 md:w-9 md:h-9")}
                 priority
             />
             <span className={cn(
