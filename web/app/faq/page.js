@@ -1,8 +1,24 @@
 
-export const metadata = {
-    title: "Frequently Asked Questions | Pashora Shop",
-    description: "Find answers to the most common questions about tracking orders, return policy, delivery times, and payment methods at Pashora Shop.",
-};
+
+export async function generateMetadata() {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const title = "সচরাচর জিজ্ঞাসা (FAQ) | Pashora Shop";
+    const description = "পাশোরা শপের অর্ডার ট্র্যাকিং, ডেলিভারি সময়, রিটার্ন পলিসি, পেমেন্ট পদ্ধতি সম্পর্কে সাধারণ প্রশ্নের উত্তর পান।";
+    return {
+        title,
+        description,
+        keywords: ["FAQ", "পাশোরা শপ FAQ", "অর্ডার ট্র্যাকিং", "ডেলিভারি সময়", "রিটার্ন পলিসি"],
+        alternates: { canonical: `${siteUrl}/faq` },
+        openGraph: {
+            title,
+            description,
+            url: `${siteUrl}/faq`,
+            siteName: "Pashora Shop",
+            locale: "bn_BD",
+            type: "website",
+        },
+    };
+}
 
 export default function FAQ() {
     const faqs = [

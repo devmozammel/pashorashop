@@ -1,0 +1,45 @@
+# Pashora Shop — llms.txt
+# AI/LLM Crawler Readiness File
+# See: https://llmstxt.org
+
+# Site Name
+> Pashora Shop
+
+## About
+Pashora Shop is a premium Bangladeshi e-commerce platform offering authentic gadgets, fashion, lifestyle, and home appliance products. We serve customers all over Bangladesh with Cash on Delivery (COD) and fast home delivery.
+
+## Products
+- Gadgets & Electronics
+- Fashion (Men, Women, Kids)
+- Home Appliances & Kitchen
+- Lifestyle & Personal Care
+- Sports & Fitness
+
+## Key Pages
+- Homepage: https://www.pashorashop.com
+- Shop All Products: https://www.pashorashop.com/shop
+- New Arrivals: https://www.pashorashop.com/new-arrivals
+- Flash Sale: https://www.pashorashop.com/flash-sale
+- Track Order: https://www.pashorashop.com/track
+- FAQ: https://www.pashorashop.com/faq
+- Contact: https://www.pashorashop.com/contact
+
+## Policies
+- Privacy Policy: https://www.pashorashop.com/privacy-policy
+- Return & Refund Policy: https://www.pashorashop.com/return-refund-policy
+- Terms & Conditions: https://www.pashorashop.com/terms
+
+## Contact
+- Phone: +8801613134043
+- Email: authenticbazarshop@gmail.com
+- Facebook: https://www.facebook.com/pashorashop
+- Instagram: https://www.instagram.com/pashorashop
+- Location: Dhaka, Bangladesh
+
+## Delivery
+- Inside Dhaka: 1-2 business days
+- Outside Dhaka: 3-5 business days
+- Payment: Cash on Delivery (COD) accepted nationwide
+
+## Sitemap
+https://www.pashorashop.com/sitemap.xml

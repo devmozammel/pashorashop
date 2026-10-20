@@ -16,24 +16,30 @@ import ScrollToTop from "@/components/ui/ScrollToTop";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop"),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com"),
     alternates: {
         canonical: "./",
     },
     title: {
-        default: "Pashora Shop | Premium Online Shopping in Bangladesh",
+        default: "Pashora Shop | বাংলাদেশের প্রিমিয়াম অনলাইন শপিং",
         template: "%s | Pashora Shop"
     },
-    description: "Discover authentic and trending products at Pashora Shop. Premium quality items with fast home delivery and cash on delivery all over Bangladesh.",
-    keywords: ["pashora shop", "online shopping", "bangladesh shopping", "gadgets", "fashion", "lifestyle", "authentic products"],
+    description: "পাশোরা শপে বিশ্বস্ত ও ট্রেন্ডি পণ্য কিনুন। সারাদেশে ক্যাশ অন ডেলিভারি, দ্রুত ডেলিভারি ও সেরা মানের পণ্য পাওয়া যায়।",
+    keywords: ["pashora shop", "পাশোরা শপ", "অনলাইন শপিং", "বাংলাদেশ শপিং", "গ্যাজেট", "ফ্যাশন", "লাইফস্টাইল", "ক্যাশ অন ডেলিভারি"],
     manifest: "/favicon_io/site.webmanifest",
     openGraph: {
-        title: "Pashora Shop | Premium Online Shopping",
-        description: "Official Pashora Shop Store - Quality Meets Trust.",
-        images: ["/logo.png"],
+        title: "Pashora Shop | বাংলাদেশের প্রিমিয়াম অনলাইন শপিং",
+        description: "পাশোরা শপে বিশ্বস্ত ও ট্রেন্ডি পণ্য কিনুন। সারাদেশে ক্যাশ অন ডেলিভারি সুবিধায় সেরা মানের পণ্য পাবেন।",
+        images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Pashora Shop Logo" }],
         siteName: "Pashora Shop",
-        locale: "en_BD",
+        locale: "bn_BD",
         type: "website",
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Pashora Shop | বাংলাদেশের প্রিমিয়াম অনলাইন শপিং",
+        description: "পাশোরা শপে বিশ্বস্ত ও ট্রেন্ডি পণ্য কিনুন।",
+        images: ["/logo.png"],
     },
     robots: {
         index: true,
@@ -59,7 +65,7 @@ export const viewport = {
 };
 
 export default async function RootLayout({ children }) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
 
     let facebookPixelId = "";
     let tiktokPixelId = "";
@@ -143,13 +149,13 @@ export default async function RootLayout({ children }) {
             "closes": "23:59"
         },
         "sameAs": [
-            "https://www.facebook.com/authenticbazar",
-            "https://www.instagram.com/authenticbazar"
+            "https://www.facebook.com/pashorashop",
+            "https://www.instagram.com/pashorashop"
         ]
     };
 
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="bn-BD" suppressHydrationWarning>
             <head>
                 {tiktokPixelId && (
                     <script

@@ -14,12 +14,26 @@ async function getSiteName() {
 
 export async function generateMetadata() {
     const siteName = await getSiteName();
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const title = `যোগাযোগ করুন | ${siteName}`;
+    const description = `পণ্য, শিপিং বা রিটার্ন সম্পর্কে প্রশ্ন আছে? ${siteName}-এর সাথে যোগাযোগ করুন। আমরা ২৪/৭ সাহায্য করতে প্রস্তুত।`;
     return {
-        title: `Contact Us | ${siteName} - Get in Touch`,
-        description: `Have questions about products, shipping, or returns? Contact ${siteName} support. We are here to help you 24/7.`,
-        alternates: {
-            canonical: "/contact"
-        }
+        title,
+        description,
+        alternates: { canonical: `${siteUrl}/contact` },
+        openGraph: {
+            title,
+            description,
+            url: `${siteUrl}/contact`,
+            siteName,
+            locale: "bn_BD",
+            type: "website",
+        },
+        twitter: {
+            card: "summary",
+            title,
+            description,
+        },
     };
 }
 

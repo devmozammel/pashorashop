@@ -7,10 +7,31 @@ import { serializePrisma } from "@/lib/serialize";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-    title: "Flash Sale | Pashora Shop",
-    description: "Incredible deals for a limited time only! Don't miss out on our premium collection at unbeatable prices.",
-};
+export async function generateMetadata() {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const title = "Flash Sale | সীমিত সময়ের অফার | Pashora Shop";
+    const description = "পাশোরা শপের ফ্ল্যাশ সেলে অবিশ্বাস্য কম দামে প্রিমিয়াম পণ্য পান! সীমিত সময়ের অফার, তাড়াতাড়ি অর্ডার করুন।";
+    return {
+        title,
+        description,
+        alternates: { canonical: `${siteUrl}/flash-sale` },
+        openGraph: {
+            title,
+            description,
+            url: `${siteUrl}/flash-sale`,
+            siteName: "Pashora Shop",
+            images: [{ url: `${siteUrl}/logo.png`, width: 1200, height: 630, alt: "Pashora Shop Flash Sale" }],
+            locale: "bn_BD",
+            type: "website",
+        },
+        twitter: {
+            card: "summary_large_image",
+            title,
+            description,
+            images: [`${siteUrl}/logo.png`],
+        },
+    };
+}
 
 export default async function FlashSalePage() {
     const now = new Date();

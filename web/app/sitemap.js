@@ -1,17 +1,24 @@
 import { prisma } from "@/lib/prisma";
 
 export default async function sitemap() {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
 
-    // Static Pages that don't need database
+    // Static Pages
     const staticUrls = [
         { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
         { url: `${baseUrl}/shop`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+        { url: `${baseUrl}/new-arrivals`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
+        { url: `${baseUrl}/flash-sale`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
+        { url: `${baseUrl}/faq`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
+        { url: `${baseUrl}/contact`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
+        { url: `${baseUrl}/privacy-policy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.4 },
+        { url: `${baseUrl}/return-refund-policy`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+        { url: `${baseUrl}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.4 },
         { url: `${baseUrl}/track`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
     ];
 
     try {
-        // 1. Fetch all products
+        // 1. Fetch all active products
         const products = await prisma.product.findMany({
             where: { isActive: true },
             select: { slug: true, updatedAt: true }
@@ -24,17 +31,17 @@ export default async function sitemap() {
             priority: 0.8,
         }));
 
-        // 2. Fetch all categories
+        // 2. Fetch all active categories (use slug-based URLs)
         const categories = await prisma.category.findMany({
             where: { isActive: true },
-            select: { id: true, updatedAt: true }
+            select: { slug: true, updatedAt: true }
         });
 
         const categoryUrls = categories.map((c) => ({
-            url: `${baseUrl}/shop?categoryId=${c.id}`,
+            url: `${baseUrl}/category/${c.slug}`,
             lastModified: c.updatedAt,
             changeFrequency: 'weekly',
-            priority: 0.6,
+            priority: 0.7,
         }));
 
         // 3. Fetch all active landing pages

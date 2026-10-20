@@ -4,10 +4,32 @@ import { serializePrisma } from "@/lib/serialize";
 import { Sparkles } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
-export const metadata = {
-    title: "New Arrivals | Pashora Shop",
-    description: "Discover the latest additions to our collection. Fresh styles added daily.",
-};
+
+export async function generateMetadata() {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const title = "নতুন পণ্য | New Arrivals | Pashora Shop";
+    const description = "পাশোরা শপের সর্বশেষ নতুন পণ্য দেখুন। প্রতিদিন নতুন পণ্য আসছে — গ্যাজেট, ফ্যাশন ও লাইফস্টাইল কালেকশন।";
+    return {
+        title,
+        description,
+        alternates: { canonical: `${siteUrl}/new-arrivals` },
+        openGraph: {
+            title,
+            description,
+            url: `${siteUrl}/new-arrivals`,
+            siteName: "Pashora Shop",
+            images: [{ url: `${siteUrl}/logo.png`, width: 1200, height: 630, alt: "Pashora Shop New Arrivals" }],
+            locale: "bn_BD",
+            type: "website",
+        },
+        twitter: {
+            card: "summary_large_image",
+            title,
+            description,
+            images: [`${siteUrl}/logo.png`],
+        },
+    };
+}
 
 export default async function NewArrivalsPage() {
     // Fetch products marked as New Arrival or recently added

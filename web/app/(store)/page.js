@@ -25,18 +25,50 @@ export async function generateMetadata() {
             } catch (e) {}
         }
 
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+        const title = `${siteName} | বাংলাদেশের প্রিমিয়াম অনলাইন শপিং`;
+        const description = "পাশোরা শপে বিশ্বস্ত ও ট্রেন্ডি পণ্য কিনুন। গ্যাজেট, ফ্যাশন, হোম অ্যাপ্লায়েন্স সহ সব ধরনের পণ্য পাবেন সেরা দামে। সারাদেশে ক্যাশ অন ডেলিভারি।";
+
         return {
-            title: {
-                absolute: siteName
+            title: { absolute: title },
+            description,
+            keywords: ["পাশোরা শপ", "অনলাইন শপিং বাংলাদেশ", "ক্যাশ অন ডেলিভারি", "সেরা দামে পণ্য", "গ্যাজেট", "ফ্যাশন"],
+            alternates: { canonical: siteUrl },
+            openGraph: {
+                title,
+                description,
+                url: siteUrl,
+                siteName,
+                images: [{ url: `${siteUrl}/logo.png`, width: 1200, height: 630, alt: `${siteName} - অনলাইন শপিং` }],
+                locale: "bn_BD",
+                type: "website",
             },
-            description: "Discover premium fashion & lifestyle products at Pashora Shop. We offer a curated collection of authentic, high-quality clothing and accessories in Bangladesh.",
+            twitter: {
+                card: "summary_large_image",
+                title,
+                description,
+                images: [`${siteUrl}/logo.png`],
+            },
         };
     } catch (e) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
         return {
-            title: {
-                absolute: "Pashora Shop"
+            title: { absolute: "Pashora Shop | বাংলাদেশের প্রিমিয়াম অনলাইন শপিং" },
+            description: "পাশোরা শপে বিশ্বস্ত ও ট্রেন্ডি পণ্য কিনুন। সারাদেশে ক্যাশ অন ডেলিভারি।",
+            alternates: { canonical: siteUrl },
+            openGraph: {
+                title: "Pashora Shop | বাংলাদেশের প্রিমিয়াম অনলাইন শপিং",
+                description: "পাশোরা শপে বিশ্বস্ত ও ট্রেন্ডি পণ্য কিনুন।",
+                images: [{ url: `${siteUrl}/logo.png`, width: 1200, height: 630, alt: "Pashora Shop" }],
+                locale: "bn_BD",
+                type: "website",
             },
-            description: "Discover premium fashion & lifestyle products at Pashora Shop. We offer a curated collection of authentic, high-quality clothing and accessories in Bangladesh.",
+            twitter: {
+                card: "summary_large_image",
+                title: "Pashora Shop | বাংলাদেশের প্রিমিয়াম অনলাইন শপিং",
+                description: "পাশোরা শপে বিশ্বস্ত ও ট্রেন্ডি পণ্য কিনুন।",
+                images: [`${siteUrl}/logo.png`],
+            },
         };
     }
 }

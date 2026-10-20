@@ -14,9 +14,21 @@ async function getSiteName() {
 
 export async function generateMetadata() {
     const siteName = await getSiteName();
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const title = `Privacy Policy | গোপনীয়তা নীতি | ${siteName}`;
+    const description = `${siteName} আপনার ব্যক্তিগত তথ্য সুরক্ষিত রাখে। আমাদের গোপনীয়তা নীতি পড়ুন এবং জানুন আমরা কীভাবে আপনার ডেটা ব্যবহার করি।`;
     return {
-        title: `Privacy Policy | ${siteName}`,
-        description: "Your privacy is important to us. Learn how we protect your data.",
+        title,
+        description,
+        alternates: { canonical: `${siteUrl}/privacy-policy` },
+        openGraph: {
+            title,
+            description,
+            url: `${siteUrl}/privacy-policy`,
+            siteName,
+            locale: "bn_BD",
+            type: "website",
+        },
     };
 }
 
