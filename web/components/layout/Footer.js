@@ -86,7 +86,7 @@ export default async function Footer() {
                             <RotateCcw className="w-5 h-5" />
                         </div>
                         <div>
-                            <h4 className="text-xs sm:text-sm font-semibold text-white">৭ দিনের রিটার্ন</h4>
+                            <h4 className="text-xs sm:text-sm font-semibold text-white">১ দিনের রিটার্ন</h4>
                             <p className="text-[11px] text-gray-400 mt-0.5">ঝামেলাহীন সহজ রিটার্ন সাপোর্ট</p>
                         </div>
                     </div>

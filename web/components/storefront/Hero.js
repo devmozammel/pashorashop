@@ -141,7 +141,7 @@ export default function Hero({ config }) {
                             সহজ রিটার্ন
                         </h3>
                         <p className="text-[11px] text-gray-500 mt-0.5 leading-snug line-clamp-1">
-                            ৭ দিনের ঝামেলাহীন রিটার্ন সাপোর্ট
+                            ১ দিনের ঝামেলাহীন রিটার্ন সাপোর্ট
                         </p>
                     </div>
                 </div>

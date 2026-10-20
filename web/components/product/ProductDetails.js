@@ -455,7 +455,7 @@ export default function ProductDetails({
                             <RotateCcw className="w-4 h-4" />
                         </div>
                         <div>
-                            <h5 className="font-bold text-gray-900 text-xs">৭ দিনের রিটার্ন</h5>
+                            <h5 className="font-bold text-gray-900 text-xs">১ দিনের রিটার্ন</h5>
                             <p className="text-[11px] text-gray-500 leading-snug">সহজ ও দ্রুত রিপ্লেসমেন্ট নিশ্চয়তা</p>
                         </div>
                     </div>
