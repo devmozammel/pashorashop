@@ -1,3 +1,4 @@
+import { getSiteUrl } from "./siteUrl";
 // lib/email.js
 // Modern, Premium Email Utility for Authentic Bazar
 // Designed for High Deliverability & Luxury Brand Experience
@@ -22,7 +23,7 @@ const transporter = nodemailer.createTransport({
 
 const FROM = process.env.EMAIL_FROM || "Authentic Bazar <authenticbazarshop@gmail.com>";
 const SITE = "Authentic Bazar";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
+const SITE_URL = getSiteUrl();
 
 // ── Master CSS & Layout Parts
 const COLORS = {

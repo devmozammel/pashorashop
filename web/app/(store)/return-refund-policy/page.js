@@ -1,3 +1,4 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 import { prisma } from "@/lib/prisma";
 
 async function getSiteName() {
@@ -13,7 +14,7 @@ async function getSiteName() {
 
 export async function generateMetadata() {
     const siteName = await getSiteName();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const siteUrl = getSiteUrl();
     const title = `Return & Replacement Policy | রিটার্ন নীতি | ${siteName}`;
     const description = `${siteName}-এর রিটার্ন ও রিপ্লেসমেন্ট নীতি সম্পর্কে বিস্তারিত জানুন। ডেলিভারির ৩ দিনের মধ্যে পণ্য ফেরত দেওয়ার সুবিধা পাবেন।`;
     return {

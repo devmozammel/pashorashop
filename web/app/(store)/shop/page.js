@@ -1,3 +1,4 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import ShopClient from "./ShopClient";
@@ -65,7 +66,7 @@ export default async function ShopPage(props) {
     let breadcrumbListJsonLd = null;
 
     try {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
+        const siteUrl = getSiteUrl();
         
         let activeCategory = null;
         let activeGroup = null;

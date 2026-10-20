@@ -1,3 +1,4 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 import { prisma } from "@/lib/prisma";
 import Hero from "@/components/storefront/Hero";
 import ProductCard from "@/components/product/ProductCard";
@@ -25,7 +26,7 @@ export async function generateMetadata() {
             } catch (e) {}
         }
 
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+        const siteUrl = getSiteUrl();
         const title = `${siteName} | বাংলাদেশের প্রিমিয়াম অনলাইন শপিং`;
         const description = "পাশোরা শপে বিশ্বস্ত ও ট্রেন্ডি পণ্য কিনুন। গ্যাজেট, ফ্যাশন, হোম অ্যাপ্লায়েন্স সহ সব ধরনের পণ্য পাবেন সেরা দামে। সারাদেশে ক্যাশ অন ডেলিভারি।";
 
@@ -51,7 +52,7 @@ export async function generateMetadata() {
             },
         };
     } catch (e) {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+        const siteUrl = getSiteUrl();
         return {
             title: { absolute: "Pashora Shop | বাংলাদেশের প্রিমিয়াম অনলাইন শপিং" },
             description: "পাশোরা শপে বিশ্বস্ত ও ট্রেন্ডি পণ্য কিনুন। সারাদেশে ক্যাশ অন ডেলিভারি।",

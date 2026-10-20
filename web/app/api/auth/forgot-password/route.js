@@ -1,3 +1,4 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";

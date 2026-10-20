@@ -7,6 +7,7 @@ import RelatedProducts from "@/components/product/RelatedProducts";
 import ProductReviews from "@/components/product/ProductReviews";
 import Link from "next/link";
 import { getProductDisplayImages } from "@/lib/productImages";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export const revalidate = 60; // Cache product page on Edge CDN for 60 seconds
 
@@ -39,7 +40,7 @@ export async function generateMetadata(props) {
     const description = product.metaDescription || product.shortDesc || product.description?.substring(0, 160) || `Buy ${product.name} at Pashora Shop`;
     const image = product.productImages[0]?.url || (typeof product.images === 'string' ? JSON.parse(product.images)[0] : product.images?.[0]) || "/logo.png";
     const keywords = product.metaKeywords || "";
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const siteUrl = getSiteUrl();
 
     return {
         title: title,
@@ -52,7 +53,7 @@ export async function generateMetadata(props) {
             title: product.name,
             description: description,
             images: [{ url: image, width: 1200, height: 630, alt: product.name }],
-            type: "product",
+            type: "website",
             siteName: "Pashora Shop",
             locale: "bn_BD",
         },
@@ -137,7 +138,7 @@ export default async function ProductPage(props) {
     // Prepare images using shared helper (filters empty/null URLs, fallback to legacy JSON)
     product.displayImages = getProductDisplayImages(product);
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const siteUrl = getSiteUrl();
 
     // JSON-LD Structured Data for Google
     const jsonLd = {

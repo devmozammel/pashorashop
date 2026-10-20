@@ -1,3 +1,4 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 
 import { Inter } from "next/font/google"; 
 import "./globals.css";
@@ -16,7 +17,7 @@ import ScrollToTop from "@/components/ui/ScrollToTop";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com"),
+    metadataBase: new URL(getSiteUrl()),
     alternates: {
         canonical: "./",
     },
@@ -65,7 +66,7 @@ export const viewport = {
 };
 
 export default async function RootLayout({ children }) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const siteUrl = getSiteUrl();
 
     let facebookPixelId = "";
     let tiktokPixelId = "";

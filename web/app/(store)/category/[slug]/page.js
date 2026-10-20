@@ -1,3 +1,4 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import ProductGrid from "@/components/storefront/ProductGrid";
@@ -64,7 +65,7 @@ export default async function CategoryPage(props) {
         take: 20
     });
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.authenticbazar.shop";
+    const siteUrl = getSiteUrl();
     const itemListJsonLd = {
         "@context": "https://schema.org",
         "@type": "ItemList",

@@ -1,7 +1,8 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 
 
 export async function generateMetadata() {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const siteUrl = getSiteUrl();
     const title = "সচরাচর জিজ্ঞাসা (FAQ) | Pashora Shop";
     const description = "পাশোরা শপের অর্ডার ট্র্যাকিং, ডেলিভারি সময়, রিটার্ন পলিসি, পেমেন্ট পদ্ধতি সম্পর্কে সাধারণ প্রশ্নের উত্তর পান।";
     return {

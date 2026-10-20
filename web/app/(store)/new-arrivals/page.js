@@ -1,3 +1,4 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 import { prisma } from "@/lib/prisma";
 import ProductCard from "@/components/product/ProductCard";
 import { serializePrisma } from "@/lib/serialize";
@@ -6,7 +7,7 @@ import { Sparkles } from "lucide-react";
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata() {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const siteUrl = getSiteUrl();
     const title = "নতুন পণ্য | New Arrivals | Pashora Shop";
     const description = "পাশোরা শপের সর্বশেষ নতুন পণ্য দেখুন। প্রতিদিন নতুন পণ্য আসছে — গ্যাজেট, ফ্যাশন ও লাইফস্টাইল কালেকশন।";
     return {

@@ -1,7 +1,8 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 import { prisma } from "@/lib/prisma";
 
 export default async function sitemap() {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const baseUrl = getSiteUrl();
 
     // Static Pages
     const staticUrls = [

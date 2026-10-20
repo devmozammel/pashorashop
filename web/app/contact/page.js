@@ -1,3 +1,4 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 import { prisma } from "@/lib/prisma";
 import ContactClient from "./ContactClient";
 
@@ -14,7 +15,7 @@ async function getSiteName() {
 
 export async function generateMetadata() {
     const siteName = await getSiteName();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const siteUrl = getSiteUrl();
     const title = `যোগাযোগ করুন | ${siteName}`;
     const description = `পণ্য, শিপিং বা রিটার্ন সম্পর্কে প্রশ্ন আছে? ${siteName}-এর সাথে যোগাযোগ করুন। আমরা ২৪/৭ সাহায্য করতে প্রস্তুত।`;
     return {

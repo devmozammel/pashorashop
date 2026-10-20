@@ -1,3 +1,4 @@
+import { getSiteUrl } from "@/lib/siteUrl";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
@@ -14,7 +15,7 @@ async function getSiteName() {
 
 export async function generateMetadata() {
     const siteName = await getSiteName();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pashorashop.com";
+    const siteUrl = getSiteUrl();
     const title = `Privacy Policy | গোপনীয়তা নীতি | ${siteName}`;
     const description = `${siteName} আপনার ব্যক্তিগত তথ্য সুরক্ষিত রাখে। আমাদের গোপনীয়তা নীতি পড়ুন এবং জানুন আমরা কীভাবে আপনার ডেটা ব্যবহার করি।`;
     return {
