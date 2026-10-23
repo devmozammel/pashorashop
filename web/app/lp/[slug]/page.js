@@ -20,7 +20,8 @@ import {
     Phone, 
     ShoppingBag, 
     ChevronDown, 
-    ArrowDown 
+    ArrowDown,
+    Wrench 
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -147,7 +148,7 @@ export default async function LandingPage({ params }) {
     }
 
     let featureList = [
-        { icon: "🔄", title: "১ দিনের সহজ রিটার্ন", desc: "পণ্য হাতে পেয়ে কোনো সমস্যা পেলে ১ দিনের মধ্যে সমাধান", color: "#059669" },
+        { icon: "🛠️", title: "ফিক্স বা ওয়ারেন্টি সুবিধা", desc: "প্রযোজ্য ক্ষেত্রে সমস্যা হলে ফিক্স বা ওয়ারেন্টি সুবিধা (সব প্রোডাক্টে নয়)", color: "#059669" },
         { icon: "💵", title: "ক্যাশ অন ডেলিভারি", desc: "কোনো অগ্রিম টাকা ছাড়াই পণ্য দেখে মূল্য পরিশোধ করুন", color: "#2563eb" },
         { icon: "🛡️", title: "১০০% আসল পণ্য", desc: "কোয়ালিটি টেস্টেড জেনুইন ও অথেন্টিক প্রোডাক্টের নিশ্চয়তা", color: "#7c3aed" },
         { icon: "⚡", title: "দ্রুত হোম ডেলিভারি", desc: "ঢাকায় ১-২ দিন ও ঢাকার বাইরে ২-৪ দিনের মধ্যে ডেলিভারি", color: "#d97706" },
@@ -155,7 +156,17 @@ export default async function LandingPage({ params }) {
     if (page.featuresJson) {
         try {
             const f = JSON.parse(page.featuresJson);
-            if (Array.isArray(f) && f.length > 0) featureList = f.map((x, i) => ({ ...x, color: ["#059669", "#2563eb", "#7c3aed", "#d97706"][i % 4] }));
+            if (Array.isArray(f) && f.length > 0) {
+                featureList = f.map((x, i) => {
+                    let title = x.title;
+                    let desc = x.desc;
+                    if (title?.includes("রিপ্লেসমেন্ট") || title?.includes("রিটার্ন") || desc?.includes("রিপ্লেসমেন্ট") || desc?.includes("রিটার্ন")) {
+                        title = "ফিক্স বা ওয়ারেন্টি সুবিধা";
+                        desc = "প্রযোজ্য ক্ষেত্রে সমস্যা হলে ফিক্স বা ওয়ারেন্টি সুবিধা (সব প্রোডাক্টে নয়)";
+                    }
+                    return { ...x, title, desc, color: ["#059669", "#2563eb", "#7c3aed", "#d97706"][i % 4] };
+                });
+            }
         } catch { }
     }
 
@@ -167,7 +178,7 @@ export default async function LandingPage({ params }) {
 
     let floatingSpecs = [
         "১০০% অরিজিনাল",
-        "১ দিনের রিটার্ন",
+        "ফিক্স বা ওয়ারেন্টি সুবিধা",
         "ক্যাশ অন ডেলিভারি",
         "প্রিমিয়াম ফিনিশিং"
     ];
@@ -196,7 +207,7 @@ export default async function LandingPage({ params }) {
         },
         {
             q: "পণ্য সমস্যাযুক্ত হলে কী করবো?",
-            a: "আমাদের রয়েছে ১ দিনের সহজ রিটার্ন ও রিপ্লেসমেন্ট সুবিধা। কোনো সমস্যা পেলে সাথে সাথে কাস্টমার কেয়ারে জানালে দ্রুত সমাধান করা হবে।"
+            a: "কোনো সমস্যাযুক্ত পণ্য পেলে আমরা তা ফিক্স (সার্ভিসিং) করে দিই বা প্রয়োজনীয় ওয়ারেন্টি সুবিধা প্রদান করি। তবে লক্ষ্য রাখবেন, এটি সব প্রোডাক্টের ক্ষেত্রে প্রযোজ্য নয়—শুধুমাত্র যেসকল প্রোডাক্টে ওয়ারেন্টি উল্লেখ থাকে সেগুলোতে এই সুবিধা প্রযোজ্য। কোনো সমস্যা হলে সাথে সাথে আমাদের কাস্টমার কেয়ারে জানালে দ্রুত ব্যবস্থা নেওয়া হবে।"
         }
     ];
 
@@ -205,10 +216,14 @@ export default async function LandingPage({ params }) {
         try {
             const parsed = typeof primaryProduct.faqs === "string" ? JSON.parse(primaryProduct.faqs) : primaryProduct.faqs;
             if (Array.isArray(parsed) && parsed.length > 0) {
-                productCustomFaqs = parsed.map(f => ({
-                    q: f.question || f.q || f.title,
-                    a: f.answer || f.a || f.desc
-                })).filter(f => f.q && f.a);
+                productCustomFaqs = parsed.map(f => {
+                    let q = f.question || f.q || f.title;
+                    let a = f.answer || f.a || f.desc;
+                    if (a?.includes("রিপ্লেসমেন্ট") || a?.includes("রিটার্ন")) {
+                        a = "কোনো সমস্যাযুক্ত পণ্য পেলে আমরা তা ফিক্স (সার্ভিসিং) করে দিই বা প্রয়োজনীয় ওয়ারেন্টি সুবিধা প্রদান করি। তবে লক্ষ্য রাখবেন, এটি সব প্রোডাক্টের ক্ষেত্রে প্রযোজ্য নয়—শুধুমাত্র যেসকল প্রোডাক্টে ওয়ারেন্টি উল্লেখ থাকে সেগুলোতে এই সুবিধা প্রযোজ্য। কোনো সমস্যা হলে সাথে সাথে আমাদের কাস্টমার কেয়ারে জানালে দ্রুত ব্যবস্থা নেওয়া হবে।";
+                    }
+                    return { q, a };
+                }).filter(f => f.q && f.a);
             }
         } catch (e) {
             console.error("Error parsing product FAQs", e);
@@ -261,7 +276,7 @@ export default async function LandingPage({ params }) {
                         <span className="hidden sm:inline text-slate-600">•</span>
                         <span>🚚 ক্যাশ অন ডেলিভারি সুবিধা</span>
                         <span className="hidden sm:inline text-slate-600">•</span>
-                        <span className="text-amber-300 font-bold">🔄 ১ দিনের সহজ রিটার্ন পলিসি</span>
+                        <span className="text-amber-300 font-bold">🛠️ ফিক্স ও ওয়ারেন্টি সুবিধা (প্রযোজ্য ক্ষেত্রে)</span>
                     </div>
                 </div>
 
@@ -385,8 +400,8 @@ export default async function LandingPage({ params }) {
                                         হট ডিল অফার
                                     </span>
                                     {page.countdownEnd && (
-                                        <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">
-                                            <span>অফার শেষ হতে বাকি:</span>
+                                        <div className="inline-flex flex-wrap items-center gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 text-amber-950 text-xs font-extrabold px-3.5 py-1.5 rounded-2xl shadow-sm">
+                                            <span className="text-amber-900 font-bold whitespace-nowrap">অফার শেষ হতে বাকি:</span>
                                             <LandingPageClient countdownEnd={page.countdownEnd.toISOString()} />
                                         </div>
                                     )}
@@ -471,7 +486,7 @@ export default async function LandingPage({ params }) {
                                         ✅ ১০০% ক্যাশ অন ডেলিভারি
                                     </span>
                                     <span className="text-[11px] font-bold text-slate-600 bg-slate-100/90 px-3 py-1 rounded-full">
-                                        🔄 ১ দিনের সহজ রিটার্ন
+                                        🛠️ ফিক্স ও ওয়ারেন্টি সুবিধা (প্রযোজ্য ক্ষেত্রে)
                                     </span>
                                     <span className="text-[11px] font-bold text-slate-600 bg-slate-100/90 px-3 py-1 rounded-full">
                                         📦 ডেলিভারির সময় চেক করার সুযোগ
@@ -487,14 +502,14 @@ export default async function LandingPage({ params }) {
                     <div className="max-w-6xl mx-auto px-4 md:px-8">
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                             
-                            {/* Card 1: 1 Day Return */}
+                            {/* Card 1: Fix or Warranty */}
                             <div className="bg-slate-50/70 border border-slate-200/70 rounded-3xl p-5 md:p-6 transition-all hover:bg-white hover:shadow-lg hover:shadow-slate-200/50 flex flex-col items-start gap-3">
                                 <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                                    <RotateCcw className="w-6 h-6" />
+                                    <Wrench className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h4 className="font-extrabold text-slate-900 text-sm md:text-base">১ দিনের সহজ রিটার্ন</h4>
-                                    <p className="text-xs text-slate-500 mt-1 leading-snug">পণ্য পাওয়ার পর সমস্যা পেলে ১ দিনের মধ্যে সমাধান সুবিধা</p>
+                                    <h4 className="font-extrabold text-slate-900 text-sm md:text-base">ফিক্স বা ওয়ারেন্টি সুবিধা</h4>
+                                    <p className="text-xs text-slate-500 mt-1 leading-snug">প্রযোজ্য ক্ষেত্রে সমস্যা হলে ফিক্স বা ওয়ারেন্টি সুবিধা (সব প্রোডাক্টে নয়)</p>
                                 </div>
                             </div>
 
