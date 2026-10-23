@@ -283,11 +283,16 @@ export default async function LandingPage({ params }) {
                 {/* ══ 2. HEADER / NAVBAR ══ */}
                 <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)]">
                     <div className="max-w-6xl mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between">
-                        <Link href="/" className="flex items-center gap-2 group">
-                            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
-                                P
-                            </div>
-                            <span className="font-extrabold text-xl tracking-tight text-slate-900">
+                        <Link href="/" className="flex items-center gap-2.5 group">
+                            <Image
+                                src="/logo.png"
+                                alt={siteName || "Pashora Shop"}
+                                width={44}
+                                height={44}
+                                className="w-9 h-9 md:w-10 md:h-10 object-contain rounded-xl shadow-xs border border-slate-200/80 group-hover:scale-105 transition-transform"
+                                priority
+                            />
+                            <span className="font-extrabold text-xl tracking-tight text-slate-900 group-hover:text-emerald-600 transition-colors">
                                 {siteName || "Pashora Shop"}
                             </span>
                         </Link>
