@@ -1,4 +1,4 @@
-export const TT_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID;
+export const TT_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || "DBDR6KJC77UASCMGHUAG";
 
 export const pageview = () => {
     if (typeof window.ttq !== 'undefined') {

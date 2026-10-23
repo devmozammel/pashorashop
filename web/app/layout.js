@@ -69,7 +69,7 @@ export default async function RootLayout({ children }) {
     const siteUrl = getSiteUrl();
 
     let facebookPixelId = "";
-    let tiktokPixelId = "";
+    let tiktokPixelId = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || "DBDR6KJC77UASCMGHUAG";
     try {
         const setting = await prisma.siteSetting.findUnique({
             where: { key: "store_settings" }
@@ -77,7 +77,7 @@ export default async function RootLayout({ children }) {
         if (setting) {
             const parsed = JSON.parse(setting.value);
             facebookPixelId = parsed.facebookPixelId || "";
-            tiktokPixelId = parsed.tiktokPixelId || "";
+            tiktokPixelId = parsed.tiktokPixelId || tiktokPixelId;
         }
     } catch (e) {
         console.error("Error reading pixel IDs in RootLayout:", e);
