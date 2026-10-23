@@ -35,6 +35,7 @@ export async function GET(req) {
                     storeEmail:       parsed.storeEmail,
                     storePhone:       parsed.storePhone,
                     storeAddress:     parsed.storeAddress,
+                    whatsapp:         parsed.whatsapp || "8801620778044",
                     deliveryFeeInside:  parsed.deliveryFeeInside,
                     deliveryFeeOutside: parsed.deliveryFeeOutside,
                     currency:         parsed.currency,

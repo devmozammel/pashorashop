@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from "react";
 
-export default function WhatsAppButton() {
+export default function WhatsAppButton({ waNumber: propWaNumber }) {
     const [isVisible, setIsVisible] = useState(false);
 
-    // Default WhatsApp number (will be used if env is not set)
-    // Needs to include country code without '+'
-    const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "8801620778044";
+    // Resolve WhatsApp number: prop > env > default
+    let rawNumber = propWaNumber || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "8801620778044";
+    let waNumber = String(rawNumber).replace(/\D/g, "");
+    if (!waNumber || waNumber.includes("01337744458") || waNumber.includes("01613134043")) {
+        waNumber = "8801620778044";
+    }
+    if (waNumber.startsWith("0")) waNumber = "88" + waNumber;
+    if (!waNumber.startsWith("88")) waNumber = "88" + waNumber;
+
     const message = "Hello Pashora Shop! I need some help.";
 
     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;

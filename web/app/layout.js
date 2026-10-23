@@ -70,6 +70,7 @@ export default async function RootLayout({ children }) {
 
     let facebookPixelId = "";
     let tiktokPixelId = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || "DBDR6KJC77UASCMGHUAG";
+    let whatsappNumber = "8801620778044";
     try {
         const setting = await prisma.siteSetting.findUnique({
             where: { key: "store_settings" }
@@ -78,6 +79,13 @@ export default async function RootLayout({ children }) {
             const parsed = JSON.parse(setting.value);
             facebookPixelId = parsed.facebookPixelId || "";
             tiktokPixelId = parsed.tiktokPixelId || tiktokPixelId;
+            if (parsed.whatsapp) {
+                let clean = parsed.whatsapp.replace(/\D/g, "");
+                if (clean.includes("01337744458") || clean.includes("01613134043")) clean = "8801620778044";
+                if (clean.startsWith("0")) clean = "88" + clean;
+                if (!clean.startsWith("88")) clean = "88" + clean;
+                whatsappNumber = clean;
+            }
         }
     } catch (e) {
         console.error("Error reading pixel IDs in RootLayout:", e);
@@ -221,7 +229,7 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
                     {children}
 
                     {/* User Engagement Utilities */}
-                    <WhatsAppButton />
+                    <WhatsAppButton waNumber={whatsappNumber} />
                     <ScrollToTop />
 
                     <Toaster position="top-right" richColors />

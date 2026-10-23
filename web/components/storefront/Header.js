@@ -206,7 +206,13 @@ export default function Header({ settings }) {
     const cartCount = mounted ? items.length : 0;
     const isSticky = settings?.enable_sticky_header !== "false";
     const supportPhone = settings?.support_phone || "+8801620778044";
-    const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || settings?.whatsapp_number || "8801620778044";
+    let rawWa = settings?.whatsapp || settings?.whatsapp_number || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "8801620778044";
+    let waNumber = String(rawWa).replace(/\D/g, "");
+    if (!waNumber || waNumber.includes("01337744458") || waNumber.includes("01613134043")) {
+        waNumber = "8801620778044";
+    }
+    if (waNumber.startsWith("0")) waNumber = "88" + waNumber;
+    if (!waNumber.startsWith("88")) waNumber = "88" + waNumber;
 
     return (
         <>

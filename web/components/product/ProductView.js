@@ -79,7 +79,13 @@ export default function ProductView({ product }) {
                         const s = JSON.parse(data.store_settings);
                         if (s.whatsapp) {
                             let cleanNum = s.whatsapp.replace(/\D/g, "");
-                            if (cleanNum.startsWith("01")) {
+                            if (cleanNum.includes("01337744458") || cleanNum.includes("01613134043")) {
+                                cleanNum = "8801620778044";
+                            }
+                            if (cleanNum.startsWith("0")) {
+                                cleanNum = "88" + cleanNum;
+                            }
+                            if (!cleanNum.startsWith("88")) {
                                 cleanNum = "88" + cleanNum;
                             }
                             setWhatsappNumber(cleanNum);
