@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 
+
+export const dynamic = "force-dynamic";
+
 // GET: List all banners
 export async function GET() {
     const admin = await requireAdmin();

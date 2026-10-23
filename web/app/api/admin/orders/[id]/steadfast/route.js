@@ -4,6 +4,9 @@ import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 import { decrypt } from "@/lib/security";
 
+
+export const dynamic = "force-dynamic";
+
 export async function POST(req, props) {
     const params = await props.params;
 

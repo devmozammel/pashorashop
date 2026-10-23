@@ -4,6 +4,9 @@ import { apiError } from "@/lib/error-handler";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 
+
+export const dynamic = "force-dynamic";
+
 export async function GET(req) {
     try {
         const admin = await requireAdmin();

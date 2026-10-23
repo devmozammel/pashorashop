@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 
+
+export const dynamic = "force-dynamic";
+
 const DEFAULT_TOGGLES = {
     banners: false,
     inventory: false,

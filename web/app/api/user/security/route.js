@@ -5,6 +5,9 @@ import { authOptions } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { passwordSchema } from "@/lib/validators";
 
+
+export const dynamic = "force-dynamic";
+
 export async function PATCH(req) {
     try {
         const session = await getServerSession(authOptions);

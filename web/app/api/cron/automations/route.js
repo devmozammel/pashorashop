@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 
 import { checkAbandonedCheckouts } from "@/lib/automations";
 import { NextResponse } from "next/server";

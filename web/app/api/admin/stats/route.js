@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { serializePrisma } from "@/lib/serialize";
 
+
+export const dynamic = "force-dynamic";
+
 export async function GET(req) {
     try {
         const admin = await requireAdmin();

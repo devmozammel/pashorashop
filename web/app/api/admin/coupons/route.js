@@ -5,6 +5,9 @@ import { couponSchema } from "@/lib/zod-schemas";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 
+
+export const dynamic = "force-dynamic";
+
 export async function POST(req) {
     try {
         const admin = await requireAdmin();

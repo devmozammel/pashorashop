@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/security";
 
+
+export const dynamic = "force-dynamic";
+
 export async function POST(req) {
     try {
         const apiKeyHeader = req.headers.get("RT-UDDOKTAPAY-API-KEY");

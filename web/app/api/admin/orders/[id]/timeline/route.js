@@ -4,6 +4,9 @@ import { apiError } from "@/lib/error-handler";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { z } from "zod";
 
+
+export const dynamic = "force-dynamic";
+
 const timelineSchema = z.object({
     note: z.string().min(1, "Note is required")
 });

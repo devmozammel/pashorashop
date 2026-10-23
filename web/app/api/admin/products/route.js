@@ -7,6 +7,9 @@ import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { revalidatePath } from "next/cache";
 
+
+export const dynamic = "force-dynamic";
+
 // GET: List all products for admin
 export async function GET(req) {
     const admin = await requireAdmin();

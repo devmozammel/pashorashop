@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/security";
 
+
+export const dynamic = "force-dynamic";
+
 /**
  * Payment Verification Endpoint
  * Called via GET redirect from UddoktaPay payment gateway after payment.

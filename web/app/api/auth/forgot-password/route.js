@@ -6,6 +6,9 @@ import { rateLimit } from "@/lib/rate-limit";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { getClientIP } from "@/lib/utils/ip";
 
+
+export const dynamic = "force-dynamic";
+
 export async function POST(req) {
     try {
         const ip = getClientIP(req);

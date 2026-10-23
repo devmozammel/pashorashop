@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+
+export const dynamic = "force-dynamic";
+
 // GET: Current user's withdrawal history
 export async function GET(req) {
     try {

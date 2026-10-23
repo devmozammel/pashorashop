@@ -4,6 +4,9 @@ import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 import { encrypt, decrypt } from "@/lib/security";
 
+
+export const dynamic = "force-dynamic";
+
 const DEFAULT_SETTINGS = {
     siteName: "Fashion House",
     currencySymbol: "৳",

@@ -1,5 +1,8 @@
 import { createAuditLog } from '@/lib/audit';
 
+
+export const dynamic = "force-dynamic";
+
 export async function PATCH(request, props) {
     const admin = await requireAdmin();
     if (!admin) return unauthorizedResponse();

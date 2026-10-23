@@ -4,6 +4,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { nanoid } from "nanoid";
 
+
+export const dynamic = "force-dynamic";
+
 // GET: Fetch affiliate stats for the current user
 export async function GET(req) {
     try {

@@ -5,6 +5,9 @@ import { requireAdmin, unauthorizedResponse } from '@/lib/require-admin';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { createAuditLog } from '@/lib/audit';
 
+
+export const dynamic = "force-dynamic";
+
 export async function GET(request, props) {
     const params = await props.params;
     const admin = await requireAdmin();

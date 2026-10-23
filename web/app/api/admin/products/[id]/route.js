@@ -7,6 +7,9 @@ import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { revalidatePath } from "next/cache";
 
+
+export const dynamic = "force-dynamic";
+
 const productSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1),

@@ -6,6 +6,9 @@ import { logActivity } from "@/lib/logger";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { z } from "zod";
 
+
+export const dynamic = "force-dynamic";
+
 const importProductSchema = z.object({
     name: z.string().min(1, "Name is required"),
     description: z.string().optional().nullable().default(""),

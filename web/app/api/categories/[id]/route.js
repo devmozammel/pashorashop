@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+
+export const dynamic = "force-dynamic";
+
 // GET public category details
 export async function GET(request, { params }) {
     try {

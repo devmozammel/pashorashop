@@ -3,6 +3,9 @@ import prisma from "@/lib/prisma";
 import { apiError } from "@/lib/error-handler";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 
+
+export const dynamic = "force-dynamic";
+
 export async function PATCH(req, props) {
     const params = await props.params;
     try {

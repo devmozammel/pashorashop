@@ -5,6 +5,9 @@ import { flashSaleItemSchema } from "@/lib/zod-schemas";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { z } from "zod";
 
+
+export const dynamic = "force-dynamic";
+
 // Schema for bulk array
 const bulkItemsSchema = z.object({
     flashSaleId: z.string().min(1),

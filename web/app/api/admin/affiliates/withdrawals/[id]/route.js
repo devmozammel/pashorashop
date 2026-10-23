@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+
+export const dynamic = "force-dynamic";
+
 // PATCH: Approve or Reject a withdrawal request
 export async function PATCH(req, { params }) {
     try {

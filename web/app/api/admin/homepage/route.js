@@ -4,6 +4,9 @@ import { apiError } from "@/lib/error-handler";
 import { homepageConfigSchema } from "@/lib/zod-schemas";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 
+
+export const dynamic = "force-dynamic";
+
 export async function GET(req) {
     try {
         const admin = await requireAdmin();

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import nodemailer from "nodemailer";
 
+
+export const dynamic = "force-dynamic";
+
 export async function POST(req) {
     try {
         const admin = await requireAdmin();

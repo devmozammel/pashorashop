@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { v2 as cloudinary } from "cloudinary";
 import { rateLimit } from "@/lib/rate-limit";
 
+
+export const dynamic = "force-dynamic";
+
 // Configure Cloudinary from env
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,

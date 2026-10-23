@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 
+
+export const dynamic = "force-dynamic";
+
 export async function PATCH(req, props) {
     const params = await props.params;
     try {

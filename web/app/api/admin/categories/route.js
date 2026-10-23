@@ -5,6 +5,9 @@ import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { revalidatePath } from 'next/cache';
 import { createAuditLog } from '@/lib/audit';
 
+
+export const dynamic = "force-dynamic";
+
 // GET: Fetch all categories
 export async function GET(request) {
     const admin = await requireAdmin();

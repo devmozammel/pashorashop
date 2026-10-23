@@ -3,6 +3,9 @@ import { validateCoupon } from "@/lib/coupon";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+
+export const dynamic = "force-dynamic";
+
 export async function POST(request) {
     try {
         const { code, total, items } = await request.json(); // total is required for minOrder check

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 
+
+export const dynamic = "force-dynamic";
+
 // Basic email format validator (RFC-compliant lightweight check)
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).toLowerCase());

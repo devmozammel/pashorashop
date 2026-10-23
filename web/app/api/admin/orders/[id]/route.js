@@ -5,6 +5,9 @@ import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 import { sendOrderStatusEmail } from "@/lib/email";
 
+
+export const dynamic = "force-dynamic";
+
 export async function GET(req, props) {
     const params = await props.params;
 

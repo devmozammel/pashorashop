@@ -4,6 +4,9 @@ import prisma from "@/lib/prisma";
 import { promises as fs } from "fs";
 import path from "path";
 
+
+export const dynamic = "force-dynamic";
+
 // Resolves to e:\e- commarce\web\appData\partners_investments.json
 const DATA_FILE_PATH = path.join(process.cwd(), "appData", "partners_investments.json");
 
