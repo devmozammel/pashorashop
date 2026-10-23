@@ -95,7 +95,7 @@ export default async function LandingPage({ params }) {
     const primaryProduct = page.products?.[0]?.product;
     const allProducts = page.products?.map((p) => p.product).filter(Boolean) || [];
 
-    let waNumber = "8801613134043";
+    let waNumber = "8801620778044";
     let siteName = "Pashora Shop";
     try {
         const { getDecryptedSettings } = await import("@/lib/settings");

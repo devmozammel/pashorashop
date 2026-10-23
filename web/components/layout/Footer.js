@@ -25,7 +25,7 @@ async function getStoreSettings() {
     } catch (_) { }
     return {
         siteName: "Pashora Shop",
-        whatsapp: "8801337744458",
+        whatsapp: "8801620778044",
         supportEmail: "support@pashorashop.com",
         address: "Dhaka, Bangladesh",
         deliveryFeeInside: 70,
@@ -36,7 +36,7 @@ async function getStoreSettings() {
 export default async function Footer() {
     const settings = await getStoreSettings();
     const siteName = settings.siteName || "Pashora Shop";
-    const whatsapp = settings.whatsapp || "8801337744458";
+    const whatsapp = settings.whatsapp || "8801620778044";
     const cleanPhone = whatsapp.replace(/[^0-9]/g, "");
     const deliveryInside = settings.deliveryFeeInside || 70;
     const deliveryOutside = settings.deliveryFeeOutside || 130;

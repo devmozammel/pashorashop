@@ -8,7 +8,7 @@ export default function WhatsAppOrderForm({
     productPrice = 0,
     originalPrice = 0,
     productImage,
-    waNumber = "8801613134043",
+    waNumber = "8801620778044",
     variants = [],
     theme = "light"
 }) {

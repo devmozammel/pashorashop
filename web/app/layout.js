@@ -95,7 +95,7 @@ export default async function RootLayout({ children }) {
         ],
         "contactPoint": {
             "@type": "ContactPoint",
-            "telephone": "+8801613134043",
+            "telephone": "+8801620778044",
             "contactType": "customer service",
             "areaServed": "BD",
             "availableLanguage": ["en", "bn"]
@@ -120,7 +120,7 @@ export default async function RootLayout({ children }) {
         "image": `${siteUrl}/logo.png`,
         "@id": `${siteUrl}/#organization`,
         "url": siteUrl,
-        "telephone": "+8801613134043",
+        "telephone": "+8801620778044",
         "priceRange": "$$",
         "address": {
             "@type": "PostalAddress",

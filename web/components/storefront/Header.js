@@ -205,8 +205,8 @@ export default function Header({ settings }) {
     const toggleExpand = (slug) => setExpandedCat(prev => prev === slug ? null : slug);
     const cartCount = mounted ? items.length : 0;
     const isSticky = settings?.enable_sticky_header !== "false";
-    const supportPhone = settings?.support_phone || "+8801613134043";
-    const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || settings?.whatsapp_number || "8801337744458";
+    const supportPhone = settings?.support_phone || "+8801620778044";
+    const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || settings?.whatsapp_number || "8801620778044";
 
     return (
         <>
