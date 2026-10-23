@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-export default function Logo({ className, variant = "header" }) {
+export default function Logo({ className, variant = "header", iconOnly = false }) {
     const isFooter = variant === "footer";
     const isWhite = variant === "white" || variant === "drawer";
 
@@ -15,12 +15,14 @@ export default function Logo({ className, variant = "header" }) {
                 className={cn("object-contain rounded-xl shadow-xs border border-gray-200/60 dark:border-white/10", isFooter ? "w-10 h-10 md:w-11 md:h-11" : "w-8 h-8 md:w-9 md:h-9")}
                 priority
             />
-            <span className={cn(
-                "font-bold tracking-tight whitespace-nowrap",
-                isFooter ? "text-2xl text-white" : isWhite ? "text-[15px] sm:text-lg text-white" : "text-[15px] sm:text-lg text-gray-900"
-            )}>
-                Pashora Shop
-            </span>
+            {!iconOnly && (
+                <span className={cn(
+                    "font-bold tracking-tight whitespace-nowrap",
+                    isFooter ? "text-2xl text-white" : isWhite ? "text-[15px] sm:text-lg text-white" : "text-[15px] sm:text-lg text-gray-900"
+                )}>
+                    Pashora Shop
+                </span>
+            )}
         </div>
     );
 }

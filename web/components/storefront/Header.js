@@ -623,14 +623,20 @@ export default function Header({ settings }) {
                                 </button>
                                 
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-full bg-white p-1 grid place-items-center shadow shrink-0">
-                                        <Logo variant="black" />
+                                    <div className="w-12 h-12 rounded-full bg-white p-1.5 flex items-center justify-center shadow shrink-0 overflow-hidden">
+                                        <Image
+                                            src="/logo.png"
+                                            alt={settings?.store_name || "Pashora Shop"}
+                                            width={44}
+                                            height={44}
+                                            className="w-full h-full object-contain"
+                                        />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-extrabold text-base leading-tight truncate">
+                                        <p className="font-extrabold text-base leading-tight truncate text-white">
                                             {settings?.store_name || "Pashora Shop"}
                                         </p>
-                                        <p className="text-[11px] opacity-90 truncate">
+                                        <p className="text-[11px] text-white/90 truncate">
                                             বাংলাদেশের বিশ্বস্ত অনলাইন শপ
                                         </p>
                                     </div>
