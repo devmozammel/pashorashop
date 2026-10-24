@@ -124,6 +124,20 @@ export default function ShippingPage() {
                             onChange={e => setSettings({ ...settings, steadfastSecretKey: e.target.value })}
                         />
                     </div>
+                    <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 mt-4">
+                        <div className="flex items-center gap-2 mb-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <h5 className="text-xs font-bold text-emerald-900">Steadfast অটোমেটিক ডেলিভারি ও ক্যানসেল ট্র্যাকিং (Webhook URL)</h5>
+                        </div>
+                        <p className="text-xs text-emerald-800 leading-relaxed mb-2.5">
+                            Steadfast মার্চেন্ট পোর্টালে (Settings &gt; Webhook / Callback URL) নিচের লিংকটি সেট করে দিলে, পার্সেল ডেলিভারি (Delivered) বা ক্যানসেল (Cancelled) হওয়া মাত্র সাথে সাথে স্বয়ংক্রিয়ভাবে আপনার ওয়েবসাইটের অর্ডার স্ট্যাটাস ও পেমেন্ট আপডেট হয়ে যাবে:
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <code className="text-xs bg-white px-3 py-2 rounded-lg border border-emerald-300 font-mono text-emerald-950 flex-1 select-all font-semibold">
+                                https://www.pashorashop.com/api/webhooks/steadfast
+                            </code>
+                        </div>
+                    </div>
                 </div>
 
                 <Button onClick={handleSave} disabled={isSaving}>
