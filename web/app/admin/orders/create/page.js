@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminShell from "@/components/admin/AdminShell";
 import { 
-    Users, Plus, Trash2, ArrowLeft, Loader2, Info, Search, Coins, ShoppingBag, CheckCircle2
+    Users, Plus, Trash2, ArrowLeft, Loader2, Info, Search, Coins, ShoppingBag, CheckCircle2, Truck
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,15 +23,16 @@ export default function AdminCreateOrderPage() {
     const [address, setAddress] = useState("");
     const [city, setCity] = useState("Dhaka");
     const [deliveryArea, setDeliveryArea] = useState("INSIDE_DHAKA");
-    const [orderSource, setOrderSource] = useState("WA"); // WA (WhatsApp), FB (Facebook), PH (Phone), MAN (Manual)
+    const [orderSource, setOrderSource] = useState("WA"); // WA, FB, PH, MAN
 
     // Financial override states
-    const [deliveryFee, setDeliveryFee] = useState(70); // Default inside Dhaka (70)
+    const [deliveryFee, setDeliveryFee] = useState(70);
     const [discount, setDiscount] = useState(0);
     const [advancePayment, setAdvancePayment] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState("COD");
     const [paymentStatus, setPaymentStatus] = useState("PENDING");
     const [adminNote, setAdminNote] = useState("");
+    const [dispatchToSteadfast, setDispatchToSteadfast] = useState(true);
 
     // Selected items state
     const [selectedItems, setSelectedItems] = useState([]);
@@ -43,12 +44,12 @@ export default function AdminCreateOrderPage() {
     const [itemQty, setItemQty] = useState(1);
     const [itemPriceOverride, setItemPriceOverride] = useState("");
 
+    const [shippingFees, setShippingFees] = useState({ inside: 70, outside: 130 });
+
     useEffect(() => {
         fetchProducts();
         fetchShippingSettings();
     }, []);
-
-    const [shippingFees, setShippingFees] = useState({ inside: 70, outside: 130 });
 
     const fetchShippingSettings = async () => {
         try {
@@ -76,6 +77,33 @@ export default function AdminCreateOrderPage() {
         }
     };
 
+    // Auto-detect outside Dhaka when address is typed
+    const handleAddressChange = (val) => {
+        setAddress(val);
+        const lower = val.toLowerCase();
+        const outsideKeywords = [
+            "নরসিংদী", "narsingdi", "চট্টগ্রাম", "chittagong", "chattogram", 
+            "সিলেট", "sylhet", "রাজশাহী", "rajshahi", "খুলনা", "khulna", 
+            "বরিশাল", "barisal", "রংপুর", "rangpur", "ময়মনসিংহ", "mymensingh", 
+            "কুমিল্লা", "comilla", "বগুড়া", "bogra", "যশোর", "jessore", 
+            "ফেনী", "feni", "নোয়াখালী", "noakhali", "কক্সবাজার", "cox", 
+            "টাঙ্গাইল", "tangail", "পাবনা", "pabna", "সিরাজগঞ্জ", "sirajganj",
+            "গোপালগঞ্জ", "জামালপুর", "ব্রাহ্মণবাড়িয়া", "কুষ্টিয়া", "দিনাজপুর"
+        ];
+
+        const isOutside = outsideKeywords.some(k => lower.includes(k));
+        if (isOutside && deliveryArea === "INSIDE_DHAKA") {
+            setDeliveryArea("OUTSIDE_DHAKA");
+            setDeliveryFee(shippingFees.outside);
+            // Detect City
+            const matchedKeyword = outsideKeywords.find(k => lower.includes(k));
+            if (matchedKeyword) {
+                const capitalized = matchedKeyword.charAt(0).toUpperCase() + matchedKeyword.slice(1);
+                setCity(capitalized);
+            }
+        }
+    };
+
     // Auto-update delivery fee when delivery area changes
     const handleDeliveryAreaChange = (val) => {
         setDeliveryArea(val);
@@ -86,18 +114,10 @@ export default function AdminCreateOrderPage() {
         }
     };
 
-    // Filter products list based on search term
-    const filteredProducts = products.filter(p => 
-        p.isActive && (
-            p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-            (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
-        )
-    );
-
     // When product changes, reset variant selection and default price
     const handleProductSelect = (pId) => {
         const prod = products.find(p => p.id === pId);
-        setSelectedProduct(prod);
+        setSelectedProduct(prod || null);
         setSelectedVariant(null);
         setItemQty(1);
         if (prod) {
@@ -110,16 +130,36 @@ export default function AdminCreateOrderPage() {
     // When variant changes, adjust pricing
     const handleVariantSelect = (vId) => {
         if (!selectedProduct) return;
-        const v = selectedProduct.variants.find(varnt => varnt.id === vId);
-        setSelectedVariant(v);
+        const v = (selectedProduct.variants || []).find(varnt => varnt.id === vId);
+        setSelectedVariant(v || null);
         if (v) {
             setItemPriceOverride(v.salePrice || v.price || selectedProduct.salePrice || selectedProduct.price);
         }
     };
 
+    // Helper: Build item object from current selector state
+    const getCurrentSelectorItem = () => {
+        if (!selectedProduct) return null;
+        if (selectedProduct.variants && selectedProduct.variants.length > 0 && !selectedVariant) {
+            return null; // Variant required
+        }
+        const price = Number(itemPriceOverride) || selectedProduct.salePrice || selectedProduct.price;
+        const quantity = Number(itemQty) || 1;
+        return {
+            productId: selectedProduct.id,
+            variantId: selectedVariant ? selectedVariant.id : null,
+            name: selectedProduct.name,
+            variantName: selectedVariant ? `${selectedVariant.size || ""} ${selectedVariant.color || ""}`.trim() : "",
+            quantity,
+            unitPrice: price,
+            productPrice: selectedProduct.price,
+            image: selectedProduct.productImages?.[0]?.url || ""
+        };
+    };
+
     // Add item to shopping list
     const handleAddItem = (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!selectedProduct) {
             toast.error("Please select a product first");
             return;
@@ -130,30 +170,19 @@ export default function AdminCreateOrderPage() {
             return;
         }
 
-        const price = Number(itemPriceOverride) || selectedProduct.salePrice || selectedProduct.price;
-        const quantity = Number(itemQty);
+        const newItem = getCurrentSelectorItem();
+        if (!newItem) return;
 
         // Check duplicate
         const isDuplicate = selectedItems.some(item => 
-            item.productId === selectedProduct.id && 
-            item.variantId === (selectedVariant ? selectedVariant.id : null)
+            item.productId === newItem.productId && 
+            item.variantId === newItem.variantId
         );
 
         if (isDuplicate) {
-            toast.error("Product item is already added. You can adjust the quantity in the list below.");
+            toast.error("This item is already in the list. You can adjust the quantity below.");
             return;
         }
-
-        const newItem = {
-            productId: selectedProduct.id,
-            variantId: selectedVariant ? selectedVariant.id : null,
-            name: selectedProduct.name,
-            variantName: selectedVariant ? `${selectedVariant.size || ""} ${selectedVariant.color || ""}`.trim() : "",
-            quantity,
-            unitPrice: price,
-            productPrice: selectedProduct.price,
-            image: selectedProduct.productImages?.[0]?.url || ""
-        };
 
         setSelectedItems([...selectedItems, newItem]);
         
@@ -194,23 +223,41 @@ export default function AdminCreateOrderPage() {
         setSelectedItems(updated);
     };
 
-    // Math summaries
-    const subtotal = selectedItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-    const total = subtotal + Number(deliveryFee) - Number(discount);
-    const dueAmount = total - Number(advancePayment);
+    // Math summaries (including preview if product is chosen but not yet clicked add)
+    const pendingItem = selectedItems.length === 0 ? getCurrentSelectorItem() : null;
+    const pendingSubtotal = pendingItem ? (pendingItem.unitPrice * pendingItem.quantity) : 0;
+    
+    const itemsSubtotal = selectedItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+    const subtotal = selectedItems.length > 0 ? itemsSubtotal : pendingSubtotal;
+
+    const rawTotal = subtotal + Number(deliveryFee) - Number(discount);
+    const total = Math.max(0, rawTotal);
+    const dueAmount = Math.max(0, total - Number(advancePayment));
 
     // Submit order creation
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
 
         if (!customerName || !phone || !address) {
             toast.error("Customer details (Name, Phone, Address) are required");
             return;
         }
 
-        if (selectedItems.length === 0) {
-            toast.error("Please add at least one product to the order");
-            return;
+        let finalItems = [...selectedItems];
+
+        // Auto-include currently selected product if user forgot to click "+ Add to Order List"
+        if (finalItems.length === 0) {
+            if (selectedProduct) {
+                const autoItem = getCurrentSelectorItem();
+                if (!autoItem) {
+                    toast.error("Please select a variant (size/color) for this product.");
+                    return;
+                }
+                finalItems = [autoItem];
+            } else {
+                toast.error("দয়া করে অন্তত একটি প্রোডাক্ট যোগ করুন বা সিলেক্ট করুন");
+                return;
+            }
         }
 
         try {
@@ -230,14 +277,33 @@ export default function AdminCreateOrderPage() {
                     paymentMethod,
                     paymentStatus,
                     adminNote,
-                    items: selectedItems,
+                    items: finalItems,
                     source: orderSource
                 })
             });
 
             const json = await res.json();
-            if (json.ok) {
+            if (json.ok && json.data) {
+                const orderId = json.data.id;
                 toast.success("Order created successfully!");
+
+                // Automatic Steadfast Dispatch if checked
+                if (dispatchToSteadfast) {
+                    try {
+                        const dispatchRes = await fetch(`/api/admin/orders/${orderId}/steadfast`, {
+                            method: "POST"
+                        });
+                        const dispatchJson = await dispatchRes.json();
+                        if (dispatchJson.ok) {
+                            toast.success(`Steadfast Courier-এ বুকিং সফল! ট্র্যাকিং: ${dispatchJson.trackingCode}`);
+                        } else {
+                            toast.warning(dispatchJson.message || "Order created, but courier booking can be completed from order details.");
+                        }
+                    } catch {
+                        toast.warning("Order created. Steadfast booking can be retried from order details.");
+                    }
+                }
+
                 router.push("/admin/orders");
             } else {
                 toast.error(json.message || "Failed to create order");
@@ -257,6 +323,8 @@ export default function AdminCreateOrderPage() {
             maximumFractionDigits: 0,
         }).format(amount);
     };
+
+    const hasAnyProduct = selectedItems.length > 0 || Boolean(selectedProduct);
 
     return (
         <AdminShell title="Create Manual Order">
@@ -292,7 +360,7 @@ export default function AdminCreateOrderPage() {
                                         required
                                         value={customerName}
                                         onChange={(e) => setCustomerName(e.target.value)}
-                                        placeholder="e.g. Rahim Uddin"
+                                        placeholder="e.g. ফাতেমা জামান"
                                         className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
@@ -304,7 +372,7 @@ export default function AdminCreateOrderPage() {
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
                                         placeholder="e.g. 017XXXXXXXX"
-                                        className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                                     />
                                 </div>
                             </div>
@@ -314,8 +382,8 @@ export default function AdminCreateOrderPage() {
                                 <textarea
                                     required
                                     value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    placeholder="e.g. House 12, Road 4, Sector 7, Uttara"
+                                    onChange={(e) => handleAddressChange(e.target.value)}
+                                    placeholder="e.g. পলাশ থানা পারুলিয়া মোড় নরসিংদী"
                                     rows={3}
                                     className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
                                 />
@@ -328,7 +396,7 @@ export default function AdminCreateOrderPage() {
                                         type="text"
                                         value={city}
                                         onChange={(e) => setCity(e.target.value)}
-                                        placeholder="e.g. Dhaka"
+                                        placeholder="e.g. Dhaka, Narsingdi"
                                         className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
@@ -339,8 +407,8 @@ export default function AdminCreateOrderPage() {
                                         onChange={(e) => handleDeliveryAreaChange(e.target.value)}
                                         className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                                     >
-                                        <option value="INSIDE_DHAKA">Inside Dhaka (৳৬০)</option>
-                                        <option value="OUTSIDE_DHAKA">Outside Dhaka (৳১২০)</option>
+                                        <option value="INSIDE_DHAKA">Inside Dhaka (৳{shippingFees.inside})</option>
+                                        <option value="OUTSIDE_DHAKA">Outside Dhaka (৳{shippingFees.outside})</option>
                                     </select>
                                 </div>
                                 <div>
@@ -371,7 +439,7 @@ export default function AdminCreateOrderPage() {
                                     <input
                                         type="number"
                                         value={deliveryFee}
-                                        onChange={(e) => setDeliveryFee(Number(e.target.value))}
+                                        onChange={(e) => setDeliveryFee(Number(e.target.value) || 0)}
                                         className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
@@ -380,7 +448,7 @@ export default function AdminCreateOrderPage() {
                                     <input
                                         type="number"
                                         value={discount}
-                                        onChange={(e) => setDiscount(Number(e.target.value))}
+                                        onChange={(e) => setDiscount(Number(e.target.value) || 0)}
                                         placeholder="0"
                                         className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
@@ -390,7 +458,7 @@ export default function AdminCreateOrderPage() {
                                     <input
                                         type="number"
                                         value={advancePayment}
-                                        onChange={(e) => setAdvancePayment(Number(e.target.value))}
+                                        onChange={(e) => setAdvancePayment(Number(e.target.value) || 0)}
                                         placeholder="0"
                                         className="w-full px-3 py-2 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
@@ -438,9 +506,16 @@ export default function AdminCreateOrderPage() {
 
                         {/* Added Items List */}
                         <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
-                            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
-                                <ShoppingBag className="w-4 h-4 text-emerald-600" /> Products Added to Order
-                            </h3>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                                    <ShoppingBag className="w-4 h-4 text-emerald-600" /> Products Added to Order
+                                </h3>
+                                {selectedItems.length > 0 && (
+                                    <span className="text-xs bg-emerald-50 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                        {selectedItems.length} items added
+                                    </span>
+                                )}
+                            </div>
 
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-left">
@@ -500,9 +575,45 @@ export default function AdminCreateOrderPage() {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {selectedItems.length === 0 && (
+
+                                        {/* Preview of selected product if not yet clicked Add */}
+                                        {selectedItems.length === 0 && selectedProduct && (
+                                            <tr className="bg-amber-50/50 border border-amber-200">
+                                                <td className="px-4 py-3.5">
+                                                    <div className="font-semibold text-gray-900 flex items-center gap-2">
+                                                        {selectedProduct.name}
+                                                        <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">সিলেক্টেড (অটো যোগ হবে)</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3.5 text-xs text-gray-500">
+                                                    {selectedVariant ? `${selectedVariant.size || ""} ${selectedVariant.color || ""}` : "None"}
+                                                </td>
+                                                <td className="px-4 py-3.5 text-center font-bold text-sm">
+                                                    {itemQty}
+                                                </td>
+                                                <td className="px-4 py-3.5 text-right font-semibold text-sm">
+                                                    ৳{itemPriceOverride || selectedProduct.salePrice || selectedProduct.price}
+                                                </td>
+                                                <td className="px-4 py-3.5 text-right font-bold text-emerald-700">
+                                                    {formatCurrency(pendingSubtotal)}
+                                                </td>
+                                                <td className="px-4 py-3.5 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddItem}
+                                                        className="text-xs bg-emerald-600 text-white px-2 py-1 rounded font-bold hover:bg-emerald-700"
+                                                    >
+                                                        Add
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {selectedItems.length === 0 && !selectedProduct && (
                                             <tr>
-                                                <td colSpan="6" className="py-12 text-center text-gray-400 font-medium">Use the right column selector to search and add products to this order list!</td>
+                                                <td colSpan="6" className="py-12 text-center text-gray-400 font-medium">
+                                                    ডানপাশের মেনু থেকে প্রোডাক্ট সিলেক্ট করে যোগ করুন।
+                                                </td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -534,7 +645,7 @@ export default function AdminCreateOrderPage() {
                                             <select
                                                 onChange={(e) => handleProductSelect(e.target.value)}
                                                 value={selectedProduct ? selectedProduct.id : ""}
-                                                className="w-full px-3 py-2.5 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                                className="w-full px-3 py-2.5 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white font-medium"
                                             >
                                                 <option value="">-- Choose Product --</option>
                                                 {products.map(p => (
@@ -589,7 +700,7 @@ export default function AdminCreateOrderPage() {
                                                     required
                                                     min="1"
                                                     value={itemQty}
-                                                    onChange={(e) => setItemQty(Number(e.target.value))}
+                                                    onChange={(e) => setItemQty(Number(e.target.value) || 1)}
                                                     className="w-full px-3 py-1.5 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                                                 />
                                             </div>
@@ -600,7 +711,7 @@ export default function AdminCreateOrderPage() {
                                                     value={itemPriceOverride}
                                                     onChange={(e) => setItemPriceOverride(e.target.value)}
                                                     placeholder="BDT"
-                                                    className="w-full px-3 py-1.5 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                                    className="w-full px-3 py-1.5 border rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white font-semibold"
                                                 />
                                             </div>
                                         </div>
@@ -609,7 +720,7 @@ export default function AdminCreateOrderPage() {
                                     <button
                                         type="submit"
                                         disabled={!selectedProduct}
-                                        className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-150 disabled:text-gray-400 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-100 disabled:text-gray-400 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
                                     >
                                         <Plus className="w-4 h-4" /> Add to Order List
                                     </button>
@@ -644,21 +755,38 @@ export default function AdminCreateOrderPage() {
                                 </div>
                                 <div className="flex justify-between border-t pt-3 font-bold text-base">
                                     <span className="text-blue-600">Net Due (কুরিয়ার ক্যাশ)</span>
-                                    <span className="text-blue-600">{formatCurrency(dueAmount)}</span>
+                                    <span className="text-blue-600 font-bold">{formatCurrency(dueAmount)}</span>
                                 </div>
+                            </div>
+
+                            {/* Steadfast Direct Booking Option */}
+                            <div className="pt-3 border-t">
+                                <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer p-2 bg-blue-50/60 hover:bg-blue-50 border border-blue-200 rounded-lg transition">
+                                    <input
+                                        type="checkbox"
+                                        checked={dispatchToSteadfast}
+                                        onChange={(e) => setDispatchToSteadfast(e.target.checked)}
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                    />
+                                    <Truck className="w-4 h-4 text-blue-600 shrink-0" />
+                                    <span>সরাসরি Steadfast Courier-এ বুকিং করুন</span>
+                                </label>
                             </div>
 
                             <button
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || selectedItems.length === 0}
-                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-3 px-4 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 shadow-md mt-6"
+                                disabled={isSubmitting || !hasAnyProduct}
+                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 px-4 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 shadow-md mt-4"
                             >
                                 {isSubmitting ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" /> অর্ডার তৈরি হচ্ছে...
+                                    </>
                                 ) : (
-                                    <CheckCircle2 className="w-5 h-5" />
+                                    <>
+                                        <CheckCircle2 className="w-5 h-5" /> Place Order / এন্ট্রি সম্পন্ন করুন
+                                    </>
                                 )}
-                                Place Order / এন্ট্রি সম্পন্ন করুন
                             </button>
                         </div>
                         
