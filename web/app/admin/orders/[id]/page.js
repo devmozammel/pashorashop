@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from "react";
 import AdminShell from "@/components/admin/AdminShell";
-import { ArrowLeft, Package, User, MapPin, Truck, CreditCard, Clock, MessageSquare, Loader2, Save } from "lucide-react";
+import { 
+    ArrowLeft, Package, User, MapPin, Truck, CreditCard, Clock, 
+    MessageSquare, Loader2, Save, RefreshCw, ExternalLink, ShieldAlert, 
+    ShieldCheck, Star, AlertTriangle, Ban, CheckCircle 
+} from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -22,6 +26,8 @@ export default function OrderDetailsPage({ params }) {
     const [note, setNote] = useState("");
     const [noteLoading, setNoteLoading] = useState(false);
     const [dispatchLoading, setDispatchLoading] = useState(false);
+    const [syncLoading, setSyncLoading] = useState(false);
+    const [blacklistLoading, setBlacklistLoading] = useState(false);
 
     useEffect(() => {
         fetchOrder();
@@ -54,7 +60,7 @@ export default function OrderDetailsPage({ params }) {
             });
             const data = await res.json();
             if (data.ok) {
-                toast.success(`Order booked with Steadfast Courier! Tracking: ${data.trackingCode || ""}`);
+                toast.success(data.message || `Order booked with Steadfast! Tracking: ${data.trackingCode || ""}`);
                 fetchOrder();
             } else {
                 if (data.message && (data.message.includes("Shipping settings") || data.message.includes("not configured"))) {
@@ -72,6 +78,59 @@ export default function OrderDetailsPage({ params }) {
             toast.error("An error occurred during dispatch");
         } finally {
             setDispatchLoading(false);
+        }
+    };
+
+    const handleSteadfastSync = async () => {
+        setSyncLoading(true);
+        try {
+            const res = await fetch(`/api/admin/orders/${id}/steadfast/sync`, {
+                method: "POST"
+            });
+            const data = await res.json();
+            if (data.ok) {
+                toast.success(data.message || "Status synced with Steadfast!");
+                fetchOrder();
+            } else {
+                toast.error(data.message || "Failed to sync status");
+            }
+        } catch (error) {
+            toast.error("Network error during status sync");
+        } finally {
+            setSyncLoading(false);
+        }
+    };
+
+    const handleToggleBlacklist = async () => {
+        if (!order?.phone) return;
+        const isCurrentlyBlocked = order.customerScore?.isBlacklisted;
+        const confirmMsg = isCurrentlyBlocked
+            ? `Remove ${order.phone} from the Blacklist?`
+            : `Add ${order.phone} to Blacklist? This will flag future orders as fraud.`;
+
+        if (!confirm(confirmMsg)) return;
+
+        setBlacklistLoading(true);
+        try {
+            const res = await fetch("/api/admin/blacklist/toggle", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    phone: order.phone,
+                    reason: `Marked from Order #${order.orderNumber}`
+                })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                toast.success(data.message);
+                fetchOrder();
+            } else {
+                toast.error(data.message || "Blacklist action failed");
+            }
+        } catch {
+            toast.error("Network error during blacklist action");
+        } finally {
+            setBlacklistLoading(false);
         }
     };
 
@@ -125,11 +184,13 @@ export default function OrderDetailsPage({ params }) {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-            case 'CONFIRMED': return 'bg-blue-100 text-blue-800';
-            case 'DELIVERED': return 'bg-green-100 text-green-800';
-            case 'CANCELLED': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+            case 'CONFIRMED': return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'PACKED': return 'bg-purple-100 text-purple-800 border-purple-200';
+            case 'SHIPPED': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+            case 'DELIVERED': return 'bg-green-100 text-green-800 border-green-200';
+            case 'CANCELLED': return 'bg-red-100 text-red-800 border-red-200';
+            default: return 'bg-gray-100 text-gray-800 border-gray-200';
         }
     };
 
@@ -145,16 +206,118 @@ export default function OrderDetailsPage({ params }) {
 
     if (!order) return null;
 
+    const score = order.customerScore;
+
     return (
         <AdminShell title={`Order #${order.orderNumber}`}>
             <div className="mb-6">
-                <Link href="/admin/orders" className="text-gray-500 hover:text-gray-900 flex items-center gap-1 mb-4 text-sm">
+                <Link href="/admin/orders" className="text-gray-500 hover:text-gray-900 flex items-center gap-1 mb-4 text-sm font-medium">
                     <ArrowLeft className="w-4 h-4" /> Back to Orders
                 </Link>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left & Center: Details */}
                     <div className="lg:col-span-2 space-y-6">
+
+                        {/* Customer Fraud & Trust Assessment Card */}
+                        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                            <div className="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                                    <h3 className="font-bold text-gray-800">কাস্টমার ভেরিফিকেশন ও ট্রাস্ট রেটিং (Fraud Detection)</h3>
+                                </div>
+                                {score && (
+                                    <div className="flex items-center gap-1">
+                                        {[1, 2, 3, 4, 5].map((s) => (
+                                            <Star
+                                                key={s}
+                                                className={`w-4 h-4 ${
+                                                    s <= (score.stars || 0)
+                                                        ? "text-amber-400 fill-amber-400"
+                                                        : "text-gray-200"
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-6">
+                                {score ? (
+                                    <div className="space-y-4">
+                                        {/* Status Alert Banner */}
+                                        <div className={`p-4 rounded-xl border flex items-start gap-3 ${
+                                            score.isBlacklisted
+                                                ? "bg-red-50 border-red-200 text-red-900"
+                                                : score.riskLevel === "HIGH_RISK"
+                                                ? "bg-amber-50 border-amber-200 text-amber-900"
+                                                : score.riskLevel === "VIP" || score.riskLevel === "TRUSTED"
+                                                ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                                                : "bg-blue-50 border-blue-200 text-blue-900"
+                                        }`}>
+                                            {score.isBlacklisted || score.riskLevel === "HIGH_RISK" ? (
+                                                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                            ) : (
+                                                <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                            )}
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <h4 className="font-bold text-sm">{score.badgeText}</h4>
+                                                    <span className="text-xs px-2 py-0.5 rounded font-mono font-semibold bg-white/80 border">
+                                                        {score.phone}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs mt-1 leading-relaxed opacity-90">
+                                                    {score.recommendation}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Stats Grid */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                            <div className="bg-gray-50 rounded-lg p-3 border">
+                                                <span className="text-xs text-gray-500 block">মোট অর্ডার</span>
+                                                <span className="text-lg font-bold text-gray-900">{score.totalOrders}টি</span>
+                                            </div>
+                                            <div className="bg-emerald-50/60 rounded-lg p-3 border border-emerald-100">
+                                                <span className="text-xs text-emerald-700 block">সফল ডেলিভারি</span>
+                                                <span className="text-lg font-bold text-emerald-800">{score.deliveredOrders}টি</span>
+                                            </div>
+                                            <div className="bg-red-50/60 rounded-lg p-3 border border-red-100">
+                                                <span className="text-xs text-red-700 block">বাতিল / রিটার্ন</span>
+                                                <span className="text-lg font-bold text-red-800">{score.cancelledOrders}টি</span>
+                                            </div>
+                                            <div className="bg-blue-50/60 rounded-lg p-3 border border-blue-100">
+                                                <span className="text-xs text-blue-700 block">সফল ডেলিভারি হার</span>
+                                                <span className="text-lg font-bold text-blue-800">{score.successRate}%</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Quick Blacklist Action */}
+                                        <div className="pt-2 flex justify-end">
+                                            <button
+                                                onClick={handleToggleBlacklist}
+                                                disabled={blacklistLoading}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border ${
+                                                    score.isBlacklisted
+                                                        ? "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300"
+                                                        : "bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
+                                                }`}
+                                            >
+                                                {blacklistLoading ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                    <Ban className="w-3.5 h-3.5" />
+                                                )}
+                                                {score.isBlacklisted ? "কাস্টমার আনব্লক করুন (Remove from Blacklist)" : "কাস্টমার ব্লক করুন (Add to Blacklist)"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-500">কোনো হিস্টোরি ডেটা লোড করা যায়নি।</p>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Order Items */}
                         <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -177,7 +340,7 @@ export default function OrderDetailsPage({ params }) {
                                             <tr key={item.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 flex items-center gap-3">
                                                     <div className="w-12 h-12 bg-gray-100 rounded border overflow-hidden flex-shrink-0">
-                                                        {item.product.images && item.product.images[0] ? (
+                                                        {item.product?.images && item.product.images[0] ? (
                                                             <img src={item.product.images[0]} alt="" className="w-full h-full object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full bg-gray-200" />
@@ -221,12 +384,18 @@ export default function OrderDetailsPage({ params }) {
                             <div className="bg-white rounded-xl shadow-sm border p-6">
                                 <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
                                     <User className="w-4 h-4 text-gray-500" />
-                                    Customer
+                                    Customer Info
                                 </h3>
                                 <div className="space-y-3 text-sm">
                                     <p><span className="text-gray-500 block text-xs">Name</span> {order.customerName}</p>
-                                    <p><span className="text-gray-500 block text-xs">Phone</span> {order.phone}</p>
+                                    <p><span className="text-gray-500 block text-xs">Phone</span> <span className="font-mono">{order.phone}</span></p>
                                     <p><span className="text-gray-500 block text-xs">Email</span> {order.user?.email || "Guest Checkout"}</p>
+                                    {order.customerNote && (
+                                        <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
+                                            <span className="font-bold block mb-1">Customer Note:</span>
+                                            {order.customerNote}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -236,22 +405,23 @@ export default function OrderDetailsPage({ params }) {
                                     Shipping Address
                                 </h3>
                                 <div className="space-y-1 text-sm">
-                                    <p>{order.address}</p>
-                                    <p>{order.city}</p>
-                                    <p className="mt-2 text-xs text-gray-500 bg-gray-100 inline-block px-2 py-1 rounded">
-                                        {order.deliveryArea || "Area not specified"}
+                                    <p className="font-medium text-gray-900">{order.address}</p>
+                                    {order.city && <p className="text-gray-600">{order.city}</p>}
+                                    <p className="mt-2 text-xs text-gray-600 bg-gray-100 inline-block px-2.5 py-1 rounded font-medium">
+                                        Area: {order.deliveryArea || "Not specified"}
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Right: Actions & History */}
+                    {/* Right: Actions, Steadfast & History */}
                     <div className="space-y-6">
+                        {/* Order Status Card */}
                         <div className="bg-white rounded-xl shadow-sm border p-6">
                             <h3 className="font-bold text-gray-800 mb-4">Order Status</h3>
                             <div className="mb-4">
-                                <span className={`inline-block w-full text-center py-2 rounded-lg font-bold ${getStatusColor(order.status)}`}>
+                                <span className={`inline-block w-full text-center py-2.5 rounded-lg font-bold border ${getStatusColor(order.status)}`}>
                                     {order.status}
                                 </span>
                             </div>
@@ -262,7 +432,7 @@ export default function OrderDetailsPage({ params }) {
                                         key={s}
                                         disabled={statusLoading || order.status === s}
                                         onClick={() => handleStatusUpdate(s)}
-                                        className={`px-3 py-2 text-xs rounded border transition ${order.status === s
+                                        className={`px-3 py-2 text-xs rounded border transition font-medium ${order.status === s
                                             ? "bg-gray-100 text-gray-400 cursor-not-allowed border-transparent"
                                             : "hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 bg-white"
                                             }`}
@@ -301,56 +471,77 @@ export default function OrderDetailsPage({ params }) {
                             </div>
                         </div>
 
-                        {/* Courier Dispatch Card */}
+                        {/* Steadfast Courier Dispatch & Tracking Card */}
                         <div className="bg-white rounded-xl shadow-sm border p-6">
-                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <Truck className="w-4 h-4 text-gray-500" />
-                                Courier & Dispatch
-                            </h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                    <Truck className="w-5 h-5 text-blue-600" />
+                                    Steadfast Courier
+                                </h3>
+                                {order.trackingNumber && (
+                                    <button
+                                        onClick={handleSteadfastSync}
+                                        disabled={syncLoading}
+                                        className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-semibold disabled:opacity-50"
+                                        title="Sync Live Status from Steadfast"
+                                    >
+                                        <RefreshCw className={`w-3.5 h-3.5 ${syncLoading ? "animate-spin" : ""}`} />
+                                        Sync Status
+                                    </button>
+                                )}
+                            </div>
 
                             {order.trackingNumber ? (
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-500">Courier:</span>
-                                        <span className="font-semibold text-gray-800">{order.courierName || "Unspecified"}</span>
+                                <div className="space-y-4">
+                                    <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-lg space-y-2">
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-gray-600">Courier Provider:</span>
+                                            <span className="font-bold text-gray-900">{order.courierName || "Steadfast"}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-gray-600">Tracking Code:</span>
+                                            <span className="font-mono font-bold text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-200">
+                                                {order.trackingNumber}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-500">Tracking Code:</span>
-                                        <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                                            {order.trackingNumber}
-                                        </span>
-                                    </div>
-                                    {order.courierName?.toLowerCase() === "steadfast" && (
+
+                                    <div className="flex gap-2">
                                         <a
                                             href={`https://steadfast.com.bd/t/${order.trackingNumber}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="w-full inline-block text-center bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs py-2 rounded font-bold transition"
+                                            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2.5 rounded-lg font-bold transition shadow-sm"
                                         >
-                                            Track on Steadfast
+                                            <ExternalLink className="w-3.5 h-3.5" /> Track on Steadfast
                                         </a>
-                                    )}
+                                        <button
+                                            onClick={handleSteadfastSync}
+                                            disabled={syncLoading}
+                                            className="px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                                            title="Sync status"
+                                        >
+                                            <RefreshCw className={`w-3.5 h-3.5 ${syncLoading ? "animate-spin" : ""}`} />
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    <p className="text-xs text-gray-500">
-                                        Book this order directly to Steadfast Courier. The status will automatically update to SHIPPED.{" "}
-                                        <Link href="/admin/shipping" className="text-blue-600 font-semibold underline hover:text-blue-800">
-                                            Shipping Settings
-                                        </Link>
+                                    <p className="text-xs text-gray-600 leading-relaxed">
+                                        এই অর্ডারটি ১-ক্লিকে সরাসরি Steadfast Courier-এ বুক করুন। বুকিং সফল হলে অর্ডার স্ট্যাটাস স্বয়ংক্রিয়ভাবে <strong>SHIPPED</strong> হয়ে যাবে এবং ট্র্যাকিং কোড জেনারেট হবে।
                                     </p>
                                     <button
                                         onClick={handleSteadfastDispatch}
                                         disabled={dispatchLoading || order.status === "CANCELLED"}
-                                        className="w-full flex items-center justify-center gap-2 bg-green-600 text-white text-xs py-2.5 rounded font-bold hover:bg-green-700 disabled:opacity-50 transition"
+                                        className="w-full flex items-center justify-center gap-2 bg-green-600 text-white text-xs py-3 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50 transition shadow-sm"
                                     >
                                         {dispatchLoading ? (
                                             <>
-                                                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Dispatching...
+                                                <Loader2 className="w-4 h-4 animate-spin" /> Steadfast-এ বুকিং হচ্ছে...
                                             </>
                                         ) : (
                                             <>
-                                                <Truck className="w-3.5 h-3.5" /> Send to Steadfast Courier
+                                                <Truck className="w-4 h-4" /> Send to Steadfast Courier
                                             </>
                                         )}
                                     </button>
@@ -358,19 +549,20 @@ export default function OrderDetailsPage({ params }) {
                             )}
                         </div>
 
+                        {/* Order Timeline Card */}
                         <div className="bg-white rounded-xl shadow-sm border p-6">
                             <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-gray-500" />
-                                Timeline
+                                Order Timeline
                             </h3>
 
                             <div className="max-h-60 overflow-y-auto space-y-4 mb-4 pr-1">
                                 {order.history.map(item => (
                                     <div key={item.id} className="relative pl-4 border-l-2 border-gray-100 pb-2 last:pb-0">
-                                        <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-gray-300"></div>
-                                        <p className="text-xs text-gray-500 mb-0.5">{new Date(item.createdAt).toLocaleString()}</p>
-                                        <p className="text-sm font-medium text-gray-800">{item.status}</p>
-                                        {item.note && <p className="text-xs text-gray-600 mt-1 italic">"{item.note}"</p>}
+                                        <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-blue-500"></div>
+                                        <p className="text-[11px] text-gray-500 mb-0.5">{new Date(item.createdAt).toLocaleString()}</p>
+                                        <p className="text-xs font-bold text-gray-800">{item.status}</p>
+                                        {item.note && <p className="text-xs text-gray-600 mt-0.5 leading-relaxed bg-gray-50 p-1.5 rounded">"{item.note}"</p>}
                                     </div>
                                 ))}
                             </div>
@@ -380,15 +572,15 @@ export default function OrderDetailsPage({ params }) {
                                     type="text"
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Add a note..."
-                                    className="w-full text-sm p-2 border rounded mb-2"
+                                    placeholder="অর্ডারে কোনো নোট যোগ করুন..."
+                                    className="w-full text-xs p-2.5 border rounded-lg mb-2 focus:ring-2 focus:ring-blue-500"
                                 />
                                 <button
                                     type="submit"
                                     disabled={noteLoading || !note.trim()}
-                                    className="w-full bg-gray-900 text-white text-xs py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+                                    className="w-full bg-gray-900 text-white text-xs py-2 rounded-lg font-semibold hover:bg-gray-800 disabled:opacity-50 transition"
                                 >
-                                    Add Note
+                                    {noteLoading ? "Saving..." : "Add Note"}
                                 </button>
                             </form>
                         </div>

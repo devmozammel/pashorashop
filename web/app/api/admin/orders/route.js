@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { apiError } from "@/lib/error-handler";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
+import { batchGetCustomerScores } from "@/lib/customer-scoring";
+import { formatBangladeshiPhone } from "@/lib/steadfast";
 
 
 export const dynamic = "force-dynamic";
@@ -47,11 +49,17 @@ export async function GET(req) {
                     id: true,
                     orderNumber: true,
                     customerName: true,
+                    phone: true,
                     total: true,
                     status: true,
                     createdAt: true,
                     paymentStatus: true,
                     paymentMethod: true,
+                    courierName: true,
+                    trackingNumber: true,
+                    city: true,
+                    deliveryArea: true,
+                    isAbnormal: true,
                     _count: {
                         select: { items: true }
                     }
@@ -60,9 +68,21 @@ export async function GET(req) {
             prisma.order.count({ where })
         ]);
 
+        // Compute customer trust & fraud scores for this batch of orders
+        const phoneList = orders.map(o => o.phone).filter(Boolean);
+        const scoresMap = await batchGetCustomerScores(phoneList);
+
+        const enrichedOrders = orders.map(order => {
+            const clean = formatBangladeshiPhone(order.phone);
+            return {
+                ...order,
+                customerScore: scoresMap[clean] || null
+            };
+        });
+
         return NextResponse.json({
             ok: true,
-            data: orders,
+            data: enrichedOrders,
             pagination: {
                 total,
                 pages: Math.ceil(total / limit),

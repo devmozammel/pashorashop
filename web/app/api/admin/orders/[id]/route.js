@@ -4,6 +4,7 @@ import { apiError } from "@/lib/error-handler";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 import { sendOrderStatusEmail } from "@/lib/email";
+import { getCustomerScore } from "@/lib/customer-scoring";
 
 
 export const dynamic = "force-dynamic";
@@ -47,7 +48,9 @@ export async function GET(req, props) {
             return NextResponse.json({ ok: false, message: "Order not found" }, { status: 404 });
         }
 
-        return NextResponse.json({ ok: true, data: order });
+        const customerScore = await getCustomerScore(order.phone);
+
+        return NextResponse.json({ ok: true, data: { ...order, customerScore } });
     } catch (error) {
         return apiError(error, "Get Order Details");
     }

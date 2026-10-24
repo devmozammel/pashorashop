@@ -36,7 +36,7 @@ export async function generateMetadata(props) {
 
     if (!product) return {};
 
-    const title = product.metaTitle || `${product.name} | Pashora Shop`;
+    const title = product.metaTitle || product.name;
     const description = product.metaDescription || product.shortDesc || product.description?.substring(0, 160) || `Buy ${product.name} at Pashora Shop`;
     const image = product.productImages[0]?.url || (typeof product.images === 'string' ? JSON.parse(product.images)[0] : product.images?.[0]) || "/logo.png";
     const keywords = product.metaKeywords || "";
@@ -201,11 +201,27 @@ export default async function ProductPage(props) {
                 <span>/</span>
                 {product.category && (
                     <>
-                        <Link href={`/shop?category=${product.category.slug}`} className="hover:text-emerald-700 transition-colors shrink-0">
+                        <Link href={`/category/${product.category.slug}`} className="hover:text-emerald-700 transition-colors shrink-0">
                             {product.category.name}
                         </Link>
                         <span>/</span>
-                        </>
+                    </>
+                )}
+                {product.subcategoryGroup && (
+                    <>
+                        <Link href={`/category/${product.category?.slug}/${product.subcategoryGroup.slug}`} className="hover:text-emerald-700 transition-colors shrink-0">
+                            {product.subcategoryGroup.name}
+                        </Link>
+                        <span>/</span>
+                    </>
+                )}
+                {product.subcategoryItem && (
+                    <>
+                        <Link href={`/category/${product.category?.slug}/${product.subcategoryGroup?.slug}/${product.subcategoryItem.slug}`} className="hover:text-emerald-700 transition-colors shrink-0">
+                            {product.subcategoryItem.name}
+                        </Link>
+                        <span>/</span>
+                    </>
                 )}
                 <span className="text-gray-900 font-medium truncate max-w-xs sm:max-w-md">{product.name}</span>
             </nav>
