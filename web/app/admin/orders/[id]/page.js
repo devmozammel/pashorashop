@@ -28,6 +28,7 @@ export default function OrderDetailsPage({ params }) {
     const [dispatchLoading, setDispatchLoading] = useState(false);
     const [syncLoading, setSyncLoading] = useState(false);
     const [blacklistLoading, setBlacklistLoading] = useState(false);
+    const [fraudCheckLoading, setFraudCheckLoading] = useState(false);
 
     useEffect(() => {
         fetchOrder();
@@ -98,6 +99,26 @@ export default function OrderDetailsPage({ params }) {
             toast.error("Network error during status sync");
         } finally {
             setSyncLoading(false);
+        }
+    };
+
+    
+    const handleRefreshSteadfastFraud = async () => {
+        if (!order?.phone) return;
+        setFraudCheckLoading(true);
+        try {
+            const res = await fetch(`/api/admin/steadfast/fraud-check?phone=${encodeURIComponent(order.phone)}`);
+            const data = await res.json();
+            if (data.ok) {
+                toast.success("Steadfast লাইভ ফ্রড ডেটা আপডেট হয়েছে");
+                setOrder(prev => ({ ...prev, steadfastFraud: data }));
+            } else {
+                toast.error(data.message || "Steadfast থেকে ডেটা পাওয়া যায়নি");
+            }
+        } catch {
+            toast.error("Steadfast চেক করতে সমস্যা হয়েছে");
+        } finally {
+            setFraudCheckLoading(false);
         }
     };
 
@@ -312,6 +333,133 @@ export default function OrderDetailsPage({ params }) {
                                                 {score.isBlacklisted ? "কাস্টমার আনব্লক করুন (Remove from Blacklist)" : "কাস্টমার ব্লক করুন (Add to Blacklist)"}
                                             </button>
                                         </div>
+
+                                        {/* Steadfast Courier Live Fraud & Delivery Ratio Section */}
+                                        <div className="mt-4 pt-4 border-t border-gray-100">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">
+                                                        ST
+                                                    </span>
+                                                    <div>
+                                                        <h5 className="font-bold text-xs text-gray-900 flex items-center gap-1.5">
+                                                            Steadfast কুরিয়ার লাইভ হিস্টোরি ও ফ্রড চেক
+                                                            <span className="text-[10px] font-normal text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                                                                অফিসিয়াল API
+                                                            </span>
+                                                        </h5>
+                                                        <p className="text-[11px] text-gray-500">
+                                                            পুরো বাংলাদেশে Steadfast দিয়ে এই নম্বরের মোট ডেলিভারি ও রিটার্ন রেকর্ড
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={handleRefreshSteadfastFraud}
+                                                    disabled={fraudCheckLoading}
+                                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-50 hover:bg-indigo-100 transition border border-indigo-200"
+                                                    title="Steadfast API থেকে লাইভ ডেটা রিফ্রেশ করুন"
+                                                >
+                                                    <RefreshCw className={`w-3 h-3 ${fraudCheckLoading ? "animate-spin" : ""}`} />
+                                                    {fraudCheckLoading ? "চেক হচ্ছে..." : "লাইভ চেক"}
+                                                </button>
+                                            </div>
+
+                                            {order.steadfastFraud?.ok ? (
+                                                <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-3">
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                        <div className="bg-white p-2.5 rounded-lg border shadow-xs">
+                                                            <span className="text-[11px] text-gray-500 block">Steadfast ডেলিভারি রেট</span>
+                                                            <div className="flex items-baseline gap-1 mt-0.5">
+                                                                <span className={`text-lg font-black ${
+                                                                    (order.steadfastFraud.deliveryRatio ?? 0) >= 80 ? "text-emerald-600" :
+                                                                    (order.steadfastFraud.deliveryRatio ?? 0) >= 50 ? "text-amber-600" : "text-rose-600"
+                                                                }`}>
+                                                                    {order.steadfastFraud.deliveryRatio !== null ? `${order.steadfastFraud.deliveryRatio}%` : "N/A"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="bg-white p-2.5 rounded-lg border shadow-xs">
+                                                            <span className="text-[11px] text-gray-500 block">Steadfast রিটার্ন রেট</span>
+                                                            <div className="flex items-baseline gap-1 mt-0.5">
+                                                                <span className={`text-lg font-black ${
+                                                                    (order.steadfastFraud.returnRatio ?? 0) > 40 ? "text-rose-600" :
+                                                                    (order.steadfastFraud.returnRatio ?? 0) > 15 ? "text-amber-600" : "text-emerald-600"
+                                                                }`}>
+                                                                    {order.steadfastFraud.returnRatio !== null ? `${order.steadfastFraud.returnRatio}%` : "0%"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="bg-white p-2.5 rounded-lg border shadow-xs">
+                                                            <span className="text-[11px] text-gray-500 block">অন্যান্য মার্চেন্ট রিপোর্ট</span>
+                                                            <div className="flex items-baseline gap-1 mt-0.5">
+                                                                <span className={`text-lg font-black ${
+                                                                    order.steadfastFraud.totalReports > 0 ? "text-rose-600" : "text-emerald-600"
+                                                                }`}>
+                                                                    {order.steadfastFraud.totalReports}টি
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="bg-white p-2.5 rounded-lg border shadow-xs">
+                                                            <span className="text-[11px] text-gray-500 block">মোট কুরিয়ার পার্সেল</span>
+                                                            <div className="flex items-baseline gap-1 mt-0.5">
+                                                                <span className="text-lg font-black text-gray-800">
+                                                                    {order.steadfastFraud.volumeRange || "N/A"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Delivery Progress Bar */}
+                                                    {order.steadfastFraud.deliveryRatio !== null && (
+                                                        <div>
+                                                            <div className="flex justify-between text-[11px] font-medium text-gray-600 mb-1">
+                                                                <span>সাকসেস ডেলিভারি: {order.steadfastFraud.deliveryRatio}%</span>
+                                                                <span>ক্যানসেল/রিটার্ন: {order.steadfastFraud.returnRatio}%</span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden flex">
+                                                                <div 
+                                                                    className="bg-emerald-500 h-full transition-all duration-500" 
+                                                                    style={{ width: `${order.steadfastFraud.deliveryRatio}%` }}
+                                                                />
+                                                                <div 
+                                                                    className="bg-rose-500 h-full transition-all duration-500" 
+                                                                    style={{ width: `${order.steadfastFraud.returnRatio}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Fraud categories breakdown if any */}
+                                                    {order.steadfastFraud.totalReports > 0 && Object.keys(order.steadfastFraud.fraudCategories || {}).length > 0 && (
+                                                        <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+                                                            <span className="font-bold block mb-1">রিপোর্টের কারণসমূহ (মার্চেন্টদের অভিযোগ):</span>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {Object.entries(order.steadfastFraud.fraudCategories).map(([key, count]) => (
+                                                                    <span key={key} className="px-2 py-0.5 bg-white border border-rose-200 rounded text-[11px] font-medium">
+                                                                        {key.replace(/_/g, " ")}: {count} বার
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="bg-gray-50 p-3 rounded-lg border text-xs text-gray-500 flex items-center justify-between">
+                                                    <span>Steadfast API থেকে কুরিয়ার হিস্টোরি ডেটা সরাসরি দেখা যাবে।</span>
+                                                    <button
+                                                        onClick={handleRefreshSteadfastFraud}
+                                                        disabled={fraudCheckLoading}
+                                                        className="text-indigo-600 hover:underline font-semibold"
+                                                    >
+                                                        এখনই চেক করুন
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
                                     </div>
                                 ) : (
                                     <p className="text-sm text-gray-500">কোনো হিস্টোরি ডেটা লোড করা যায়নি।</p>

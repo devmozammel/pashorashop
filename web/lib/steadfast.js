@@ -291,3 +291,76 @@ export function mapSteadfastStatus(deliveryStatus) {
         isFinal: false
     };
 }
+
+
+/**
+ * Check customer's courier delivery history and fraud risk directly via Steadfast's live fraud score API.
+ * Endpoint: GET /fraud_check/score/{phone}
+ * Returns delivery_ratio (%), cancellation_ratio (%), return_ratio (%), total_reports, fraud_categories, volume_range.
+ */
+export async function checkSteadfastFraud(rawPhone) {
+    const cleanPhone = formatBangladeshiPhone(rawPhone);
+    if (!cleanPhone || cleanPhone.length !== 11) {
+        return {
+            ok: false,
+            message: 'সঠিক ১১-সংখ্যার মোবাইল নম্বর দিন'
+        };
+    }
+
+    try {
+        const response = await fetchSteadfast('/fraud_check/score/' + cleanPhone, { method: 'GET' });
+        if (response.data && (response.data.status === 200 || response.data.delivery_ratio !== undefined)) {
+            const d = response.data;
+            const deliveryRatio = d.delivery_ratio !== null && d.delivery_ratio !== undefined ? Number(d.delivery_ratio) : null;
+            const cancellationRatio = d.cancellation_ratio !== null && d.cancellation_ratio !== undefined ? Number(d.cancellation_ratio) : null;
+            const returnRatio = d.return_ratio !== null && d.return_ratio !== undefined ? Number(d.return_ratio) : (cancellationRatio || 0);
+            const totalReports = Number(d.total_reports || 0);
+
+            // Risk Assessment
+            let riskLevel = 'SAFE';
+            let riskLabel = 'নিরাপদ কাস্টমার';
+            let riskColor = 'emerald';
+
+            if (totalReports > 0 || (deliveryRatio !== null && deliveryRatio < 50) || returnRatio > 50) {
+                riskLevel = 'HIGH_RISK';
+                riskLabel = '⚠️ অতি ঝুঁকিপূর্ণ কাস্টমার';
+                riskColor = 'rose';
+            } else if ((deliveryRatio !== null && deliveryRatio < 75) || returnRatio > 25) {
+                riskLevel = 'MODERATE';
+                riskLabel = 'মাঝারি ঝুঁকি (ক্যানসেল বেশি)';
+                riskColor = 'amber';
+            } else if (deliveryRatio !== null && deliveryRatio >= 85) {
+                riskLevel = 'TRUSTED';
+                riskLabel = '⭐ অত্যন্ত বিশ্বস্ত ক্রেতা';
+                riskColor = 'emerald';
+            }
+
+            return {
+                ok: true,
+                phone: cleanPhone,
+                deliveryRatio,
+                cancellationRatio,
+                returnRatio,
+                totalReports,
+                volumeRange: d.volume_range || 'N/A',
+                volumeBand: d.volume_band || 'N/A',
+                fraudCategories: d.fraud_categories || {},
+                riskLevel,
+                riskLabel,
+                riskColor,
+                checkedAt: new Date().toISOString()
+            };
+        }
+
+        return {
+            ok: false,
+            message: response.data?.message || 'Steadfast থেকে কোনো তথ্য পাওয়া যায়নি'
+        };
+    } catch (err) {
+        console.error('Error checking Steadfast fraud:', err);
+        return {
+            ok: false,
+            message: err.message
+        };
+    }
+}

@@ -5,6 +5,7 @@ import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 import { sendOrderStatusEmail } from "@/lib/email";
 import { getCustomerScore } from "@/lib/customer-scoring";
+import { checkSteadfastFraud } from "@/lib/steadfast";
 
 
 export const dynamic = "force-dynamic";
@@ -48,9 +49,12 @@ export async function GET(req, props) {
             return NextResponse.json({ ok: false, message: "Order not found" }, { status: 404 });
         }
 
-        const customerScore = await getCustomerScore(order.phone);
+        const [customerScore, steadfastFraud] = await Promise.all([
+            getCustomerScore(order.phone).catch(() => null),
+            checkSteadfastFraud(order.phone).catch(() => null)
+        ]);
 
-        return NextResponse.json({ ok: true, data: { ...order, customerScore } });
+        return NextResponse.json({ ok: true, data: { ...order, customerScore, steadfastFraud } });
     } catch (error) {
         return apiError(error, "Get Order Details");
     }
