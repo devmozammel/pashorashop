@@ -37,7 +37,8 @@ export default function AffiliatePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        setDomain(window.location.origin);
+        const origin = window.location.hostname === 'localhost' ? window.location.origin : 'https://www.pashorashop.com';
+        setDomain(origin);
         if (status === "unauthenticated") {
             router.push("/auth/login");
         } else if (status === "authenticated") {

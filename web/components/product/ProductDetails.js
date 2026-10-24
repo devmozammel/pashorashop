@@ -41,7 +41,7 @@ export default function ProductDetails({
 
     const handleShare = async () => {
         try {
-            const baseUrl = window.location.origin;
+            const baseUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? window.location.origin : 'https://www.pashorashop.com';
             const productUrl = `${baseUrl}/product/${product.slug}`;
             const shareUrl = affiliateCode ? `${productUrl}?ref=${affiliateCode}` : productUrl;
             await navigator.clipboard.writeText(shareUrl);

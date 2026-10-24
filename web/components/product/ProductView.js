@@ -250,7 +250,7 @@ export default function ProductView({ product }) {
                     ? `Size: ${selectedVariant.size || ''} ${selectedVariant.color ? `, Color: ${selectedVariant.color}` : ''}`.trim() 
                     : "";
  
-                const waMessage = `*হোয়াটসঅ্যাপ ডিরেক্ট অর্ডার (authenticbazar.shop)*\n` +
+                const waMessage = `*হোয়াটসঅ্যাপ ডিরেক্ট অর্ডার (pashorashop.com)*\n` +
                     `---------------------------------------------\n` +
                     `অর্ডার নম্বর: ${data.orderNumber || 'N/A'}\n` +
                     `প্রোডাক্ট: ${product.name}\n` +
