@@ -104,9 +104,66 @@ export async function POST(req) {
         });
 
         if (!order) {
-            console.warn(`[Steadfast Webhook] No matching order found for invoice: "${invoice}", CID: "${consignmentId}"`);
-            // Steadfast expects 2xx answer within 5 seconds so return 200 to acknowledge
-            return NextResponse.json({ status: 200, message: "Order not found in database, acknowledged." });
+            console.log(`[Steadfast Webhook] Order not found in database for invoice: "${invoice}", CID: "${consignmentId}". Auto-importing WhatsApp/External booking...`);
+            
+            // Auto-create external / WhatsApp order booked directly in Steadfast!
+            const externalOrderNumber = invoice && invoice.trim().length > 0 
+                ? invoice.trim() 
+                : `ST-${consignmentId || Date.now()}`;
+
+            const mapped = mapSteadfastStatus(rawStatus) || { 
+                orderStatus: "SHIPPED", 
+                paymentStatus: null, 
+                label: rawStatus || "Dispatched" 
+            };
+            const cod = Number(body.cod_amount || 0);
+            const deliveryFee = Number(body.delivery_charge || 0);
+
+            try {
+                const newOrder = await prisma.order.create({
+                    data: {
+                        orderNumber: externalOrderNumber,
+                        trackingNumber: consignmentId ? String(consignmentId) : null,
+                        customerName: "WhatsApp / Steadfast Direct Customer",
+                        phone: "01000000000",
+                        address: "Steadfast Direct Booking",
+                        city: "Bangladesh",
+                        deliveryArea: "inside",
+                        deliveryFee: deliveryFee,
+                        subtotal: cod > 0 ? cod : 0,
+                        total: cod > 0 ? cod : 0,
+                        status: mapped.orderStatus,
+                        paymentStatus: mapped.paymentStatus || "PENDING",
+                        paymentMethod: "COD",
+                        isAbnormal: false,
+                        customerNote: `Steadfast থেকে সরাসরি আমদানি করা হয়েছে (WhatsApp / অফলাইন বুকিং)। Consignment ID: ${consignmentId || "N/A"}`,
+                        history: {
+                            create: {
+                                status: mapped.orderStatus,
+                                note: `[Steadfast অটো আমদানি] অর্ডারটি ওয়েবসাইটে তোলা ছিল না। Steadfast বুকিং থেকে স্বয়ংক্রিয়ভাবে অর্ডার তৈরি হয়েছে। (${rawStatus})`
+                            }
+                        },
+                        items: {
+                            create: [{
+                                name: "Steadfast Direct Parcel (WhatsApp / Phone Order)",
+                                price: cod > 0 ? cod : 0,
+                                quantity: 1,
+                                total: cod > 0 ? cod : 0
+                            }]
+                        }
+                    }
+                });
+
+                console.log(`[Steadfast Webhook] Auto-created missing external order #${newOrder.orderNumber} from Steadfast!`);
+                return NextResponse.json({
+                    status: 200,
+                    message: "External order auto-created and synced successfully",
+                    orderNumber: newOrder.orderNumber
+                });
+            } catch (createErr) {
+                console.error("[Steadfast Webhook] Failed to auto-create missing order:", createErr.message);
+                return NextResponse.json({ status: 200, message: "Order creation skipped, acknowledged." });
+            }
         }
 
         // Handle delivery_status events
