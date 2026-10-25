@@ -15,23 +15,23 @@ const checkoutSchema = z.object({
     items: z.array(z.object({
         product: z.object({
             id: z.string(),
-            name: z.string(),
-            price: z.coerce.number().int(),
-            salePrice: z.coerce.number().int().nullable().optional(),
-        }),
+            name: z.string().optional().default("Product"),
+            price: z.coerce.number().transform(v => Math.round(v)),
+            salePrice: z.coerce.number().transform(v => Math.round(v)).nullable().optional(),
+        }).passthrough(),
         variant: z.object({
-            id: z.string(),
+            id: z.string().optional().nullable(),
             size: z.string().optional().nullable(),
             color: z.string().optional().nullable(),
-            priceAdjustment: z.coerce.number().int().optional(),
-            stock: z.coerce.number().int().optional(),
-        }).nullable().optional(),
-        quantity: z.coerce.number().int().min(1),
-        price: z.coerce.number().int().optional(),
-    })),
+            priceAdjustment: z.coerce.number().optional().nullable(),
+            stock: z.coerce.number().optional().nullable(),
+        }).passthrough().nullable().optional(),
+        quantity: z.coerce.number().min(1).default(1),
+        price: z.coerce.number().optional(),
+    }).passthrough()),
     customer: z.object({
         firstName: z.string().min(1),
-        lastName: z.string().min(1),
+        lastName: z.string().optional().nullable().transform(val => val ? val.trim() : ""),
         phone: z.string().min(1),
         address: z.string().min(1),
         city: z.string().optional().nullable().transform(val => (val && val.trim()) ? val.trim() : "Dhaka"),
@@ -472,7 +472,7 @@ export async function POST(req) {
                                 value: Number(order.total),
                                 currency: "BDT",
                                 content_type: "product",
-                                content_ids: orderItemsData.map(item => item.productId)
+                                content_ids: fullOrder?.items?.map(item => item.productId) || []
                             }
                         }
                     ]
@@ -500,7 +500,9 @@ export async function POST(req) {
     } catch (error) {
         console.error("Checkout Error:", error);
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
+            const issues = error.issues?.map(i => `${i.path.join(".")}: ${i.message}`).join(", ") || "Validation error";
+            console.error("Zod Validation Failed:", issues);
+            return NextResponse.json({ error: `Invalid data format: ${issues}` }, { status: 400 });
         }
         return NextResponse.json({ error: error.message || "Something went wrong" }, { status: 500 });
     }
