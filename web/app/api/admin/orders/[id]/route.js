@@ -5,7 +5,7 @@ import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 import { sendOrderStatusEmail } from "@/lib/email";
 import { getCustomerScore } from "@/lib/customer-scoring";
-import { checkSteadfastFraud } from "@/lib/steadfast";
+import { checkSteadfastFraud, getCachedSteadfastFraud } from "@/lib/steadfast";
 
 
 export const dynamic = "force-dynamic";
@@ -49,10 +49,32 @@ export async function GET(req, props) {
             return NextResponse.json({ ok: false, message: "Order not found" }, { status: 404 });
         }
 
-        const [customerScore, steadfastFraud] = await Promise.all([
-            getCustomerScore(order.phone).catch(() => null),
-            checkSteadfastFraud(order.phone).catch(() => null)
-        ]);
+        // 1. Get internal customer trust score
+        const customerScore = await getCustomerScore(order.phone).catch(() => null);
+
+        // 2. Get Steadfast Fraud score using 2-tier cache (DB order snapshot -> Memory Cache -> Live API)
+        let steadfastFraud = null;
+        if (order.shippingAddress && typeof order.shippingAddress === "object" && order.shippingAddress.steadfastFraud) {
+            steadfastFraud = order.shippingAddress.steadfastFraud;
+        } else {
+            steadfastFraud = getCachedSteadfastFraud(order.phone);
+        }
+
+        if (!steadfastFraud) {
+            steadfastFraud = await checkSteadfastFraud(order.phone, { force: false }).catch(() => null);
+            if (steadfastFraud?.ok) {
+                const currentAddr = order.shippingAddress && typeof order.shippingAddress === "object" ? order.shippingAddress : {};
+                prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        shippingAddress: {
+                            ...currentAddr,
+                            steadfastFraud
+                        }
+                    }
+                }).catch(err => console.error("Error caching steadfast fraud score in order:", err.message));
+            }
+        }
 
         return NextResponse.json({ ok: true, data: { ...order, customerScore, steadfastFraud } });
     } catch (error) {

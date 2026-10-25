@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/security";
 
 const STEADFAST_BASE_URL = "https://portal.packzy.com/api/v1";
-const STEADFAST_FALLBACK_URL = "https://portal.steadfast.com.bd/api/v1";
 
 /**
  * Fetch and decrypt Steadfast API credentials from DB or fallback to environment variables.
@@ -41,7 +40,7 @@ export async function getSteadfastCredentials() {
 }
 
 /**
- * Make an authenticated request to Steadfast API with automatic fallback.
+ * Make an authenticated request to Steadfast API with timeout protection.
  */
 export async function fetchSteadfast(endpoint, options = {}) {
     const { apiKey, secretKey } = await getSteadfastCredentials();
@@ -61,30 +60,26 @@ export async function fetchSteadfast(endpoint, options = {}) {
     const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds timeout
+
         const res = await fetch(`${STEADFAST_BASE_URL}${cleanEndpoint}`, {
             ...options,
-            headers
+            headers,
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         const data = await res.json().catch(async () => {
             const text = await res.text();
             return { status: res.status, rawText: text };
         });
         return { ok: res.ok, status: res.status, data };
     } catch (primaryErr) {
-        // Fallback endpoint attempt
-        try {
-            const res = await fetch(`${STEADFAST_FALLBACK_URL}${cleanEndpoint}`, {
-                ...options,
-                headers
-            });
-            const data = await res.json().catch(async () => {
-                const text = await res.text();
-                return { status: res.status, rawText: text };
-            });
-            return { ok: res.ok, status: res.status, data };
-        } catch (fallbackErr) {
-            throw new Error(`Failed to connect to Steadfast Courier: ${primaryErr.message}`);
+        if (primaryErr.name === 'AbortError') {
+            throw new Error("Steadfast API request timed out (12s).");
         }
+        throw new Error(`Failed to connect to Steadfast Courier: ${primaryErr.message}`);
     }
 }
 
@@ -110,16 +105,22 @@ export async function getSteadfastBalance() {
  * Normalize and clean Bangladeshi mobile numbers to 11 digits: 01XXXXXXXXX
  */
 export function formatBangladeshiPhone(rawPhone) {
-    let clean = (rawPhone || "").toString().replace(/\D/g, "");
-    if (clean.startsWith("880") && clean.length === 14) {
+    if (!rawPhone) return "";
+    let clean = rawPhone.toString().replace(/\D/g, "");
+    if (clean.startsWith("880") && clean.length >= 13) {
         clean = clean.slice(3);
-    } else if (clean.startsWith("88") && clean.length === 13) {
+        if (!clean.startsWith("0")) clean = "0" + clean;
+    } else if (clean.startsWith("88") && clean.length >= 12) {
         clean = clean.slice(2);
-    } else if (clean.length > 11 && clean.includes("880")) {
-        clean = clean.split("880")[1];
+        if (!clean.startsWith("0")) clean = "0" + clean;
     }
-    if (clean.length === 10 && !clean.startsWith("0")) {
+    if (clean.length === 10 && clean.startsWith("1")) {
         clean = "0" + clean;
+    }
+    if (clean.length > 11 && clean.includes("01")) {
+        const idx = clean.indexOf("01");
+        const candidate = clean.slice(idx, idx + 11);
+        if (candidate.length === 11) clean = candidate;
     }
     return clean;
 }
@@ -162,7 +163,7 @@ export async function createSteadfastOrder(order) {
         body: JSON.stringify(payload)
     });
 
-    const result = response.data;
+    const result = response.data || {};
     const trackingCode = result.consignment?.tracking_code || result.tracking_code || result.consignment?.consignment_id?.toString() || result.consignment_id?.toString();
     const consignmentId = result.consignment?.consignment_id || result.consignment_id || null;
 
@@ -175,13 +176,44 @@ export async function createSteadfastOrder(order) {
             consignmentId,
             consignment: result.consignment || result
         };
-    } else {
-        const errorMsg = result.message || (typeof result.errors === 'object' ? JSON.stringify(result.errors) : null) || "Failed to book parcel with Steadfast";
+    }
+
+    // If order was already dispatched to Steadfast (invoice taken), attempt to recover existing tracking code
+    const rawErrorStr = JSON.stringify(result);
+    if (rawErrorStr.includes("invoice has already been taken") || rawErrorStr.includes("already been taken")) {
+        try {
+            const existingStatus = await checkSteadfastStatus({ invoice: order.orderNumber });
+            if (existingStatus.ok && existingStatus.data) {
+                const recoveredTracking = existingStatus.data.tracking_code || existingStatus.data.consignment_id || order.orderNumber;
+                const recoveredCid = existingStatus.data.consignment_id || null;
+                return {
+                    ok: true,
+                    trackingCode: recoveredTracking,
+                    consignmentId: recoveredCid,
+                    consignment: existingStatus.data,
+                    recovered: true,
+                    message: `Order was already booked with Steadfast. Recovered Tracking Code: ${recoveredTracking}`
+                };
+            }
+        } catch {}
         return {
             ok: false,
-            message: errorMsg
+            message: `এই অর্ডারটি (#${order.orderNumber}) ইতিমধ্যে Steadfast-এ বুকিং করা হয়েছে।`
         };
     }
+
+    let errorMsg = result.message || result.error;
+    if (!errorMsg && result.errors && typeof result.errors === "object") {
+        errorMsg = Object.values(result.errors).flat().join(". ");
+    }
+    if (!errorMsg) {
+        errorMsg = "Failed to book parcel with Steadfast";
+    }
+
+    return {
+        ok: false,
+        message: errorMsg
+    };
 }
 
 /**
@@ -293,12 +325,37 @@ export function mapSteadfastStatus(deliveryStatus) {
 }
 
 
+// In-memory fraud score cache (24 hour TTL) to avoid exceeding Steadfast's 10 queries/day limit
+const fraudMemoryCache = new Map();
+const FRAUD_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+export function getCachedSteadfastFraud(rawPhone) {
+    const clean = formatBangladeshiPhone(rawPhone);
+    if (!clean) return null;
+    const entry = fraudMemoryCache.get(clean);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > FRAUD_CACHE_TTL) {
+        fraudMemoryCache.delete(clean);
+        return null;
+    }
+    return entry.data;
+}
+
+export function setCachedSteadfastFraud(rawPhone, data) {
+    const clean = formatBangladeshiPhone(rawPhone);
+    if (!clean || !data) return;
+    fraudMemoryCache.set(clean, {
+        data,
+        timestamp: Date.now()
+    });
+}
+
 /**
  * Check customer's courier delivery history and fraud risk directly via Steadfast's live fraud score API.
- * Endpoint: GET /fraud_check/score/{phone}
- * Returns delivery_ratio (%), cancellation_ratio (%), return_ratio (%), total_reports, fraud_categories, volume_range.
+ * Endpoint: GET /fraud_check/score/{phone} (fallback /fraud_check/{phone})
+ * Includes smart caching & rate limit detection.
  */
-export async function checkSteadfastFraud(rawPhone) {
+export async function checkSteadfastFraud(rawPhone, options = {}) {
     const cleanPhone = formatBangladeshiPhone(rawPhone);
     if (!cleanPhone || cleanPhone.length !== 11) {
         return {
@@ -307,14 +364,69 @@ export async function checkSteadfastFraud(rawPhone) {
         };
     }
 
+    // 1. Check in-memory cache unless caller explicitly requested force refresh
+    if (!options.force) {
+        const cached = getCachedSteadfastFraud(cleanPhone);
+        if (cached && cached.ok) {
+            return { ...cached, isCached: true };
+        }
+    }
+
     try {
         const response = await fetchSteadfast('/fraud_check/score/' + cleanPhone, { method: 'GET' });
-        if (response.data && (response.data.status === 200 || response.data.delivery_ratio !== undefined)) {
-            const d = response.data;
-            const deliveryRatio = d.delivery_ratio !== null && d.delivery_ratio !== undefined ? Number(d.delivery_ratio) : null;
-            const cancellationRatio = d.cancellation_ratio !== null && d.cancellation_ratio !== undefined ? Number(d.cancellation_ratio) : null;
-            const returnRatio = d.return_ratio !== null && d.return_ratio !== undefined ? Number(d.return_ratio) : (cancellationRatio || 0);
-            const totalReports = Number(d.total_reports || 0);
+        const d = response.data || {};
+
+        // 2. Check for Steadfast API Rate Limit (e.g. 10/10 limit exceeded)
+        const isRateLimited = response.status === 429 ||
+            (typeof d.error === 'string' && d.error.toLowerCase().includes('rate limit')) ||
+            (typeof d.message === 'string' && d.message.toLowerCase().includes('rate limit'));
+
+        if (isRateLimited) {
+            const existingCache = fraudMemoryCache.get(cleanPhone);
+            if (existingCache?.data?.ok) {
+                return {
+                    ...existingCache.data,
+                    isCached: true,
+                    rateLimitWarning: "Steadfast লাইভ লিমিট (১০/১০) শেষ হওয়ায় পূর্বে সংরক্ষিত তথ্য দেখানো হচ্ছে।"
+                };
+            }
+            return {
+                ok: false,
+                isRateLimited: true,
+                message: "Steadfast ফ্রড চেক লিমিট (১০/১০) শেষ হয়েছে। Steadfast মার্চেন্ট পোর্টালে লিমিট রিনিউ হলে পুনরায় চেক করা যাবে।"
+            };
+        }
+
+        // 3. Check for successful response (handles both score endpoint and standard history endpoint)
+        const hasScoreData = d.status === 200 || d.delivery_ratio !== undefined || d.Total_parcels !== undefined || d.total_delivered !== undefined;
+
+        if (response.ok && hasScoreData) {
+            let deliveryRatio = null;
+            let cancellationRatio = null;
+            let returnRatio = 0;
+            let totalReports = 0;
+            let totalParcels = null;
+            let volumeRange = d.volume_range || d.volume_band || null;
+
+            if (d.delivery_ratio !== undefined && d.delivery_ratio !== null) {
+                deliveryRatio = Number(d.delivery_ratio);
+                cancellationRatio = d.cancellation_ratio !== undefined && d.cancellation_ratio !== null ? Number(d.cancellation_ratio) : null;
+                returnRatio = d.return_ratio !== undefined && d.return_ratio !== null ? Number(d.return_ratio) : (cancellationRatio || 0);
+            } else if (d.Total_parcels !== undefined || d.total_delivered !== undefined) {
+                totalParcels = Number(d.Total_parcels || 0);
+                const delivered = Number(d.total_delivered || 0);
+                const cancelled = Number(d.total_cancelled || 0);
+                deliveryRatio = totalParcels > 0 ? Math.round((delivered / totalParcels) * 100) : 100;
+                cancellationRatio = totalParcels > 0 ? Math.round((cancelled / totalParcels) * 100) : 0;
+                returnRatio = cancellationRatio;
+                volumeRange = `${totalParcels}টি পার্সেল (${delivered} ডেলিভারি, ${cancelled} ক্যানসেল)`;
+            }
+
+            if (Array.isArray(d.total_fraud_reports)) {
+                totalReports = d.total_fraud_reports.length;
+            } else if (d.total_reports !== undefined && d.total_reports !== null) {
+                totalReports = Number(d.total_reports);
+            }
 
             // Risk Assessment
             let riskLevel = 'SAFE';
@@ -335,14 +447,15 @@ export async function checkSteadfastFraud(rawPhone) {
                 riskColor = 'emerald';
             }
 
-            return {
+            const parsedResult = {
                 ok: true,
                 phone: cleanPhone,
                 deliveryRatio,
                 cancellationRatio,
                 returnRatio,
                 totalReports,
-                volumeRange: d.volume_range || 'N/A',
+                totalParcels,
+                volumeRange: volumeRange || 'N/A',
                 volumeBand: d.volume_band || 'N/A',
                 fraudCategories: d.fraud_categories || {},
                 riskLevel,
@@ -350,12 +463,25 @@ export async function checkSteadfastFraud(rawPhone) {
                 riskColor,
                 checkedAt: new Date().toISOString()
             };
+
+            setCachedSteadfastFraud(cleanPhone, parsedResult);
+            return parsedResult;
+        }
+
+        // 4. Extract meaningful error message from Steadfast
+        let errorMessage = d.error || d.message;
+        if (!errorMessage && d.errors && typeof d.errors === 'object') {
+            errorMessage = Object.values(d.errors).flat().join('. ');
+        }
+        if (!errorMessage) {
+            errorMessage = 'Steadfast থেকে কোনো তথ্য পাওয়া যায়নি';
         }
 
         return {
             ok: false,
-            message: response.data?.message || 'Steadfast থেকে কোনো তথ্য পাওয়া যায়নি'
+            message: errorMessage
         };
+
     } catch (err) {
         console.error('Error checking Steadfast fraud:', err);
         return {

@@ -107,13 +107,16 @@ export default function OrderDetailsPage({ params }) {
         if (!order?.phone) return;
         setFraudCheckLoading(true);
         try {
-            const res = await fetch(`/api/admin/steadfast/fraud-check?phone=${encodeURIComponent(order.phone)}`);
+            const res = await fetch(`/api/admin/steadfast/fraud-check?phone=${encodeURIComponent(order.phone)}&orderId=${order.id}&force=true`);
             const data = await res.json();
             if (data.ok) {
                 toast.success("Steadfast লাইভ ফ্রড ডেটা আপডেট হয়েছে");
                 setOrder(prev => ({ ...prev, steadfastFraud: data }));
             } else {
                 toast.error(data.message || "Steadfast থেকে ডেটা পাওয়া যায়নি");
+                if (data.isRateLimited) {
+                    setOrder(prev => ({ ...prev, steadfastFraud: data }));
+                }
             }
         } catch {
             toast.error("Steadfast চেক করতে সমস্যা হয়েছে");
@@ -347,6 +350,11 @@ export default function OrderDetailsPage({ params }) {
                                                             <span className="text-[10px] font-normal text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                                                                 অফিসিয়াল API
                                                             </span>
+                                                            {order.steadfastFraud?.isCached && (
+                                                                <span className="text-[10px] font-normal text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded" title="পূর্বের সেভ করা ডেটা">
+                                                                    সংরক্ষিত
+                                                                </span>
+                                                            )}
                                                         </h5>
                                                         <p className="text-[11px] text-gray-500">
                                                             পুরো বাংলাদেশে Steadfast দিয়ে এই নম্বরের মোট ডেলিভারি ও রিটার্ন রেকর্ড
@@ -363,6 +371,12 @@ export default function OrderDetailsPage({ params }) {
                                                     {fraudCheckLoading ? "চেক হচ্ছে..." : "লাইভ চেক"}
                                                 </button>
                                             </div>
+
+                                            {order.steadfastFraud?.rateLimitWarning && (
+                                                <div className="bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-medium">
+                                                    ⚠️ {order.steadfastFraud.rateLimitWarning}
+                                                </div>
+                                            )}
 
                                             {order.steadfastFraud?.ok ? (
                                                 <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-3">
@@ -445,6 +459,17 @@ export default function OrderDetailsPage({ params }) {
                                                             </div>
                                                         </div>
                                                     )}
+                                                </div>
+                                            ) : order.steadfastFraud?.isRateLimited ? (
+                                                <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-xs text-amber-800 flex items-center justify-between">
+                                                    <span>⚠️ {order.steadfastFraud.message}</span>
+                                                    <button
+                                                        onClick={handleRefreshSteadfastFraud}
+                                                        disabled={fraudCheckLoading}
+                                                        className="text-amber-800 hover:underline font-semibold ml-2 whitespace-nowrap"
+                                                    >
+                                                        পুনরায় চেক
+                                                    </button>
                                                 </div>
                                             ) : (
                                                 <div className="bg-gray-50 p-3 rounded-lg border text-xs text-gray-500 flex items-center justify-between">
