@@ -34,7 +34,7 @@ const checkoutSchema = z.object({
         lastName: z.string().min(1),
         phone: z.string().min(1),
         address: z.string().min(1),
-        city: z.string().min(1),
+        city: z.string().optional().nullable().transform(val => (val && val.trim()) ? val.trim() : "Dhaka"),
         shippingArea: z.enum(["inside", "outside"]),
         paymentMethod: z.enum(["COD", "ONLINE", "CARD"]),
     }),

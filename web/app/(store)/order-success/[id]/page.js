@@ -11,6 +11,7 @@ export default async function OrderSuccessPage(props) {
 
     const order = await prisma.order.findUnique({
         where: { id },
+        include: { items: true },
     });
 
     if (!order) notFound();

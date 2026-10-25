@@ -119,14 +119,14 @@ export default function OrderSuccessDisplay({ order }) {
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-gray-50">
                             <span className="text-gray-500">Date</span>
-                            <span className="font-medium">{new Date(order.createdAt).toLocaleDateString()}</span>
+                            <span className="font-medium" suppressHydrationWarning>{new Date(order.createdAt).toLocaleDateString()}</span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-gray-50">
                             <span className="text-gray-500">Payment Method</span>
                             <span className="font-medium">{order.paymentMethod}</span>
                         </div>
                         <div className="pt-4 flex justify-between items-center">
-                            <span className="text-xl font-bold text-gray-900">Total Paid</span>
+                            <span className="text-xl font-bold text-gray-900">{order.paymentMethod === "COD" ? "Total Payable" : "Total Paid"}</span>
                             <span className="text-2xl font-black text-green-600 bg-green-50 px-4 py-1 rounded-xl">
                                 {formatPrice(order.total)}
                             </span>

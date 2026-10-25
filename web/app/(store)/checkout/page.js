@@ -75,11 +75,11 @@ export default function CheckoutPage() {
         if (hasHydrated && items.length > 0) {
             try {
                 fpixel.event("InitiateCheckout", {
-                    content_ids: items.map(i => i.product.id),
+                    content_ids: items.map(i => i.product?.id || i.productId).filter(Boolean),
                     content_type: "product",
                     value: Number(getCartTotal()),
                     currency: "BDT",
-                    num_items: items.reduce((acc, i) => acc + i.quantity, 0)
+                    num_items: items.reduce((acc, i) => acc + (i.quantity || 1), 0)
                 });
             } catch (e) {
                 console.error("Facebook Pixel InitiateCheckout error:", e);
@@ -88,11 +88,11 @@ export default function CheckoutPage() {
             try {
                 ttpixel.event("InitiateCheckout", {
                     contents: items.map(i => ({
-                        content_id: i.product.id,
+                        content_id: i.product?.id || i.productId,
                         content_type: "product",
-                        content_name: i.product.name,
-                        quantity: i.quantity,
-                        price: Number(i.price)
+                        content_name: i.product?.name || i.name || "Product",
+                        quantity: i.quantity || 1,
+                        price: Number(i.price || 0)
                     })),
                     value: Number(getCartTotal()),
                     currency: "BDT"
@@ -126,13 +126,15 @@ export default function CheckoutPage() {
         lastName: "",
         phone: "",
         address: "",
-        city: "",
+        city: "Dhaka",
         paymentMethod: "COD",
         shippingArea: "inside"
     });
 
     // Draft Checkout Auto-Save (Abandoned Cart Recovery)
     useEffect(() => {
+        if (isRedirecting) return;
+        if (!items || items.length === 0) return;
         if (!formData.phone || (!formData.firstName && !formData.lastName)) return;
 
         let draftId = localStorage.getItem("draft_checkout_id");
@@ -150,11 +152,11 @@ export default function CheckoutPage() {
                     address: formData.address,
                     city: formData.city || (formData.shippingArea === "inside" ? "Dhaka" : "Outside Dhaka"),
                     items: items.map(item => ({
-                        productId: item.product.id,
+                        productId: item.product?.id || item.productId,
                         variantId: item.variant?.id || null,
-                        name: item.product.name,
+                        name: item.product?.name || item.name || "Item",
                         quantity: item.quantity,
-                        price: item.product.salePrice || item.product.price
+                        price: item.product?.salePrice || item.product?.price || item.price || 0
                     })),
                     total: getCartTotal() + (formData.shippingArea === "inside" 
                         ? Number(settings.shipping_fee_inside || "70") 
@@ -172,26 +174,7 @@ export default function CheckoutPage() {
         }, 1500);
 
         return () => clearTimeout(debounceTimer);
-    }, [formData.phone, formData.firstName, formData.lastName, formData.address, formData.city, formData.shippingArea, items, settings]);
-
-    // Wait for Zustand to hydrate from localStorage before checking empty cart
-    if (!hasHydrated) {
-        return (
-            <div className="container mx-auto px-4 py-20 flex flex-col items-center justify-center gap-4">
-                <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-gray-500">Loading your cart...</p>
-            </div>
-        );
-    }
-
-    if (items.length === 0 && !isRedirecting) {
-        return (
-            <div className="container mx-auto px-4 py-20 text-center">
-                <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
-                <Link href="/"><Button>Continue Shopping</Button></Link>
-            </div>
-        );
-    }
+    }, [formData.phone, formData.firstName, formData.lastName, formData.address, formData.city, formData.shippingArea, items, settings, isRedirecting]);
 
     const shippingCost = formData.shippingArea === "inside"
         ? (Number(settings.shipping_fee_inside) || 70)
@@ -203,8 +186,8 @@ export default function CheckoutPage() {
     const total = subtotal - discount + shippingCost;
 
     // Pre-order logic
-    const preOrderItems = items.filter(i => i.product.isPreOrder);
-    const advanceAmount = preOrderItems.reduce((acc, i) => acc + (100 * i.quantity), 0);
+    const preOrderItems = items.filter(i => i.product?.isPreOrder);
+    const advanceAmount = preOrderItems.reduce((acc, i) => acc + (100 * (i.quantity || 1)), 0);
     const requiresAdvance = advanceAmount > 0;
 
     const handleChange = (e) => {
@@ -235,7 +218,7 @@ export default function CheckoutPage() {
                     code: couponCode,
                     total: subtotal,
                     items: items.map(i => ({
-                        productId: i.product.id,
+                        productId: i.product?.id || i.productId,
                         quantity: i.quantity,
                         price: i.price
                     }))
@@ -266,9 +249,9 @@ export default function CheckoutPage() {
         }
     };
 
-    // Automatically re-validate coupon when cart items or subtotal change
+    // Automatically re-validate coupon when cart items or subtotal change (hook at top level)
     useEffect(() => {
-        if (appliedCoupon) {
+        if (appliedCoupon && items.length > 0) {
             const revalidateCoupon = async () => {
                 try {
                     const res = await fetch("/api/coupons/verify", {
@@ -278,7 +261,7 @@ export default function CheckoutPage() {
                             code: appliedCoupon.code,
                             total: subtotal,
                             items: items.map(i => ({
-                                productId: i.product.id,
+                                productId: i.product?.id || i.productId,
                                 quantity: i.quantity,
                                 price: i.price
                             }))
@@ -313,9 +296,6 @@ export default function CheckoutPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Guest checkout is allowed, so we don't redirect to register anymore.
-        // The backend handles confirmedUserId as null for guests.
-
         setLoading(true);
         setError("");
 
@@ -326,7 +306,10 @@ export default function CheckoutPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     items,
-                    customer: formData,
+                    customer: {
+                        ...formData,
+                        city: formData.city || (formData.shippingArea === "inside" ? "Dhaka" : "Outside Dhaka")
+                    },
                     shippingCost,
                     couponCode: appliedCoupon ? appliedCoupon.code : null,
                     affiliateCode: affiliateCode,
@@ -338,13 +321,9 @@ export default function CheckoutPage() {
 
             if (!res.ok) throw new Error(data.error || "Checkout failed");
 
-            // Success
-            // For COD, we clear the cart immediately. 
-            // For Online/Card, we keep it until they reach the success page 
-            // (in case they cancel or come back).
-            if (!data.paymentUrl) {
-                clearCart();
-            }
+            // Prevent empty-cart flash and unmount by setting redirect state
+            setIsRedirecting(true);
+
             // Clear draft checkout ID on success
             localStorage.removeItem("draft_checkout_id");
 
@@ -353,19 +332,47 @@ export default function CheckoutPage() {
             setCouponCode("");
 
             if (data.paymentUrl) {
-                setIsRedirecting(true);
                 window.location.href = data.paymentUrl;
             } else {
+                clearCart();
                 router.push(`/order-success/${data.orderId}`);
             }
 
         } catch (err) {
             setError(err.message);
             toast.error(err.message);
-        } finally {
             setLoading(false);
         }
     };
+
+    // ── RENDER GUARDS (All hooks have now been executed) ──
+    if (isRedirecting) {
+        return (
+            <div className="container mx-auto px-4 py-20 flex flex-col items-center justify-center gap-4">
+                <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm font-medium text-gray-700">অর্ডার প্রসেস হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</p>
+            </div>
+        );
+    }
+
+    // Wait for Zustand to hydrate from localStorage before checking empty cart
+    if (!hasHydrated) {
+        return (
+            <div className="container mx-auto px-4 py-20 flex flex-col items-center justify-center gap-4">
+                <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-gray-500">Loading your cart...</p>
+            </div>
+        );
+    }
+
+    if (items.length === 0) {
+        return (
+            <div className="container mx-auto px-4 py-20 text-center">
+                <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
+                <Link href="/"><Button>Continue Shopping</Button></Link>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
