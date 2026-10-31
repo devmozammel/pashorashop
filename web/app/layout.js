@@ -69,7 +69,7 @@ export default async function RootLayout({ children }) {
     const siteUrl = getSiteUrl();
 
     let facebookPixelId = "";
-    let tiktokPixelId = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || "DBDR6KJC77UASCMGHUAG";
+    let tiktokPixelId = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || "DBJ2U7JC77U0QLCJRMN0";
     let whatsappNumber = "8801620778044";
     try {
         const setting = await prisma.siteSetting.findUnique({
