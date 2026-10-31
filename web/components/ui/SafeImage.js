@@ -8,7 +8,15 @@ import NextImage from "next/image";
  * If the src fails to load, shows a clean gray box (no broken icon).
  * Accepts all standard Next.js Image props.
  */
-export default function SafeImage({ src, alt = "", fallback = null, className = "", ...props }) {
+function getOptimizedCloudinaryUrl(url) {
+    if (!url || typeof url !== 'string') return url;
+    if (url.includes('res.cloudinary.com') && url.includes('/image/upload/') && !url.includes('f_auto')) {
+        return url.replace('/image/upload/', '/image/upload/f_auto,q_auto/');
+    }
+    return url;
+}
+
+export default function SafeImage({ src, alt = "", fallback = null, className = "", loading = "lazy", ...props }) {
     const [errored, setErrored] = useState(false);
 
     // If errored or no src, show fallback
@@ -33,11 +41,14 @@ export default function SafeImage({ src, alt = "", fallback = null, className = 
         );
     }
 
+    const optimizedSrc = getOptimizedCloudinaryUrl(src);
+
     return (
         <NextImage
-            src={src}
+            src={optimizedSrc}
             alt={alt}
             className={className}
+            loading={loading}
             onError={() => setErrored(true)}
             {...props}
         />
