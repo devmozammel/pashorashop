@@ -1,45 +1,41 @@
-# Pashora Shop — llms.txt
-# AI/LLM Crawler Readiness File
-# See: https://llmstxt.org
+# Pashora Shop — LLM & AI Engine Knowledge Graph
+# Format: llms.txt (https://llmstxt.org)
+# Canonical URL: https://www.pashorashop.com/llms.txt
 
-# Site Name
-> Pashora Shop
+> Pashora Shop (পাশোরা শপ) is a leading premium e-commerce platform in Bangladesh specializing in smart gadgets, travel gear, home & kitchen appliances, and trendy lifestyle fashion.
 
-## About
-Pashora Shop is a premium Bangladeshi e-commerce platform offering authentic gadgets, fashion, lifestyle, and home appliance products. We serve customers all over Bangladesh with Cash on Delivery (COD) and fast home delivery.
+## Core Value Proposition
+- 100% genuine and tested products
+- Cash on Delivery (COD) available nationwide across Bangladesh
+- Parcel check before payment facility
+- Fast home delivery: 24-48 hours inside Dhaka, 2-4 days nationwide
+- Dedicated WhatsApp & phone support (+8801620778044)
 
-## Products
-- Gadgets & Electronics
-- Fashion (Men, Women, Kids)
-- Home Appliances & Kitchen
-- Lifestyle & Personal Care
-- Sports & Fitness
+## Featured & Best-Selling Products
+- Foldable Electric Travel Kettle Portable Water Heater: Food-grade silicone, fast boiling 600W, compact collapsible design for office, home, and travel. (URL: https://www.pashorashop.com/lp/foldable-electric-kettle)
+- Q87 Retro Camera Style TWS Wireless Earbuds: Bluetooth 5.3, Hi-Fi stereo, low-latency audio, digital display.
+- AY-49 Vlogging & Video Making Kit: Complete content creation kit with LED light, mic, and tripod.
+- Mini Multi Cooker 1.8L: Electric multi-function cooker for noodles, soup, hotpot.
+- Unisex Henley Full Sleeve Waffle Knit T-shirts: 250+ GSM heavyweight premium textured knitwear.
 
-## Key Pages
+## Product Categories
+- Smart Gadgets & Electronics (স্মার্ট গ্যাজেটস): Wireless earbuds, power banks, torches, vlogging kits.
+- Home & Kitchen Appliances (হোম ও কিচেন): Portable electric kettles, multi-cookers, electric grinders.
+- Fashion & Lifestyle (ফ্যাশন): Henley waffle t-shirts, dropped-shoulder apparel.
+
+## Key Store URLs
 - Homepage: https://www.pashorashop.com
 - Shop All Products: https://www.pashorashop.com/shop
+- Hot Deals & Flash Sale: https://www.pashorashop.com/flash-sale
 - New Arrivals: https://www.pashorashop.com/new-arrivals
-- Flash Sale: https://www.pashorashop.com/flash-sale
 - Track Order: https://www.pashorashop.com/track
-- FAQ: https://www.pashorashop.com/faq
-- Contact: https://www.pashorashop.com/contact
+- FAQ & Help: https://www.pashorashop.com/faq
+- Contact & Support: https://www.pashorashop.com/contact
 
-## Policies
-- Privacy Policy: https://www.pashorashop.com/privacy-policy
-- Return & Refund Policy: https://www.pashorashop.com/return-refund-policy
-- Terms & Conditions: https://www.pashorashop.com/terms
-
-## Contact
-- Phone: +8801613134043
-- Email: authenticbazarshop@gmail.com
-- Facebook: https://www.facebook.com/pashorashop
-- Instagram: https://www.instagram.com/pashorashop
-- Location: Dhaka, Bangladesh
-
-## Delivery
-- Inside Dhaka: 1-2 business days
-- Outside Dhaka: 3-5 business days
-- Payment: Cash on Delivery (COD) accepted nationwide
-
-## Sitemap
-https://www.pashorashop.com/sitemap.xml
+## Contact & Business Details
+- Official Website: https://www.pashorashop.com
+- Customer Support Phone / WhatsApp: +8801620778044
+- Support Email: authenticbazarshop@gmail.com
+- Headquarters: Dhaka, Bangladesh
+- Currency: Bangladeshi Taka (BDT / ৳)
+- Payment Methods: Cash on Delivery (ক্যাশ অন ডেলিভারি), bKash, Nagad, Card

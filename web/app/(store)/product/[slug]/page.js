@@ -188,6 +188,47 @@ export default async function ProductPage(props) {
         ].filter(Boolean)
     };
 
+    // FAQ Schema for AI GEO (Generative Engine Optimization) & Google Rich Snippets
+    let faqsList = [
+        {
+            q: `${product.name} কি আসল এবং অরিজিনাল?`,
+            a: `জি হ্যাঁ! Pashora Shop-এ শতভাগ অথেন্টিক এবং কোয়ালিটি টেস্টেড পণ্য সরবরাহ করা হয়।`
+        },
+        {
+            q: `ক্যাশ অন ডেলিভারি এবং পার্সেল চেক করার সুবিধা আছে কি?`,
+            a: `অবশ্যই! সারাদেশে ক্যাশ অন ডেলিভারি সুবিধা রয়েছে। ডেলিভারি ম্যানের সামনে প্যাকেট খুলে চেক করে তারপর মূল্য পরিশোধ করতে পারবেন।`
+        },
+        {
+            q: `ডেলিভারি চার্জ কত এবং কতদিনে পাবো?`,
+            a: `ঢাকা সিটির ভেতরে ডেলিভারি চার্জ মাত্র ৭০ টাকা (২৪-৪৮ ঘণ্টার মধ্যে ডেলিভারি) এবং ঢাকার বাইরে ১৩০ টাকা (২-৩ দিনের মধ্যে হোম ডেলিভারি)।`
+        }
+    ];
+
+    if (product.faqs) {
+        try {
+            const parsedFaqs = typeof product.faqs === "string" ? JSON.parse(product.faqs) : product.faqs;
+            if (Array.isArray(parsedFaqs) && parsedFaqs.length > 0) {
+                faqsList = parsedFaqs.map(f => ({
+                    q: f.q || f.question || f.title,
+                    a: f.a || f.answer || f.desc
+                })).filter(f => f.q && f.a);
+            }
+        } catch { }
+    }
+
+    const faqLd = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faqsList.map(item => ({
+            "@type": "Question",
+            "name": item.q,
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": item.a
+            }
+        }))
+    };
+
     return (
         <div className="container px-4 py-4 md:px-6 md:py-8 pb-24 md:pb-12 max-w-7xl mx-auto">
             <script
@@ -197,6 +238,10 @@ export default async function ProductPage(props) {
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
             />
 
             {/* Breadcrumb Navigation (Shobkichu Style) */}
