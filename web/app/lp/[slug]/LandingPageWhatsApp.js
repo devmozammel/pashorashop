@@ -15,6 +15,25 @@ export default function WhatsAppOrderForm({
     const productVariants = variants && variants.length > 0 ? variants : (product?.variants || []);
     const [selectedVariant, setSelectedVariant] = useState(productVariants?.[0] || null);
 
+    const availableColors = [...new Set(productVariants.map((v) => v.color).filter(Boolean))];
+    const availableSizes = [...new Set(productVariants.map((v) => v.size).filter(Boolean))];
+    const [selectedColor, setSelectedColor] = useState(productVariants?.[0]?.color || availableColors[0] || null);
+    const [selectedSize, setSelectedSize] = useState(productVariants?.[0]?.size || availableSizes[0] || null);
+
+    const handleColorSelect = (col) => {
+        setSelectedColor(col);
+        const match = productVariants.find((v) => v.color === col && (!selectedSize || v.size === selectedSize))
+                   || productVariants.find((v) => v.color === col);
+        if (match) setSelectedVariant(match);
+    };
+
+    const handleSizeSelect = (sz) => {
+        setSelectedSize(sz);
+        const match = productVariants.find((v) => (!selectedColor || v.color === selectedColor) && v.size === sz)
+                   || productVariants.find((v) => v.size === sz);
+        if (match) setSelectedVariant(match);
+    };
+
     const [form, setForm] = useState({
         name: "",
         phone: "",
@@ -316,33 +335,96 @@ ${variantText ? `🎨 *ভ্যারিয়েন্ট:* ${variantText}\n` 
 
     return (
         <form onSubmit={handleSubmit} onFocus={handleFormFocus} className="space-y-4">
-            {/* Color / Variant Selector if available */}
+            {/* Color & Size Selector if available */}
             {productVariants.length > 0 && (
-                <div className="pb-2">
-                    <label className="text-slate-700 text-xs font-bold mb-2 block uppercase tracking-wider">
-                        কালার / ভ্যারিয়েন্ট নির্বাচন করুন:
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                        {productVariants.map((v, i) => {
-                            const isSelected = selectedVariant?.id === v.id;
-                            const label = [v.color, v.size].filter(Boolean).join(" - ") || `ভ্যারিয়েন্ট ${i + 1}`;
-                            return (
-                                <button
-                                    key={v.id || i}
-                                    type="button"
-                                    onClick={() => setSelectedVariant(v)}
-                                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
-                                        isSelected
-                                            ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 shadow-sm"
-                                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                                    }`}
-                                >
-                                    {label}
-                                    {v.priceAdjustment ? ` (+৳${v.priceAdjustment})` : ""}
-                                </button>
-                            );
-                        })}
-                    </div>
+                <div className="space-y-3 pb-2 border-b border-slate-100">
+                    {availableColors.length > 1 ? (
+                        <>
+                            <div>
+                                <label className="text-slate-700 text-xs font-bold mb-2 flex items-center justify-between">
+                                    <span className="uppercase tracking-wider">১. কালার নির্বাচন করুন:</span>
+                                    <span className="text-emerald-700 font-extrabold">{selectedColor || selectedVariant?.color}</span>
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {availableColors.map((col) => {
+                                        const isSelected = (selectedColor || selectedVariant?.color) === col;
+                                        const swatchBg = col === "Washed Brown" ? "#7A5C43" : col === "Black" ? "#1A1A1A" : col === "Off-White" ? "#F5F3ED" : "#4B5563";
+                                        const swatchBorder = col === "Off-White" ? "#D1D5DB" : swatchBg;
+                                        return (
+                                            <button
+                                                key={col}
+                                                type="button"
+                                                onClick={() => handleColorSelect(col)}
+                                                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${
+                                                    isSelected
+                                                        ? "border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs font-extrabold scale-102"
+                                                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                                }`}
+                                            >
+                                                <span className="w-3.5 h-3.5 rounded-full border shadow-2xs shrink-0" style={{ backgroundColor: swatchBg, borderColor: swatchBorder }} />
+                                                <span>{col}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {availableSizes.length > 0 && (
+                                <div>
+                                    <label className="text-slate-700 text-xs font-bold mb-2 flex items-center justify-between">
+                                        <span className="uppercase tracking-wider">২. সাইজ নির্বাচন করুন:</span>
+                                        <span className="text-emerald-700 font-extrabold">{selectedSize || selectedVariant?.size}</span>
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {availableSizes.map((sz) => {
+                                            const isSelected = (selectedSize || selectedVariant?.size) === sz;
+                                            return (
+                                                <button
+                                                    key={sz}
+                                                    type="button"
+                                                    onClick={() => handleSizeSelect(sz)}
+                                                    className={`w-12 h-10 rounded-xl text-xs font-bold transition-all border flex items-center justify-center cursor-pointer ${
+                                                        isSelected
+                                                            ? "border-emerald-600 bg-emerald-600 text-white shadow-xs font-extrabold scale-105"
+                                                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                                    }`}
+                                                >
+                                                    <span>{sz}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div>
+                            <label className="text-slate-700 text-xs font-bold mb-2 block uppercase tracking-wider">
+                                কালার / ভ্যারিয়েন্ট নির্বাচন করুন:
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                                {productVariants.map((v, i) => {
+                                    const isSelected = selectedVariant?.id === v.id;
+                                    const label = [v.color, v.size].filter(Boolean).join(" - ") || `ভ্যারিয়েন্ট ${i + 1}`;
+                                    return (
+                                        <button
+                                            key={v.id || i}
+                                            type="button"
+                                            onClick={() => setSelectedVariant(v)}
+                                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                                isSelected
+                                                    ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 shadow-sm"
+                                                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                            }`}
+                                        >
+                                            {label}
+                                            {v.priceAdjustment ? ` (+৳${v.priceAdjustment})` : ""}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

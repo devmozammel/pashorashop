@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { logActivity } from "@/lib/logger";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { generateProductSlug } from "@/lib/slug";
 import { z } from "zod";
 
 
@@ -67,7 +68,7 @@ export async function POST(request) {
                 const sanitizedDescription = sanitizeHtml(parsedData.description || "");
 
                 // Slug generation
-                let slug = parsedData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                let slug = generateProductSlug({ name: parsedData.name });
                 // Ensure unique slug (simple append for conflict, ideally check DB)
                 const existing = await prisma.product.findUnique({ where: { slug } });
                 if (existing) {

@@ -6,6 +6,7 @@ import { createAuditLog } from "@/lib/audit";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { revalidatePath } from "next/cache";
+import { generateProductSlug } from "@/lib/slug";
 
 
 export const dynamic = "force-dynamic";
@@ -125,10 +126,10 @@ export async function PUT(req, props) {
         }
         const productId = existing.id;
 
-        let slug = data.slug;
-        if (!slug) {
-            slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        }
+        let slug = generateProductSlug({ slug: data.slug || existing.slug, name: data.name, metaTitle: data.metaTitle, id: productId });
+        // slug guaranteed non-empty by generateProductSlug
+
+
 
         // Ensure slug is unique (ignore self)
         const slugConflict = await prisma.product.findFirst({

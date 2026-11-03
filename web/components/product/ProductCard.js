@@ -106,7 +106,7 @@ export default function ProductCard({ product, isFlashSale, isHot }) {
 
     return (
         <article className="group relative bg-white rounded-xl border border-gray-200/90 hover:border-gray-300 hover:shadow-md transition-all flex flex-col h-full overflow-hidden">
-            <Link href={`/product/${product.slug}`} className="flex flex-col flex-1">
+            <Link href={`/product/${product.slug || product.id}`} className="flex flex-col flex-1">
                 {/* ── IMAGE CONTAINER ── */}
                 <div className="relative aspect-square bg-gray-50 shrink-0 overflow-hidden">
                     {thumbnail ? (

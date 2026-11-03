@@ -55,7 +55,7 @@ export default function CartPage() {
                             <div className="flex-1 flex flex-col justify-between">
                                 <div>
                                     <div className="flex justify-between items-start">
-                                        <Link href={`/product/${item.product.slug}`} className="font-semibold hover:underline line-clamp-2">
+                                        <Link href={`/product/${item.product.slug || item.product.id}`} className="font-semibold hover:underline line-clamp-2">
                                             {item.product.name}
                                         </Link>
                                         <button

@@ -361,7 +361,7 @@ export default function Header({ settings }) {
                                             return (
                                                 <Link
                                                     key={prod.id}
-                                                    href={`/product/${prod.slug}`}
+                                                    href={`/product/${prod.slug || prod.id}`}
                                                     onClick={() => setSearchDropdownOpen(false)}
                                                     className={cn(
                                                         "flex items-center gap-3 px-4 py-2.5 transition-colors group",

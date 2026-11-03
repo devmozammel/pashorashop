@@ -122,9 +122,9 @@ export default async function LandingPage({ params }) {
     } catch { }
 
     const heroImg = page.heroImageUrl || primaryProduct?.productImages?.[0]?.url || (Array.isArray(primaryProduct?.images) ? primaryProduct.images[0] : null);
-    const productImages = primaryProduct?.productImages?.map((i) => i.url).filter(Boolean).length > 0
-        ? primaryProduct.productImages.map((i) => i.url).filter(Boolean)
-        : heroImg ? [heroImg] : [];
+    const productImages = primaryProduct?.productImages?.length > 0
+        ? primaryProduct.productImages.map((i) => ({ url: i.url, color: i.color || null, label: i.color || null }))
+        : heroImg ? [{ url: heroImg, color: null, label: null }] : [];
 
     let effectivePrice = primaryProduct?.salePrice ?? primaryProduct?.price ?? 0;
     let originalPrice = primaryProduct?.price ?? 0;
@@ -175,6 +175,7 @@ export default async function LandingPage({ params }) {
     const isAudio = slug?.includes("earbud") || slug?.includes("headphone") || slug?.includes("neckband") || slug?.includes("x73") || slug?.includes("p9") || slug?.includes("hoco") || slug?.includes("b72");
     const isKitchen = slug?.includes("cooker") || slug?.includes("grinder") || slug?.includes("silver-crest") || slug?.includes("prestige");
     const isLight = slug?.includes("light") || slug?.includes("sunford") || slug?.includes("lamp");
+    const isKettle = slug?.includes("kettle") || slug?.includes("ketli") || slug?.includes("heater") || slug?.includes("water");
 
     let floatingSpecs = [
         "১০০% অরিজিনাল",
@@ -190,6 +191,8 @@ export default async function LandingPage({ params }) {
         floatingSpecs = ["Stainless Steel Blade", "Heavy Duty Motor", "Easy Cleaning", "Energy Efficient"];
     } else if (isLight) {
         floatingSpecs = ["Ultra Bright LED", "Rechargeable Battery", "Energy Saving", "Portable & Durable"];
+    } else if (isKettle) {
+        floatingSpecs = ["Foldable & Portable", "Food-Grade Silicone", "Fast 600W Boiling", "Auto Shut-Off Safe"];
     }
 
     const generalFaqs = [
@@ -328,8 +331,8 @@ export default async function LandingPage({ params }) {
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
                             
                             {/* ── LEFT: Product Image & Floating Specs Pills (Cols: 6) ── */}
-                            <div className="lg:col-span-6 relative flex flex-col items-center justify-center">
-                                <div className="relative w-full max-w-lg aspect-square rounded-[2.5rem] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/40 p-4 border border-slate-200/80 shadow-[0_20px_60px_rgba(0,0,0,0.06)] flex items-center justify-center">
+                            <div className="lg:col-span-6 relative flex flex-col items-center justify-center w-full">
+                                <div className="relative w-full max-w-lg rounded-3xl md:rounded-[2.5rem] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/40 p-2.5 sm:p-4 md:p-5 border border-slate-200/80 shadow-[0_20px_60px_rgba(0,0,0,0.06)] flex flex-col items-center justify-center">
                                     
                                     {/* Discount Badge */}
                                     {discount && (
@@ -338,33 +341,33 @@ export default async function LandingPage({ params }) {
                                         </div>
                                     )}
 
-                                    {/* Floating Spec Pill 1 (Top Right) */}
+                                    {/* Floating Spec Pill 1 (Top Right) - Desktop Only */}
                                     {floatingSpecs[0] && (
-                                        <div className="anim-pill-1 absolute -top-3 right-6 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.08)] rounded-full px-4 py-1.5 text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                        <div className="hidden lg:flex anim-pill-1 absolute -top-3 right-6 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.08)] rounded-full px-4 py-1.5 text-xs font-bold text-slate-800 items-center gap-1.5">
                                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                             <span>{floatingSpecs[0]}</span>
                                         </div>
                                     )}
 
-                                    {/* Floating Spec Pill 2 (Middle Right) */}
+                                    {/* Floating Spec Pill 2 (Middle Right) - Desktop Only */}
                                     {floatingSpecs[1] && (
-                                        <div className="anim-pill-2 absolute top-1/3 -right-3 sm:-right-5 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.08)] rounded-full px-4 py-1.5 text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                        <div className="hidden lg:flex anim-pill-2 absolute top-1/3 -right-3 sm:-right-5 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.08)] rounded-full px-4 py-1.5 text-xs font-bold text-slate-800 items-center gap-1.5">
                                             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                                             <span>{floatingSpecs[1]}</span>
                                         </div>
                                     )}
 
-                                    {/* Floating Spec Pill 3 (Lower Left) */}
+                                    {/* Floating Spec Pill 3 (Lower Left) - Desktop Only */}
                                     {floatingSpecs[2] && (
-                                        <div className="anim-pill-3 absolute bottom-8 -left-3 sm:-left-5 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.08)] rounded-full px-4 py-1.5 text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                        <div className="hidden lg:flex anim-pill-3 absolute bottom-8 -left-3 sm:-left-5 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.08)] rounded-full px-4 py-1.5 text-xs font-bold text-slate-800 items-center gap-1.5">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                                             <span>{floatingSpecs[2]}</span>
                                         </div>
                                     )}
 
-                                    {/* Floating Spec Pill 4 (Bottom Right) */}
+                                    {/* Floating Spec Pill 4 (Bottom Right) - Desktop Only */}
                                     {floatingSpecs[3] && (
-                                        <div className="anim-pill-1 absolute -bottom-3 right-10 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.08)] rounded-full px-4 py-1.5 text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                        <div className="hidden lg:flex anim-pill-1 absolute -bottom-3 right-10 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.08)] rounded-full px-4 py-1.5 text-xs font-bold text-slate-800 items-center gap-1.5">
                                             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                                             <span>{floatingSpecs[3]}</span>
                                         </div>

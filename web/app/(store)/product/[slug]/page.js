@@ -16,8 +16,10 @@ export async function generateMetadata(props) {
     const params = await props.params;
     const { slug } = params;
 
-    const product = await prisma.product.findUnique({
-        where: { slug },
+    const product = await prisma.product.findFirst({
+        where: {
+            OR: [{ slug }, { id: slug }]
+        },
         select: {
             name: true,
             shortDesc: true,
@@ -75,8 +77,10 @@ export default async function ProductPage(props) {
 
     const { slug } = params;
 
-    const productRaw = await prisma.product.findUnique({
-        where: { slug },
+    const productRaw = await prisma.product.findFirst({
+        where: {
+            OR: [{ slug }, { id: slug }]
+        },
         include: {
             category: true,
             subcategoryGroup: true,

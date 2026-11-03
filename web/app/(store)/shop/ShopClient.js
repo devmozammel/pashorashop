@@ -357,7 +357,7 @@ export default function ShopClient() {
                         ) : viewMode === "list" ? (
                             <div className="space-y-3">
                                 {products.map(product => (
-                                    <Link key={product.id} href={`/product/${product.slug}`}
+                                    <Link key={product.id} href={`/product/${product.slug || product.id}`}
                                         className="bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 p-4 hover:shadow-md transition-shadow group"
                                     >
                                         <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-50 shrink-0 relative">

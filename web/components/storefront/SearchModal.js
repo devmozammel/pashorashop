@@ -177,7 +177,7 @@ export default function SearchModal({ isOpen, onClose }) {
                                             return (
                                                 <Link
                                                     key={product.id}
-                                                    href={`/product/${product.slug}`}
+                                                    href={`/product/${product.slug || product.id}`}
                                                     onClick={onClose}
                                                     className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-all group"
                                                 >

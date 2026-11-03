@@ -6,6 +6,7 @@ import { createAuditLog } from "@/lib/audit";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { revalidatePath } from "next/cache";
+import { generateProductSlug } from "@/lib/slug";
 
 
 export const dynamic = "force-dynamic";
@@ -98,10 +99,10 @@ export async function POST(req) {
         const body = await req.json();
         const data = productSchema.parse(body);
 
-        let slug = data.slug;
-        if (!slug) {
-            slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        }
+        let slug = generateProductSlug({ slug: data.slug, name: data.name, metaTitle: data.metaTitle });
+        // slug is guaranteed non-empty by generateProductSlug
+
+
 
         let uniqueSlug = slug;
         let counter = 1;
