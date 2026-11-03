@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import CartDrawer from "@/components/cart/CartDrawer";
 import MobileNav from "@/components/storefront/MobileNav";
 import CartSync from "@/components/storefront/CartSync";
-import RecentSalesPopup from "@/components/storefront/RecentSalesPopup";
 
 export default async function StoreLayout({ children }) {
     let settings = {};
@@ -32,7 +31,6 @@ export default async function StoreLayout({ children }) {
             </main>
 
             <Footer />
-            <RecentSalesPopup />
             <MobileNav />
         </div>
     );
