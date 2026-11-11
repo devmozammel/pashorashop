@@ -3,9 +3,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import AdminShell from "@/components/admin/AdminShell";
-import { InboxSubNav } from "@/components/admin/inbox/InboxShared";
+import {
+    InboxSubNav,
+    MessengerLogo,
+    FacebookCommentLogo,
+    WhatsAppLogo,
+} from "@/components/admin/inbox/InboxShared";
 import { toast } from "sonner";
-import { Save, Loader2, Copy, KeyRound, Truck, Globe, Eye, EyeOff, PhoneCall, ExternalLink } from "lucide-react";
+import { Save, Loader2, Copy, Truck, Globe, Eye, EyeOff, ExternalLink } from "lucide-react";
 
 function SecretInput({ id, label, value, onChange, placeholder = "" }) {
     const [visible, setVisible] = useState(false);
@@ -138,7 +143,10 @@ export default function InboxSettingsPage() {
                         {/* Facebook Page / Messenger */}
                         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
                             <h2 className="font-bold text-gray-900 flex items-center gap-2 border-b pb-2 text-balance">
-                                <KeyRound className="w-4 h-4 text-blue-600 shrink-0" aria-hidden="true" />
+                                <span className="inline-flex items-center gap-1 shrink-0">
+                                    <MessengerLogo className="w-4 h-4" />
+                                    <FacebookCommentLogo className="w-4 h-4" />
+                                </span>
                                 Facebook Page (Messenger ও Post Comments)
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -191,7 +199,7 @@ export default function InboxSettingsPage() {
                         <div className="space-y-6">
                             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
                                 <h2 className="font-bold text-gray-900 flex items-center gap-2 border-b pb-2 text-balance">
-                                    <PhoneCall className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                                    <WhatsAppLogo className="w-5 h-5" />
                                     WhatsApp Cloud API (Official Meta Free Tier)
                                 </h2>
                                 <div>

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import useSWR from "swr";
 import AdminShell from "@/components/admin/AdminShell";
-import { InboxSubNav } from "@/components/admin/inbox/InboxShared";
+import { InboxSubNav, FacebookCommentLogo } from "@/components/admin/inbox/InboxShared";
 import { toast } from "sonner";
-import { Sparkles, Plus, Trash2, MessageSquareReply, Loader2 } from "lucide-react";
+import { Sparkles, Plus, Trash2, Loader2 } from "lucide-react";
 
 const fetcher = (url) => fetch(url).then((r) => r.json());
 
@@ -85,7 +85,7 @@ export default function InboxAutomationsPage() {
                     className="lg:col-span-5 bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4"
                 >
                     <h2 className="font-bold text-gray-900 flex items-center gap-2 border-b pb-2 text-balance">
-                        <MessageSquareReply className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                        <FacebookCommentLogo className="w-5 h-5" />
                         নতুন Facebook Comment-to-Inbox রুল তৈরি করুন
                     </h2>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import Link from "next/link";
 import useSWR from "swr";
 import { toast } from "sonner";
 import {
@@ -20,12 +21,17 @@ import {
     Loader2,
     MessageSquare,
     ChevronLeft,
+    BarChart3,
+    MessageSquareReply,
+    Settings,
+    Sparkles,
 } from "lucide-react";
 import {
     CHANNEL_META,
+    ChannelLogo,
+    ChannelAvatar,
     ChannelBadge,
     AdAttributionBadge,
-    InboxSubNav,
 } from "./InboxShared";
 
 const fetcher = (url) => fetch(url).then((r) => r.json());
@@ -45,6 +51,20 @@ const QUICK_REPLIES = [
     },
 ];
 
+const CHANNELS = [
+    { key: "ALL", label: "সব চ্যানেল", subtitle: "Unified" },
+    { key: "WHATSAPP", label: "WhatsApp", subtitle: "Cloud API" },
+    { key: "MESSENGER", label: "Messenger", subtitle: "Page DM" },
+    { key: "FB_COMMENT", label: "FB Comments", subtitle: "Post Reply" },
+];
+
+const STATUS_OPTIONS = [
+    { key: "ALL", label: "সব মেসেজ", dot: "bg-slate-400" },
+    { key: "OPEN", label: "অপেক্ষমাণ (Open)", dot: "bg-blue-500" },
+    { key: "ORDERED", label: "অর্ডার সম্পন্ন", dot: "bg-emerald-500" },
+    { key: "RESOLVED", label: "সমাধান (Resolved)", dot: "bg-gray-400" },
+];
+
 function formatShortTime(dateStr) {
     if (!dateStr) return "";
     try {
@@ -55,13 +75,6 @@ function formatShortTime(dateStr) {
     } catch {
         return "";
     }
-}
-
-function getInitials(name = "") {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return "CU";
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
 export default function SocialInboxWorkspace() {
@@ -80,6 +93,7 @@ export default function SocialInboxWorkspace() {
     const [showSimMenu, setShowSimMenu] = useState(false);
     const [isSimulating, setIsSimulating] = useState(false);
     const simMenuRef = useRef(null);
+    const mobileSimRef = useRef(null);
 
     // Fraud check loading
     const [isCheckingFraud, setIsCheckingFraud] = useState(false);
@@ -111,7 +125,9 @@ export default function SocialInboxWorkspace() {
             if (e.key === "Escape") setShowSimMenu(false);
         };
         const handleClickOutside = (e) => {
-            if (simMenuRef.current && !simMenuRef.current.contains(e.target)) {
+            const insideDesktop = simMenuRef.current?.contains(e.target);
+            const insideMobile = mobileSimRef.current?.contains(e.target);
+            if (!insideDesktop && !insideMobile) {
                 setShowSimMenu(false);
             }
         };
@@ -401,20 +417,97 @@ export default function SocialInboxWorkspace() {
 
     const risk = activeConv?.customerRisk;
     const successRatio = risk?.combinedSuccessRatio;
+    const activeChannelMeta = CHANNELS.find((c) => c.key === channelFilter) || CHANNELS[0];
+    const activeConvMeta = activeConv ? CHANNEL_META[activeConv.channel] || CHANNEL_META.MESSENGER : null;
+
+    const simMenuContent = (
+        <div
+            role="menu"
+            aria-label="Demo message presets"
+            className="w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-2 z-40 space-y-1 overscroll-contain"
+        >
+            <p className="text-[11px] font-semibold text-gray-500 px-2 py-1">
+                ডেমো ইনবাউন্ড মেসেজ পাঠান:
+            </p>
+            <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleSimulate("MESSENGER_AD")}
+                className="w-full flex items-center gap-2.5 text-left px-2.5 py-2 rounded-lg text-xs hover:bg-sky-50 text-gray-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            >
+                <ChannelLogo channel="MESSENGER" className="w-4 h-4" />
+                <span>Messenger (FB Ad + নাম/ঠিকানা/ফোনসহ)</span>
+            </button>
+            <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleSimulate("FB_COMMENT_PRICE")}
+                className="w-full flex items-center gap-2.5 text-left px-2.5 py-2 rounded-lg text-xs hover:bg-indigo-50 text-gray-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+                <ChannelLogo channel="FB_COMMENT" className="w-4 h-4" />
+                <span>FB Boost Comment (“Price please?”)</span>
+            </button>
+            <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleSimulate("WHATSAPP_AD")}
+                className="w-full flex items-center gap-2.5 text-left px-2.5 py-2 rounded-lg text-xs hover:bg-emerald-50 text-gray-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            >
+                <ChannelLogo channel="WHATSAPP" className="w-4 h-4" />
+                <span>WhatsApp (Click-to-WhatsApp Ad মেসেজ)</span>
+            </button>
+        </div>
+    );
 
     return (
-        <div>
-            <InboxSubNav unreadTotal={totalUnread} />
+        <div className="h-full flex flex-col bg-white border-t border-gray-200">
+            {/* ─── MOBILE / TABLET TOP BAR (hidden on lg+) ─── */}
+            <div className="lg:hidden border-b border-gray-200 bg-white px-3 py-2 space-y-2 shrink-0">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                        <Link
+                            href="/admin/inbox/automations"
+                            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-700"
+                        >
+                            <MessageSquareReply className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Auto Reply</span>
+                        </Link>
+                        <Link
+                            href="/admin/inbox/analytics"
+                            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-700"
+                        >
+                            <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>ROI Report</span>
+                        </Link>
+                        <Link
+                            href="/admin/inbox/settings"
+                            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-700"
+                        >
+                            <Settings className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>API</span>
+                        </Link>
+                    </div>
+                    <div className="relative shrink-0" ref={mobileSimRef}>
+                        <button
+                            type="button"
+                            onClick={() => setShowSimMenu((v) => !v)}
+                            disabled={isSimulating}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200"
+                        >
+                            <FlaskConical className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>ডেমো</span>
+                        </button>
+                        {showSimMenu && (
+                            <div className="absolute right-0 mt-1.5 z-40">
+                                {simMenuContent}
+                            </div>
+                        )}
+                    </div>
+                </div>
 
-            {/* Channel Filter + Simulator Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-                <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by channel">
-                    {[
-                        { key: "ALL", label: "সব চ্যানেল" },
-                        { key: "WHATSAPP", label: "WhatsApp" },
-                        { key: "MESSENGER", label: "Messenger" },
-                        { key: "FB_COMMENT", label: "FB Comments" },
-                    ].map((ch) => {
+                {/* Mobile Channel Pills with Brand Logos */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" role="group" aria-label="Filter by channel">
+                    {CHANNELS.map((ch) => {
                         const unread = ch.key === "ALL" ? totalUnread : unreadByChannel[ch.key] || 0;
                         const active = channelFilter === ch.key;
                         return (
@@ -423,12 +516,13 @@ export default function SocialInboxWorkspace() {
                                 type="button"
                                 onClick={() => setChannelFilter(ch.key)}
                                 aria-pressed={active}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold touch-manipulation transition-[background-color,color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                                     active
-                                        ? "bg-gray-900 text-white shadow-sm"
-                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        ? "bg-slate-900 text-white shadow-sm"
+                                        : "bg-slate-100 text-gray-700 hover:bg-slate-200"
                                 }`}
                             >
+                                <ChannelLogo channel={ch.key} className="w-4 h-4" />
                                 <span>{ch.label}</span>
                                 {unread > 0 && (
                                     <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-500 text-white tabular-nums">
@@ -440,94 +534,201 @@ export default function SocialInboxWorkspace() {
                     })}
                 </div>
 
-                {/* Test Simulator */}
-                <div className="relative" ref={simMenuRef}>
-                    <button
-                        type="button"
-                        onClick={() => setShowSimMenu((v) => !v)}
-                        disabled={isSimulating}
-                        aria-expanded={showSimMenu}
-                        aria-haspopup="menu"
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 touch-manipulation transition-[background-color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-                    >
-                        {isSimulating ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-                        ) : (
-                            <FlaskConical className="w-3.5 h-3.5" aria-hidden="true" />
-                        )}
-                        <span>টেস্ট ডেমো মেসেজ পাঠান</span>
-                    </button>
-
-                    {showSimMenu && (
-                        <div
-                            role="menu"
-                            aria-label="Demo message presets"
-                            className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-2 z-30 space-y-1 overscroll-contain"
+                {/* Mobile Pane Switcher */}
+                <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
+                    {[
+                        { id: "list", label: `চ্যাট (${conversations.length})` },
+                        { id: "chat", label: "মেসেজ ও চ্যাট" },
+                        { id: "order", label: "১-ক্লিক অর্ডার" },
+                    ].map((pane) => (
+                        <button
+                            key={pane.id}
+                            type="button"
+                            onClick={() => setMobilePane(pane.id)}
+                            className={`py-1.5 px-2 rounded-lg text-xs font-bold tabular-nums transition-colors ${
+                                mobilePane === pane.id
+                                    ? "bg-white text-emerald-700 shadow-sm"
+                                    : "text-gray-600"
+                            }`}
                         >
-                            <p className="text-[11px] font-semibold text-gray-500 px-2 py-1">
-                                টেস্ট ইনবাউন্ড ইভেন্ট সিলেক্ট করুন:
-                            </p>
-                            <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => handleSimulate("MESSENGER_AD")}
-                                className="w-full text-left px-2.5 py-2 rounded-lg text-xs hover:bg-blue-50 text-gray-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                            >
-                                Messenger (FB Ad + নাম/ঠিকানা/ফোনসহ)
-                            </button>
-                            <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => handleSimulate("FB_COMMENT_PRICE")}
-                                className="w-full text-left px-2.5 py-2 rounded-lg text-xs hover:bg-indigo-50 text-gray-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                            >
-                                FB Boost Comment (“Price please?”)
-                            </button>
-                            <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => handleSimulate("WHATSAPP_AD")}
-                                className="w-full text-left px-2.5 py-2 rounded-lg text-xs hover:bg-emerald-50 text-gray-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                            >
-                                WhatsApp (Click-to-WhatsApp Ad মেসেজ)
-                            </button>
-                        </div>
-                    )}
+                            {pane.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Mobile Pane Switcher (visible below lg breakpoint) */}
-            <div className="grid grid-cols-3 gap-1.5 mb-3 lg:hidden bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm">
-                {[
-                    { id: "list", label: `চ্যাট (${conversations.length})` },
-                    { id: "chat", label: "মেসেজ ও চ্যাট" },
-                    { id: "order", label: "১-ক্লিক অর্ডার" },
-                ].map((pane) => (
-                    <button
-                        key={pane.id}
-                        type="button"
-                        onClick={() => setMobilePane(pane.id)}
-                        className={`py-2 px-2 rounded-lg text-xs font-bold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-                            mobilePane === pane.id
-                                ? "bg-emerald-600 text-white"
-                                : "text-gray-600 hover:bg-gray-100"
-                        }`}
-                    >
-                        {pane.label}
-                    </button>
-                ))}
-            </div>
+            {/* ─── MAIN 4-PANE SAAS INBOX WORKSPACE ─── */}
+            <div className="flex-1 min-h-0 flex overflow-hidden">
+                {/* ─── PANE 1: LEFT CHANNEL & NAVIGATION SIDEBAR (Desktop) ─── */}
+                <aside
+                    aria-label="Inbox channels and tools"
+                    className="hidden lg:flex lg:flex-col w-[224px] xl:w-[240px] shrink-0 border-r border-gray-200 bg-slate-50/80 select-none"
+                >
+                    {/* Workspace Title */}
+                    <div className="px-4 py-3.5 border-b border-gray-200/80 flex items-center justify-between gap-2 bg-white/70">
+                        <div className="min-w-0">
+                            <h1 className="text-sm font-bold text-gray-900 tracking-tight truncate">
+                                Omnichannel Inbox
+                            </h1>
+                            <p className="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
+                                <span>Live Sync · Meta API</span>
+                            </p>
+                        </div>
+                    </div>
 
-            {/* 3-Pane Unified Workspace */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-                {/* ─── LEFT PANE: Conversations List ─── */}
+                    {/* Channels + Status Filters */}
+                    <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-5">
+                        <div>
+                            <p className="px-2.5 mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                চ্যানেলসমূহ
+                            </p>
+                            <div className="space-y-1" role="group" aria-label="Inbox channels">
+                                {CHANNELS.map((ch) => {
+                                    const unread = ch.key === "ALL" ? totalUnread : unreadByChannel[ch.key] || 0;
+                                    const active = channelFilter === ch.key;
+                                    return (
+                                        <button
+                                            key={ch.key}
+                                            type="button"
+                                            onClick={() => setChannelFilter(ch.key)}
+                                            aria-pressed={active}
+                                            className={`w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-xl text-left transition-[background-color,box-shadow,color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                                active
+                                                    ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/90"
+                                                    : "text-gray-700 hover:bg-white/70 hover:text-gray-900"
+                                            }`}
+                                        >
+                                            <span className="flex items-center gap-2.5 min-w-0">
+                                                <ChannelLogo channel={ch.key} className="w-5 h-5" />
+                                                <span className="min-w-0">
+                                                    <span className={`block text-[13px] leading-tight truncate ${active ? "font-bold" : "font-semibold"}`}>
+                                                        {ch.label}
+                                                    </span>
+                                                    <span className="block text-[10px] text-gray-400 leading-tight mt-0.5">
+                                                        {ch.subtitle}
+                                                    </span>
+                                                </span>
+                                            </span>
+                                            {unread > 0 && (
+                                                <span
+                                                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums shrink-0 ${
+                                                        active
+                                                            ? "bg-emerald-600 text-white"
+                                                            : "bg-rose-500 text-white"
+                                                    }`}
+                                                >
+                                                    {unread}
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="px-2.5 mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                স্ট্যাটাস ফিল্টার
+                            </p>
+                            <div className="space-y-1" role="group" aria-label="Filter by status">
+                                {STATUS_OPTIONS.map((st) => {
+                                    const active = statusFilter === st.key;
+                                    return (
+                                        <button
+                                            key={st.key}
+                                            type="button"
+                                            onClick={() => setStatusFilter(st.key)}
+                                            aria-pressed={active}
+                                            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                                active
+                                                    ? "bg-emerald-50 text-emerald-800 font-semibold"
+                                                    : "text-gray-600 hover:bg-gray-100/80 hover:text-gray-900"
+                                            }`}
+                                        >
+                                            <span className={`w-2 h-2 rounded-full shrink-0 ${st.dot}`} aria-hidden="true" />
+                                            <span className="truncate">{st.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="px-2.5 mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                অটোমেশন ও রিপোর্ট
+                            </p>
+                            <nav aria-label="Inbox settings and reports" className="space-y-1">
+                                <Link
+                                    href="/admin/inbox/automations"
+                                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-white hover:text-gray-900 transition-colors"
+                                >
+                                    <MessageSquareReply className="w-4 h-4 text-indigo-600 shrink-0" aria-hidden="true" />
+                                    <span className="truncate">Comment-to-Inbox</span>
+                                </Link>
+                                <Link
+                                    href="/admin/inbox/analytics"
+                                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-white hover:text-gray-900 transition-colors"
+                                >
+                                    <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                                    <span className="truncate">Ad ROI & Team Report</span>
+                                </Link>
+                                <Link
+                                    href="/admin/inbox/settings"
+                                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-white hover:text-gray-900 transition-colors"
+                                >
+                                    <Settings className="w-4 h-4 text-slate-600 shrink-0" aria-hidden="true" />
+                                    <span className="truncate">FB & WhatsApp API</span>
+                                </Link>
+                            </nav>
+                        </div>
+                    </div>
+
+                    {/* Sidebar Footer: Demo Simulator */}
+                    <div className="p-2.5 border-t border-gray-200/80 bg-white/60 relative" ref={simMenuRef}>
+                        <button
+                            type="button"
+                            onClick={() => setShowSimMenu((v) => !v)}
+                            disabled={isSimulating}
+                            aria-expanded={showSimMenu}
+                            aria-haspopup="menu"
+                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200/90 hover:bg-amber-100 touch-manipulation transition-[background-color,transform] duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                        >
+                            {isSimulating ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                            ) : (
+                                <FlaskConical className="w-3.5 h-3.5" aria-hidden="true" />
+                            )}
+                            <span>টেস্ট ডেমো মেসেজ</span>
+                        </button>
+                        {showSimMenu && (
+                            <div className="absolute bottom-full left-2.5 mb-2 z-50">
+                                {simMenuContent}
+                            </div>
+                        )}
+                    </div>
+                </aside>
+
+                {/* ─── PANE 2: CONVERSATIONS LIST ─── */}
                 <section
                     aria-label="Conversations list"
-                    className={`lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-col h-[560px] lg:h-[calc(100vh-220px)] lg:min-h-[640px] ${
+                    className={`w-full lg:w-[295px] xl:w-[325px] shrink-0 border-r border-gray-200 bg-white flex-col min-h-0 ${
                         mobilePane === "list" ? "flex" : "hidden lg:flex"
                     }`}
                 >
-                    <div className="p-3 border-b border-gray-100 space-y-2">
+                    <div className="px-3.5 py-3 border-b border-gray-100 space-y-2.5 shrink-0">
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <ChannelLogo channel={channelFilter} className="w-5 h-5" />
+                                <h2 className="text-sm font-bold text-gray-900 truncate">
+                                    {activeChannelMeta.label}
+                                </h2>
+                            </div>
+                            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 tabular-nums shrink-0">
+                                {conversations.length}
+                            </span>
+                        </div>
+
                         <div className="relative">
                             <label htmlFor="inbox-search" className="sr-only">
                                 কাস্টমার বা মেসেজ খুঁজুন
@@ -541,25 +742,8 @@ export default function SocialInboxWorkspace() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="নাম, ফোন বা অ্যাড খুঁজুন…"
-                                className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="w-full pl-9 pr-3 py-1.5 text-sm bg-slate-50 border border-gray-200 rounded-lg focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             />
-                        </div>
-                        <div className="flex gap-1.5" role="group" aria-label="Filter by status">
-                            {["ALL", "OPEN", "ORDERED", "RESOLVED"].map((st) => (
-                                <button
-                                    key={st}
-                                    type="button"
-                                    onClick={() => setStatusFilter(st)}
-                                    aria-pressed={statusFilter === st}
-                                    className={`flex-1 py-1 rounded text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-                                        statusFilter === st
-                                            ? "bg-emerald-100 text-emerald-800"
-                                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                                    }`}
-                                >
-                                    {st}
-                                </button>
-                            ))}
                         </div>
                     </div>
 
@@ -571,26 +755,35 @@ export default function SocialInboxWorkspace() {
                             </div>
                         ) : conversations.length === 0 ? (
                             <div role="status" aria-live="polite" className="p-6 text-center text-gray-500 text-sm space-y-3">
-                                <MessageSquare className="w-8 h-8 text-gray-300 mx-auto" aria-hidden="true" />
-                                <p className="font-medium text-gray-700">এখনো কোনো মেসেজ নেই।</p>
+                                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto">
+                                    <ChannelLogo channel={channelFilter} className="w-6 h-6" />
+                                </div>
+                                <p className="font-semibold text-gray-700">এখনো কোনো মেসেজ নেই</p>
                                 <p className="text-xs text-gray-400 text-pretty">
-                                    টেস্ট করতে নিচের বাটনে ক্লিক করে একটি ডেমো ইনবাউন্ড মেসেজ পাঠান।
+                                    নিচের বাটনে ক্লিক করে একটি ডেমো ইনবাউন্ড চ্যাট টেস্ট করুন।
                                 </p>
                                 <button
                                     type="button"
-                                    onClick={() => handleSimulate("MESSENGER_AD")}
+                                    onClick={() =>
+                                        handleSimulate(
+                                            channelFilter === "WHATSAPP"
+                                                ? "WHATSAPP_AD"
+                                                : channelFilter === "FB_COMMENT"
+                                                ? "FB_COMMENT_PRICE"
+                                                : "MESSENGER_AD"
+                                        )
+                                    }
                                     disabled={isSimulating}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 >
-                                    <FlaskConical className="w-3.5 h-3.5" aria-hidden="true" />
-                                    ডেমো চ্যাট দিয়ে শুরু করুন
+                                    <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                                    ডেমো চ্যাট পাঠান
                                 </button>
                             </div>
                         ) : (
                             conversations.map((conv) => {
                                 const isSelected = conv.id === selectedId;
                                 const meta = CHANNEL_META[conv.channel] || CHANNEL_META.MESSENGER;
-                                const ChannelIcon = meta.icon;
                                 return (
                                     <button
                                         key={conv.id}
@@ -600,60 +793,62 @@ export default function SocialInboxWorkspace() {
                                             setMobilePane("chat");
                                         }}
                                         aria-current={isSelected ? "true" : undefined}
-                                        className={`w-full text-left p-3 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 ${
-                                            isSelected ? "bg-emerald-50/70 border-l-4 border-emerald-600" : ""
+                                        className={`w-full text-left px-3.5 py-3 transition-colors hover:bg-slate-50/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 ${
+                                            isSelected
+                                                ? "bg-emerald-50/70 shadow-[inset_3px_0_0_0_#059669]"
+                                                : ""
                                         }`}
                                     >
-                                        <div className="flex items-start justify-between gap-2 mb-1">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <span
-                                                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border ${meta.bg}`}
-                                                    title={meta.label}
-                                                >
-                                                    <ChannelIcon className="w-3.5 h-3.5" aria-hidden="true" />
-                                                </span>
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-semibold text-gray-900 truncate">
+                                        <div className="flex items-start gap-2.5">
+                                            <ChannelAvatar
+                                                name={conv.customerName}
+                                                channel={conv.channel}
+                                                size="md"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="text-[13px] font-semibold text-gray-900 truncate">
                                                         {conv.customerName}
                                                     </p>
+                                                    <span className="text-[10px] text-gray-400 tabular-nums shrink-0">
+                                                        {formatShortTime(conv.lastMessageAt)}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center justify-between gap-2 mt-0.5">
                                                     <p className="text-[11px] text-gray-500 truncate tabular-nums">
                                                         {conv.phone || conv.customerHandle || meta.label}
                                                     </p>
+                                                    {conv.unreadCount > 0 && (
+                                                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white tabular-nums shrink-0">
+                                                            {conv.unreadCount}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <p className="text-xs text-gray-600 line-clamp-2 mt-1 leading-snug">
+                                                    {conv.lastMessagePreview}
+                                                </p>
+
+                                                <div className="flex flex-wrap items-center justify-between gap-1 mt-2">
+                                                    <AdAttributionBadge
+                                                        adPlatform={conv.adPlatform}
+                                                        adName={conv.adName}
+                                                        campaignName={conv.campaignName}
+                                                    />
+                                                    <span
+                                                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                                            conv.status === "ORDERED"
+                                                                ? "bg-emerald-100 text-emerald-800"
+                                                                : conv.status === "RESOLVED"
+                                                                ? "bg-gray-100 text-gray-600"
+                                                                : "bg-blue-50 text-blue-700"
+                                                        }`}
+                                                    >
+                                                        {conv.status}
+                                                    </span>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-end gap-1 shrink-0">
-                                                <span className="text-[10px] text-gray-400 tabular-nums">
-                                                    {formatShortTime(conv.lastMessageAt)}
-                                                </span>
-                                                {conv.unreadCount > 0 && (
-                                                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white tabular-nums">
-                                                        {conv.unreadCount}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <p className="text-xs text-gray-600 line-clamp-2 mb-1.5">
-                                            {conv.lastMessagePreview}
-                                        </p>
-
-                                        <div className="flex flex-wrap items-center justify-between gap-1">
-                                            <AdAttributionBadge
-                                                adPlatform={conv.adPlatform}
-                                                adName={conv.adName}
-                                                campaignName={conv.campaignName}
-                                            />
-                                            <span
-                                                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                                                    conv.status === "ORDERED"
-                                                        ? "bg-emerald-100 text-emerald-800"
-                                                        : conv.status === "RESOLVED"
-                                                        ? "bg-gray-100 text-gray-600"
-                                                        : "bg-blue-50 text-blue-700"
-                                                }`}
-                                            >
-                                                {conv.status}
-                                            </span>
                                         </div>
                                     </button>
                                 );
@@ -662,10 +857,10 @@ export default function SocialInboxWorkspace() {
                     </div>
                 </section>
 
-                {/* ─── CENTER PANE: Chat Thread + Gemini AI Co-pilot ─── */}
+                {/* ─── PANE 3: CENTER ACTIVE CHAT THREAD ─── */}
                 <section
                     aria-label="Active conversation"
-                    className={`lg:col-span-5 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-col h-[580px] lg:h-[calc(100vh-220px)] lg:min-h-[640px] ${
+                    className={`flex-1 min-w-0 bg-[#F5F7FA] flex-col min-h-0 ${
                         mobilePane === "chat" ? "flex" : "hidden lg:flex"
                     }`}
                 >
@@ -675,9 +870,14 @@ export default function SocialInboxWorkspace() {
                                 <Loader2 className="w-8 h-8 animate-spin mb-2" aria-hidden="true" />
                             ) : (
                                 <>
-                                    <ShoppingBag className="w-10 h-10 mb-3 text-gray-300" aria-hidden="true" />
-                                    <p className="text-sm font-medium text-gray-600 text-pretty">
+                                    <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-gray-200 flex items-center justify-center mb-3">
+                                        <MessageSquare className="w-7 h-7 text-emerald-600" aria-hidden="true" />
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-700">
                                         বাম পাশ থেকে যেকোনো চ্যাট সিলেক্ট করুন
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        ক্লিক করলেই এখানে সম্পূর্ণ চ্যাট এবং ডান পাশে অর্ডার ও ফ্রড চেক প্যানেল দেখা যাবে।
                                     </p>
                                 </>
                             )}
@@ -685,32 +885,31 @@ export default function SocialInboxWorkspace() {
                     ) : (
                         <>
                             {/* Thread Header */}
-                            <div className="p-3.5 border-b border-gray-100 bg-gray-50/70 space-y-2">
+                            <div className="px-4 py-3 border-b border-gray-200 bg-white space-y-2 shrink-0">
                                 <div className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex items-center gap-2.5 min-w-0">
                                         <button
                                             type="button"
                                             onClick={() => setMobilePane("list")}
                                             aria-label="চ্যাট তালিকায় ফিরে যান"
-                                            className="lg:hidden p-1.5 rounded-lg hover:bg-gray-200 text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                         >
                                             <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                                         </button>
-                                        <span
-                                            aria-hidden="true"
-                                            className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0"
-                                        >
-                                            {getInitials(activeConv.customerName)}
-                                        </span>
+                                        <ChannelAvatar
+                                            name={activeConv.customerName}
+                                            channel={activeConv.channel}
+                                            size="lg"
+                                        />
                                         <div className="min-w-0">
-                                            <div className="flex items-center gap-1.5 min-w-0">
+                                            <div className="flex items-center gap-2 min-w-0">
                                                 <h2 className="font-bold text-gray-900 truncate text-sm">
                                                     {activeConv.customerName}
                                                 </h2>
                                                 <ChannelBadge channel={activeConv.channel} compact />
                                             </div>
                                             {activeConv.phone && (
-                                                <p className="text-[11px] text-gray-500 tabular-nums">
+                                                <p className="text-[11px] text-gray-500 tabular-nums mt-0.5">
                                                     {activeConv.phone}
                                                 </p>
                                             )}
@@ -725,7 +924,7 @@ export default function SocialInboxWorkspace() {
                                             id="assign-moderator-select"
                                             value={activeConv.assignedToId || ""}
                                             onChange={(e) => handleAssignModerator(e.target.value)}
-                                            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-slate-50 text-gray-700 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                         >
                                             <option value="">Unassigned</option>
                                             {staffUsers.map((u) => (
@@ -741,7 +940,7 @@ export default function SocialInboxWorkspace() {
                                             id="conv-status-select"
                                             value={activeConv.status}
                                             onChange={(e) => handleStatusChange(e.target.value)}
-                                            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white font-semibold text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-slate-50 font-semibold text-gray-700 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                         >
                                             <option value="OPEN">OPEN</option>
                                             <option value="PENDING">PENDING</option>
@@ -771,9 +970,20 @@ export default function SocialInboxWorkspace() {
                             </div>
 
                             {/* Messages Scroll Area */}
-                            <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3 bg-slate-50/60">
+                            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3.5">
+                                <div className="flex justify-center">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-gray-200/80 text-[11px] font-medium text-gray-500 shadow-sm">
+                                        <ChannelLogo channel={activeConv.channel} className="w-3.5 h-3.5" />
+                                        <span>{activeConvMeta?.label || "Social"} কনভার্সেশন</span>
+                                    </span>
+                                </div>
+
                                 {(activeConv.messages || []).map((msg) => {
                                     const isOutbound = msg.direction === "OUTBOUND";
+                                    const outboundTone =
+                                        msg.senderType === "AI_AUTO"
+                                            ? "bg-indigo-600 text-white"
+                                            : activeConvMeta?.bubbleOutbound || "bg-emerald-700 text-white";
                                     return (
                                         <div
                                             key={msg.id}
@@ -782,12 +992,10 @@ export default function SocialInboxWorkspace() {
                                             }`}
                                         >
                                             <div
-                                                className={`max-w-[84%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm whitespace-pre-wrap break-words ${
-                                                    msg.senderType === "AI_AUTO"
-                                                        ? "bg-violet-600 text-white rounded-br-sm"
-                                                        : isOutbound
-                                                        ? "bg-emerald-600 text-white rounded-br-sm"
-                                                        : "bg-white text-gray-800 border border-gray-200 rounded-bl-sm"
+                                                className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap break-words ${
+                                                    isOutbound
+                                                        ? `${outboundTone} rounded-br-sm shadow-sm`
+                                                        : "bg-white text-gray-800 border border-gray-200/90 rounded-bl-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                                                 }`}
                                             >
                                                 {msg.mediaUrl && (
@@ -818,24 +1026,24 @@ export default function SocialInboxWorkspace() {
                                                     </>
                                                 )}
                                                 {msg.senderType === "CUSTOMER" && activeConv.customerName}
-                                                 {" · "}
-                                                 {formatShortTime(msg.createdAt)}
-                                             </span>
-                                         </div>
-                                     );
-                                 })}
-                                 <div ref={messagesEndRef} />
-                             </div>
+                                                {" · "}
+                                                {formatShortTime(msg.createdAt)}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                                <div ref={messagesEndRef} />
+                            </div>
 
-                             {/* Reply Input Box + Quick Replies */}
-                            <div className="p-3 border-t border-gray-200 bg-white space-y-2">
+                            {/* Reply Input Box + Quick Replies */}
+                            <div className="p-3 border-t border-gray-200 bg-white space-y-2 shrink-0">
                                 <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
                                     {QUICK_REPLIES.map((qr) => (
                                         <button
                                             key={qr.label}
                                             type="button"
                                             onClick={() => setReplyText(qr.text)}
-                                            className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 border border-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-100 text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 border border-gray-200/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                         >
                                             + {qr.label}
                                         </button>
@@ -860,7 +1068,7 @@ export default function SocialInboxWorkspace() {
                                     </label>
                                 )}
 
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-end">
                                     <label htmlFor="inbox-reply-input" className="sr-only">
                                         কাস্টমারকে মেসেজ লিখুন
                                     </label>
@@ -876,14 +1084,14 @@ export default function SocialInboxWorkspace() {
                                                 handleSendReply();
                                             }
                                         }}
-                                        placeholder="মেসেজ লিখুন… (Enter চাপলে সেন্ড হবে)"
-                                        className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 resize-none"
+                                        placeholder={`${activeConvMeta?.label || "Inbox"}-এ রিপ্লাই লিখুন… (Enter চাপলে সেন্ড)`}
+                                        className="flex-1 text-sm bg-slate-50 border border-gray-200 rounded-xl px-3 py-2 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 resize-none"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => handleSendReply()}
                                         disabled={isSendingReply || !replyText.trim()}
-                                        className="px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 touch-manipulation transition-[background-color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                        className="h-[58px] px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 touch-manipulation transition-[background-color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                     >
                                         {isSendingReply ? (
                                             <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
@@ -898,15 +1106,15 @@ export default function SocialInboxWorkspace() {
                     )}
                 </section>
 
-                {/* ─── RIGHT PANE: Fraud/Delivery Ratio + 1-Click Order & Courier Booking ─── */}
+                {/* ─── PANE 4: RIGHT FRAUD CHECK + 1-CLICK ORDER ─── */}
                 <section
                     aria-label="Customer risk and 1-click order"
-                    className={`lg:col-span-4 space-y-4 lg:h-[calc(100vh-220px)] lg:min-h-[640px] overflow-y-auto overscroll-contain pr-0.5 ${
+                    className={`w-full lg:w-[335px] xl:w-[375px] shrink-0 border-l border-gray-200 bg-slate-50/70 overflow-y-auto overscroll-contain p-3.5 space-y-3.5 ${
                         mobilePane === "order" ? "block" : "hidden lg:block"
                     }`}
                 >
                     {/* 1. Courier Fraud Check & Delivery Success Ratio */}
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
+                    <div className="bg-white rounded-xl border border-gray-200/90 shadow-sm p-3.5 space-y-3">
                         <div className="flex items-center justify-between gap-2">
                             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5 text-balance">
                                 {risk?.riskLevel === "HIGH_RISK" || risk?.riskLevel === "BLOCKED" ? (
@@ -983,7 +1191,7 @@ export default function SocialInboxWorkspace() {
                                 )}
 
                                 <div className="grid grid-cols-3 gap-2 text-center pt-1 tabular-nums">
-                                    <div className="bg-gray-50 rounded-lg p-1.5 border border-gray-100">
+                                    <div className="bg-slate-50 rounded-lg p-1.5 border border-gray-100">
                                         <p className="text-[10px] text-gray-500">মোট অর্ডার</p>
                                         <p className="text-sm font-bold text-gray-800">
                                             {risk?.local?.totalOrders ?? 0}
@@ -1015,7 +1223,7 @@ export default function SocialInboxWorkspace() {
                     {/* 2. 1-Click Order Entry + Auto Courier Booking */}
                     <form
                         onSubmit={handleSubmitOneClickOrder}
-                        className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3"
+                        className="bg-white rounded-xl border border-gray-200/90 shadow-sm p-3.5 space-y-3"
                     >
                         <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5 border-b border-gray-100 pb-2 text-balance">
                             <ShoppingBag className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
@@ -1133,7 +1341,7 @@ export default function SocialInboxWorkspace() {
                                 className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             />
                             {productSearch.trim().length > 0 && (
-                                <div className="max-h-44 overflow-y-auto overscroll-contain border border-gray-200 rounded-lg divide-y bg-gray-50">
+                                <div className="max-h-44 overflow-y-auto overscroll-contain border border-gray-200 rounded-lg divide-y bg-slate-50">
                                     {filteredProducts.length === 0 ? (
                                         <p className="p-2.5 text-xs text-gray-500">কোনো প্রোডাক্ট পাওয়া যায়নি</p>
                                     ) : (
@@ -1271,7 +1479,7 @@ export default function SocialInboxWorkspace() {
                             </div>
                         </div>
 
-                        <div className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-200">
+                        <div className="bg-slate-50 rounded-lg p-3 space-y-2 border border-gray-200/90">
                             <div className="flex items-center justify-between text-xs font-bold text-gray-900">
                                 <span>মোট বিল (COD সংগ্রহ):</span>
                                 <span className="text-base text-emerald-700 tabular-nums">
@@ -1341,7 +1549,7 @@ export default function SocialInboxWorkspace() {
 
                     {/* 3. Linked / Recent Orders for this customer */}
                     {activeConv && (activeConv.orders?.length > 0 || activeConv.phoneOrderHistory?.length > 0) && (
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-2">
+                        <div className="bg-white rounded-xl border border-gray-200/90 shadow-sm p-3.5 space-y-2">
                             <h4 className="text-xs font-bold text-gray-700 uppercase">
                                 কাস্টমারের পূর্ববর্তী / লিংকড অর্ডার
                             </h4>
@@ -1353,7 +1561,7 @@ export default function SocialInboxWorkspace() {
                                             href={`/admin/orders/${ord.id}`}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                         >
                                             <div>
                                                 <p className="font-bold text-gray-800 tabular-nums">

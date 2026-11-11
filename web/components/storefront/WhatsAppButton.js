@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function WhatsAppButton({ waNumber: propWaNumber }) {
+    const pathname = usePathname();
     const [isVisible, setIsVisible] = useState(false);
 
     // Resolve WhatsApp number: prop > env > default
@@ -25,6 +27,10 @@ export default function WhatsAppButton({ waNumber: propWaNumber }) {
         }, 1000);
         return () => clearTimeout(timer);
     }, []);
+
+    if (pathname?.startsWith("/admin")) {
+        return null;
+    }
 
     return (
         <a

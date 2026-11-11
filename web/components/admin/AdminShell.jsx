@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
 
-export default function AdminShell({ children, title, actions }) {
+export default function AdminShell({ children, title, actions, fullBleed = false }) {
     const [isSidebarOpen, setSidebarOpen] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -26,28 +26,34 @@ export default function AdminShell({ children, title, actions }) {
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
     return (
-        <div className="flex h-screen bg-gray-50 text-gray-900 font-sans">
+        <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
             {/* Sidebar */}
             <AdminSidebar isOpen={isSidebarOpen} setIsOpen={setSidebarOpen} isMobile={isMobile} />
 
             {/* Main Content */}
-            <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen && !isMobile ? 'ml-64' : 'ml-0'}`}>
+            <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarOpen && !isMobile ? 'ml-64' : 'ml-0'}`}>
                 <AdminTopbar toggleSidebar={toggleSidebar} />
 
-                <main className="flex-1 overflow-y-auto p-4 md:p-6">
-                    <div className="container mx-auto max-w-7xl">
-                        {/* Page Header */}
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
-                            </div>
-                            {actions && <div className="flex gap-2">{actions}</div>}
-                        </div>
-
-                        {/* Page Content */}
+                {fullBleed ? (
+                    <main className="flex-1 min-h-0 overflow-hidden bg-white">
                         {children}
-                    </div>
-                </main>
+                    </main>
+                ) : (
+                    <main className="flex-1 overflow-y-auto p-4 md:p-6">
+                        <div className="container mx-auto max-w-7xl">
+                            {/* Page Header */}
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+                                </div>
+                                {actions && <div className="flex gap-2">{actions}</div>}
+                            </div>
+
+                            {/* Page Content */}
+                            {children}
+                        </div>
+                    </main>
+                )}
             </div>
 
             {/* Overlay for mobile */}
