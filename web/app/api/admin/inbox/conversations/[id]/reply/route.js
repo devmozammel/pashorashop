@@ -14,10 +14,18 @@ export async function POST(req, props) {
         const { id } = await params;
         const body = await req.json();
         const text = (body.text || "").trim();
+        const mediaUrl = body.mediaUrl ? String(body.mediaUrl).trim() : null;
+        const rawMediaType = String(body.mediaType || "").toUpperCase();
+        const mediaType = mediaUrl
+            ? ["AUDIO", "IMAGE", "VIDEO"].includes(rawMediaType)
+                ? rawMediaType
+                : "IMAGE"
+            : "TEXT";
+        const mediaMeta = body.mediaMeta && typeof body.mediaMeta === "object" ? body.mediaMeta : {};
         const isPublicCommentReply = Boolean(body.isPublicCommentReply);
 
-        if (!text) {
-            return NextResponse.json({ ok: false, message: "Reply message cannot be empty" }, { status: 400 });
+        if (!text && !mediaUrl) {
+            return NextResponse.json({ ok: false, message: "মেসেজ বা মিডিয়া খালি হতে পারবে না" }, { status: 400 });
         }
 
         const conversation = await prisma.socialConversation.findUnique({
@@ -44,6 +52,8 @@ export async function POST(req, props) {
             externalThreadId: conversation.externalThreadId,
             commentId,
             text,
+            mediaUrl,
+            mediaType,
             isPublicCommentReply,
         });
 
@@ -67,20 +77,28 @@ export async function POST(req, props) {
             };
         }
 
+        const fallbackLabel =
+            mediaType === "AUDIO" ? "[Voice Message]" : mediaType === "VIDEO" ? "[Video]" : "[Image]";
+        const bodyToStore = text || fallbackLabel;
+        const messageTypeToStore = isPublicCommentReply ? "COMMENT" : mediaType;
+
         const [message, updatedConversation] = await prisma.$transaction([
             prisma.socialMessage.create({
                 data: {
                     conversationId: id,
                     externalMessageId: sendRes.externalMessageId || null,
                     direction: "OUTBOUND",
-                    messageType: isPublicCommentReply ? "COMMENT" : "TEXT",
+                    messageType: messageTypeToStore,
                     senderType: "MODERATOR",
                     senderId: dbUserId,
-                    body: text,
+                    body: bodyToStore,
+                    mediaUrl,
                     metadata: {
                         simulated: sendRes.simulated,
                         isPublicCommentReply,
                         staffName: staff.user?.name || staff.user?.email,
+                        ...(mediaMeta.publicId ? { cloudinaryPublicId: mediaMeta.publicId } : {}),
+                        ...(mediaMeta.resourceType ? { cloudinaryResourceType: mediaMeta.resourceType } : {}),
                     },
                 },
                 include: {
@@ -91,7 +109,7 @@ export async function POST(req, props) {
                 where: { id },
                 data: {
                     unreadCount: 0,
-                    lastMessagePreview: text.slice(0, 200),
+                    lastMessagePreview: bodyToStore.slice(0, 200),
                     lastMessageAt: now,
                     aiSuggestedReply: null,
                     ...(dbUserId && !conversation.assignedToId ? { assignedToId: dbUserId, assignedAt: now } : {}),

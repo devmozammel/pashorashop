@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { fetchFacebookUserProfile } from "@/lib/meta-api";
 import { getSocialSettings } from "@/lib/social-settings";
 import { ingestInboundSocialEvent } from "@/lib/social-ingestion";
+import { maybeRunInboxRetentionCleanup } from "@/lib/inbox-retention";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +82,8 @@ export async function POST(req) {
             return NextResponse.json({ ok: false, message: "Invalid signature" }, { status: 401 });
         }
 
+        maybeRunInboxRetentionCleanup();
+
         const payload = JSON.parse(rawBody || "{}");
         objectType = payload.object || null;
         const entries = Array.isArray(payload.entry) ? payload.entry : [];
@@ -95,14 +98,26 @@ export async function POST(req) {
                     const senderId = event.sender?.id;
                     if (!senderId || (settings.fbPageId && senderId === settings.fbPageId)) continue;
 
-                    const mediaUrl = event.message?.attachments?.[0]?.payload?.url || null;
+                    const att = event.message?.attachments?.[0];
+                    const attType = String(att?.type || "").toLowerCase();
+                    const mediaUrl = att?.payload?.url || null;
+                    const messageType =
+                        attType === "audio"
+                            ? "AUDIO"
+                            : attType === "video"
+                            ? "VIDEO"
+                            : mediaUrl
+                            ? "IMAGE"
+                            : "TEXT";
                     const text =
                         event.message?.text ||
                         event.postback?.title ||
-                        (event.message?.attachments?.[0]?.type
-                            ? `[${event.message.attachments[0].type}]`
+                        (attType === "audio"
+                            ? "[Voice Message]"
+                            : attType
+                            ? `[${attType}]`
                             : "");
-                    if (!text) continue;
+                    if (!text && !mediaUrl) continue;
 
                     let profile = profileCache.get(senderId);
                     if (!profile) {
@@ -121,7 +136,8 @@ export async function POST(req) {
                         externalMessageId: event.message?.mid,
                         customerName: profile?.name || `FB User ${senderId.slice(-4)}`,
                         customerAvatar: profile?.avatarUrl || null,
-                        body: text,
+                        body: text || `[${messageType}]`,
+                        messageType,
                         mediaUrl,
                         adPlatform: adId ? "FACEBOOK" : "ORGANIC",
                         adId,
@@ -142,12 +158,30 @@ export async function POST(req) {
                         const contacts = Array.isArray(val.contacts) ? val.contacts : [];
                         for (const msg of val.messages) {
                             const contact = contacts.find((c) => c.wa_id === msg.from) || contacts[0];
+                            const msgKind = String(msg.type || "").toLowerCase();
+                            const mediaId =
+                                msg.image?.id ||
+                                msg.audio?.id ||
+                                msg.voice?.id ||
+                                msg.video?.id ||
+                                null;
+                            const mediaUrl = mediaId ? `/api/admin/inbox/media/${mediaId}` : null;
+                            const messageType =
+                                msgKind === "audio" || msgKind === "voice"
+                                    ? "AUDIO"
+                                    : msgKind === "video"
+                                    ? "VIDEO"
+                                    : mediaId
+                                    ? "IMAGE"
+                                    : "TEXT";
                             const text =
                                 msg.text?.body ||
+                                msg.image?.caption ||
+                                msg.video?.caption ||
                                 msg.button?.text ||
                                 msg.interactive?.button_reply?.title ||
-                                `[${msg.type || "media"}]`;
-                            if (!msg.from || !text) continue;
+                                (messageType === "AUDIO" ? "[Voice Message]" : `[${msgKind || "media"}]`);
+                            if (!msg.from || (!text && !mediaUrl)) continue;
 
                             const referral = msg.referral || {};
                             const adId = referral.source_id || null;
@@ -161,6 +195,8 @@ export async function POST(req) {
                                 customerHandle: `+${msg.from}`,
                                 phone: msg.from,
                                 body: text,
+                                messageType,
+                                mediaUrl,
                                 adPlatform: adId ? "FACEBOOK" : "ORGANIC",
                                 adId,
                                 adName: referral.headline || (adId ? `Click-to-WA Ad #${adId}` : null),

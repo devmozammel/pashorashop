@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, unauthorizedResponse } from "@/lib/require-admin";
+import { maybeRunInboxRetentionCleanup } from "@/lib/inbox-retention";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,8 @@ export async function GET(req) {
     try {
         const staff = await requireStaff();
         if (!staff) return unauthorizedResponse();
+
+        maybeRunInboxRetentionCleanup();
 
         const { searchParams } = new URL(req.url);
         const channel = searchParams.get("channel") || "ALL";

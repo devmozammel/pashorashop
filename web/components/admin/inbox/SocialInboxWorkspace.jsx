@@ -25,6 +25,14 @@ import {
     MessageSquareReply,
     Settings,
     Sparkles,
+    Mic,
+    Square,
+    ImagePlus,
+    Phone,
+    PhoneCall,
+    X,
+    Maximize2,
+    Volume2,
 } from "lucide-react";
 import {
     CHANNEL_META,
@@ -35,6 +43,32 @@ import {
 } from "./InboxShared";
 
 const fetcher = (url) => fetch(url).then((r) => r.json());
+
+function formatCallLinks(rawPhone) {
+    const digits = String(rawPhone || "").replace(/\D/g, "");
+    if (!digits) return null;
+    let intl = digits;
+    let local = digits;
+    if (/^01[3-9]\d{8}$/.test(digits)) {
+        intl = `88${digits}`;
+    } else if (/^8801[3-9]\d{8}$/.test(digits)) {
+        local = digits.slice(2);
+    } else if (/^1[3-9]\d{8}$/.test(digits)) {
+        local = `0${digits}`;
+        intl = `880${digits}`;
+    }
+    return {
+        display: local,
+        telHref: `tel:+${intl}`,
+        waHref: `https://wa.me/${intl}`,
+    };
+}
+
+function formatRecordingTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 const QUICK_REPLIES = [
     {
@@ -117,7 +151,54 @@ export default function SocialInboxWorkspace() {
     const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
     const [isSyncingMessenger, setIsSyncingMessenger] = useState(false);
 
+    // Media, Voice Recording, Call & Lightbox states
+    const [lightboxImage, setLightboxImage] = useState(null);
+    const [pendingMedia, setPendingMedia] = useState(null);
+    const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+    const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+    const [recordingSec, setRecordingSec] = useState(0);
+    const [voiceDraft, setVoiceDraft] = useState(null); // { blob, objectUrl, durationSec }
+    const [showCallPopover, setShowCallPopover] = useState(false);
+    const [callPhoneInput, setCallPhoneInput] = useState("");
+    const [isSavingCallPhone, setIsSavingCallPhone] = useState(false);
+
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const mediaRecorderRef = useRef(null);
+    const mediaStreamRef = useRef(null);
+    const recordTimerRef = useRef(null);
+    const audioChunksRef = useRef([]);
+    const callPopoverRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+            if (mediaStreamRef.current) {
+                mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!lightboxImage && !showCallPopover) return;
+        const onKey = (e) => {
+            if (e.key === "Escape") {
+                setLightboxImage(null);
+                setShowCallPopover(false);
+            }
+        };
+        const onClickOut = (e) => {
+            if (showCallPopover && callPopoverRef.current && !callPopoverRef.current.contains(e.target)) {
+                setShowCallPopover(false);
+            }
+        };
+        document.addEventListener("keydown", onKey);
+        document.addEventListener("mousedown", onClickOut);
+        return () => {
+            document.removeEventListener("keydown", onKey);
+            document.removeEventListener("mousedown", onClickOut);
+        };
+    }, [lightboxImage, showCallPopover]);
 
     // Close simulator dropdown on Escape or outside click
     useEffect(() => {
@@ -193,6 +274,10 @@ export default function SocialInboxWorkspace() {
             deliveryFee: area === "OUTSIDE_DHAKA" ? 130 : 70,
         }));
         setIsPublicCommentReply(false);
+        setPendingMedia(null);
+        setVoiceDraft(null);
+        setShowCallPopover(false);
+        setCallPhoneInput(activeConv.phone || ext.phone || "");
     }, [activeConv?.id]);
 
     // Scroll chat to bottom when message count changes
@@ -222,23 +307,38 @@ export default function SocialInboxWorkspace() {
     );
     const codPayable = Math.max(0, orderTotal - Number(orderForm.advancePayment || 0));
 
-    const handleSendReply = async (textOverride = null) => {
+    const handleSendReply = async (textOverride = null, mediaOverride = null) => {
         const text = (textOverride ?? replyText).trim();
-        if (!text || !selectedId) return;
+        const mediaToUse = mediaOverride || pendingMedia;
+        if ((!text && !mediaToUse?.url) || !selectedId) return;
 
         setIsSendingReply(true);
         try {
             const res = await fetch(`/api/admin/inbox/conversations/${selectedId}/reply`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, isPublicCommentReply }),
+                body: JSON.stringify({
+                    text,
+                    mediaUrl: mediaToUse?.url || null,
+                    mediaType: mediaToUse?.mediaType || "TEXT",
+                    mediaMeta: mediaToUse
+                        ? {
+                              publicId: mediaToUse.publicId || null,
+                              resourceType: mediaToUse.resourceType || null,
+                          }
+                        : {},
+                    isPublicCommentReply,
+                }),
             });
             const data = await res.json();
             if (data.ok) {
-                if (!textOverride) setReplyText("");
+                if (textOverride === null) setReplyText("");
+                if (!mediaOverride) setPendingMedia(null);
                 toast.success(
                     data.simulated
                         ? "রিপ্লাই সেভ হয়েছে (Demo Mode — FB/WhatsApp Token দিলে সরাসরি লাইভ যাবে)"
+                        : mediaToUse?.mediaType === "AUDIO"
+                        ? "ভয়েস মেসেজ পাঠানো হয়েছে!"
                         : "মেসেজ পাঠানো হয়েছে!"
                 );
                 mutateActive();
@@ -250,6 +350,185 @@ export default function SocialInboxWorkspace() {
             toast.error("নেটওয়ার্ক সমস্যার কারণে মেসেজ পাঠানো যায়নি");
         } finally {
             setIsSendingReply(false);
+        }
+    };
+
+    const handleImageSelect = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+        setIsUploadingMedia(true);
+        try {
+            const form = new FormData();
+            form.append("file", file);
+            form.append("kind", "IMAGE");
+            const res = await fetch("/api/admin/inbox/media/upload", {
+                method: "POST",
+                body: form,
+            });
+            const data = await res.json();
+            if (data.ok) {
+                setPendingMedia({
+                    url: data.url,
+                    mediaType: "IMAGE",
+                    publicId: data.publicId,
+                    resourceType: data.resourceType,
+                    name: file.name,
+                });
+                toast.success("ছবি যুক্ত হয়েছে — এখন Send বাটনে ক্লিক করুন");
+            } else {
+                toast.error(data.message || "ছবি আপলোড করা যায়নি");
+            }
+        } catch {
+            toast.error("ছবি আপলোড করতে সমস্যা হয়েছে");
+        } finally {
+            setIsUploadingMedia(false);
+        }
+    };
+
+    const stopStreamTracks = () => {
+        if (recordTimerRef.current) {
+            clearInterval(recordTimerRef.current);
+            recordTimerRef.current = null;
+        }
+        if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+            mediaStreamRef.current = null;
+        }
+    };
+
+    const startVoiceRecording = async () => {
+        if (!navigator?.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+            toast.error("আপনার ব্রাউজার মাইক্রোফোন রেকর্ডিং সাপোর্ট করছে না");
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaStreamRef.current = stream;
+            audioChunksRef.current = [];
+            setVoiceDraft(null);
+            setRecordingSec(0);
+
+            const preferredMime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"].find(
+                (m) => MediaRecorder.isTypeSupported?.(m)
+            );
+            const recorder = preferredMime
+                ? new MediaRecorder(stream, { mimeType: preferredMime })
+                : new MediaRecorder(stream);
+
+            recorder.ondataavailable = (ev) => {
+                if (ev.data && ev.data.size > 0) {
+                    audioChunksRef.current.push(ev.data);
+                }
+            };
+
+            recorder.onstop = () => {
+                stopStreamTracks();
+                const chunks = audioChunksRef.current;
+                if (chunks.length > 0) {
+                    const mime = recorder.mimeType || "audio/webm";
+                    const blob = new Blob(chunks, { type: mime });
+                    const objectUrl = URL.createObjectURL(blob);
+                    setVoiceDraft({ blob, objectUrl, mime });
+                }
+                setIsRecordingVoice(false);
+            };
+
+            mediaRecorderRef.current = recorder;
+            recorder.start(250);
+            setIsRecordingVoice(true);
+            recordTimerRef.current = setInterval(() => {
+                setRecordingSec((s) => s + 1);
+            }, 1000);
+        } catch {
+            stopStreamTracks();
+            toast.error("মাইক্রোফোনের অনুমতি (Permission) পাওয়া যায়নি");
+        }
+    };
+
+    const stopVoiceRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            mediaRecorderRef.current.stop();
+        } else {
+            stopStreamTracks();
+            setIsRecordingVoice(false);
+        }
+    };
+
+    const cancelVoiceRecording = () => {
+        audioChunksRef.current = [];
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            mediaRecorderRef.current.onstop = null;
+            mediaRecorderRef.current.stop();
+        }
+        stopStreamTracks();
+        setIsRecordingVoice(false);
+        setRecordingSec(0);
+        if (voiceDraft?.objectUrl) {
+            URL.revokeObjectURL(voiceDraft.objectUrl);
+        }
+        setVoiceDraft(null);
+    };
+
+    const handleSendVoiceDraft = async () => {
+        if (!voiceDraft?.blob || !selectedId) return;
+        setIsUploadingMedia(true);
+        try {
+            const ext = voiceDraft.mime?.includes("mp4") ? "m4a" : voiceDraft.mime?.includes("ogg") ? "ogg" : "webm";
+            const file = new File([voiceDraft.blob], `voice-${Date.now()}.${ext}`, {
+                type: voiceDraft.mime || "audio/webm",
+            });
+            const form = new FormData();
+            form.append("file", file);
+            form.append("kind", "AUDIO");
+
+            const upRes = await fetch("/api/admin/inbox/media/upload", {
+                method: "POST",
+                body: form,
+            });
+            const upData = await upRes.json();
+            if (!upData.ok) {
+                toast.error(upData.message || "ভয়েস আপলোড ব্যর্থ হয়েছে");
+                return;
+            }
+
+            if (voiceDraft.objectUrl) URL.revokeObjectURL(voiceDraft.objectUrl);
+            setVoiceDraft(null);
+            await handleSendReply("", {
+                url: upData.url,
+                mediaType: "AUDIO",
+                publicId: upData.publicId,
+                resourceType: upData.resourceType,
+            });
+        } catch {
+            toast.error("ভয়েস পাঠাতে সমস্যা হয়েছে");
+        } finally {
+            setIsUploadingMedia(false);
+        }
+    };
+
+    const handleSaveCallPhone = async (e) => {
+        e.preventDefault();
+        if (!selectedId || !callPhoneInput.trim()) return;
+        setIsSavingCallPhone(true);
+        try {
+            const res = await fetch(`/api/admin/inbox/conversations/${selectedId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: callPhoneInput.trim() }),
+            });
+            const data = await res.json();
+            if (data.ok) {
+                toast.success("ফোন নম্বর সেভ হয়েছে — এখন কল বা WhatsApp কল করতে পারবেন");
+                mutateActive();
+                mutateList();
+            } else {
+                toast.error(data.message || "নম্বর সেভ করা যায়নি");
+            }
+        } catch {
+            toast.error("নম্বর সেভ করতে সমস্যা হয়েছে");
+        } finally {
+            setIsSavingCallPhone(false);
         }
     };
 
@@ -441,6 +720,13 @@ export default function SocialInboxWorkspace() {
     const successRatio = risk?.combinedSuccessRatio;
     const activeChannelMeta = CHANNELS.find((c) => c.key === channelFilter) || CHANNELS[0];
     const activeConvMeta = activeConv ? CHANNEL_META[activeConv.channel] || CHANNEL_META.MESSENGER : null;
+    const activeCallLinks = activeConv
+        ? formatCallLinks(
+              activeConv.phone ||
+                  orderForm.phone ||
+                  (activeConv.channel === "WHATSAPP" ? activeConv.externalUserId : "")
+          )
+        : null;
 
     const simMenuContent = (
         <div
@@ -975,7 +1261,80 @@ export default function SocialInboxWorkspace() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 shrink-0">
+                                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                                        {activeCallLinks ? (
+                                            <>
+                                                <a
+                                                    href={activeCallLinks.telHref}
+                                                    title={`ফোন কল করুন (${activeCallLinks.display})`}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/90 text-xs font-semibold hover:bg-emerald-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                                >
+                                                    <PhoneCall className="w-3.5 h-3.5" aria-hidden="true" />
+                                                    <span className="hidden sm:inline">Call</span>
+                                                </a>
+                                                <a
+                                                    href={activeCallLinks.waHref}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    title="WhatsApp-এ খুলে কল বা চ্যাট করুন"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200/90 text-xs font-semibold hover:bg-green-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+                                                >
+                                                    <ChannelLogo channel="WHATSAPP" className="w-3.5 h-3.5" />
+                                                    <span className="hidden sm:inline">WA Call</span>
+                                                </a>
+                                            </>
+                                        ) : (
+                                            <div className="relative" ref={callPopoverRef}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowCallPopover((v) => !v)}
+                                                    title="কল করতে কাস্টমারের নম্বর যুক্ত করুন বা চান"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 text-gray-700 border border-gray-200 text-xs font-semibold hover:bg-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                                >
+                                                    <Phone className="w-3.5 h-3.5" aria-hidden="true" />
+                                                    <span className="hidden sm:inline">Call</span>
+                                                </button>
+                                                {showCallPopover && (
+                                                    <div className="absolute right-0 mt-1.5 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-40 space-y-2.5">
+                                                        <p className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                                            <PhoneCall className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+                                                            কল করার জন্য মোবাইল নম্বর
+                                                        </p>
+                                                        <p className="text-[11px] text-gray-500 leading-snug">
+                                                            Meta থার্ড-পার্টি ওয়েবে সরাসরি Messenger কল দেয় না — নম্বর সেভ করলে এখান থেকেই ফোন বা WhatsApp কল করতে পারবেন।
+                                                        </p>
+                                                        <form onSubmit={handleSaveCallPhone} className="flex gap-1.5">
+                                                            <input
+                                                                type="tel"
+                                                                value={callPhoneInput}
+                                                                onChange={(e) => setCallPhoneInput(e.target.value)}
+                                                                placeholder="01XXXXXXXXX"
+                                                                className="flex-1 text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                                            />
+                                                            <button
+                                                                type="submit"
+                                                                disabled={isSavingCallPhone || !callPhoneInput.trim()}
+                                                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50"
+                                                            >
+                                                                {isSavingCallPhone ? "…" : "Save"}
+                                                            </button>
+                                                        </form>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setShowCallPopover(false);
+                                                                handleSendReply(
+                                                                    "কল বা অর্ডার কনফার্ম করার জন্য অনুগ্রহ করে আপনার মোবাইল নম্বরটি দিন।"
+                                                                );
+                                                            }}
+                                                            className="w-full py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold hover:bg-blue-100"
+                                                        >
+                                                            + চ্যাটে কাস্টমারের নম্বর চান
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                         <label htmlFor="assign-moderator-select" className="sr-only">
                                             মডারেটর অ্যাসাইন করুন
                                         </label>
@@ -1043,6 +1402,16 @@ export default function SocialInboxWorkspace() {
                                         msg.senderType === "AI_AUTO"
                                             ? "bg-indigo-600 text-white"
                                             : activeConvMeta?.bubbleOutbound || "bg-emerald-700 text-white";
+                                    const isAudio =
+                                        msg.mediaUrl &&
+                                        (msg.messageType === "AUDIO" ||
+                                            /\.(mp3|ogg|wav|m4a|webm)(\?|$)/i.test(msg.mediaUrl));
+                                    const isVideo = msg.mediaUrl && msg.messageType === "VIDEO";
+                                    const isGenericMediaPlaceholder =
+                                        msg.mediaUrl &&
+                                        /^\[(image|audio|voice message|video|attachment)\]$/i.test(
+                                            String(msg.body || "").trim()
+                                        );
                                     return (
                                         <div
                                             key={msg.id}
@@ -1057,17 +1426,51 @@ export default function SocialInboxWorkspace() {
                                                         : "bg-white text-gray-800 border border-gray-200/90 rounded-bl-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                                                 }`}
                                             >
-                                                {msg.mediaUrl && (
-                                                    <img
+                                                {msg.mediaUrl && isAudio && (
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-1.5 text-[11px] font-semibold opacity-90">
+                                                            <Volume2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                                            <span>Voice Message</span>
+                                                        </div>
+                                                        <audio
+                                                            controls
+                                                            preload="metadata"
+                                                            src={msg.mediaUrl}
+                                                            className="w-60 sm:w-64 max-w-full h-9 rounded-lg"
+                                                        />
+                                                    </div>
+                                                )}
+                                                {msg.mediaUrl && isVideo && (
+                                                    <video
+                                                        controls
+                                                        preload="metadata"
                                                         src={msg.mediaUrl}
-                                                        alt="Customer attachment"
-                                                        width={320}
-                                                        height={240}
-                                                        loading="lazy"
-                                                        className="rounded-lg max-h-48 w-auto mb-2 object-cover outline outline-1 outline-black/10 -outline-offset-1"
+                                                        className="rounded-lg max-h-56 w-auto mb-1.5 bg-black"
                                                     />
                                                 )}
-                                                <p className="leading-relaxed">{msg.body}</p>
+                                                {msg.mediaUrl && !isAudio && !isVideo && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setLightboxImage(msg.mediaUrl)}
+                                                        title="বড় করে দেখতে ক্লিক করুন"
+                                                        className="group relative block rounded-lg overflow-hidden mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                                                    >
+                                                        <img
+                                                            src={msg.mediaUrl}
+                                                            alt="Chat attachment"
+                                                            width={320}
+                                                            height={240}
+                                                            loading="lazy"
+                                                            className="rounded-lg max-h-56 w-auto object-cover outline outline-1 outline-black/10 -outline-offset-1 transition-transform duration-150 group-hover:scale-[1.01]"
+                                                        />
+                                                        <span className="absolute bottom-1.5 right-1.5 p-1 rounded-md bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" />
+                                                        </span>
+                                                    </button>
+                                                )}
+                                                {msg.body && !isGenericMediaPlaceholder && (
+                                                    <p className="leading-relaxed">{msg.body}</p>
+                                                )}
                                             </div>
                                             <span className="text-[10px] text-gray-400 mt-1 px-1 flex items-center gap-1 tabular-nums">
                                                 {msg.senderType === "AI_AUTO" && (
@@ -1094,7 +1497,7 @@ export default function SocialInboxWorkspace() {
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            {/* Reply Input Box + Quick Replies */}
+                            {/* Reply Input Box + Quick Replies + Voice + Image */}
                             <div className="p-3 border-t border-gray-200 bg-white space-y-2 shrink-0">
                                 <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
                                     {QUICK_REPLIES.map((qr) => (
@@ -1127,7 +1530,142 @@ export default function SocialInboxWorkspace() {
                                     </label>
                                 )}
 
+                                {/* Attached Image Preview */}
+                                {pendingMedia && (
+                                    <div className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-emerald-50/70 border border-emerald-200">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <img
+                                                src={pendingMedia.url}
+                                                alt="Selected upload"
+                                                className="w-10 h-10 rounded-lg object-cover border border-emerald-200 shrink-0"
+                                            />
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold text-emerald-900 truncate">
+                                                    {pendingMedia.name || "ছবি যুক্ত হয়েছে"}
+                                                </p>
+                                                <p className="text-[11px] text-emerald-700">
+                                                    চাইলে সাথে ক্যাপশন লিখে Send চাপুন
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPendingMedia(null)}
+                                            aria-label="ছবি সরান"
+                                            className="p-1 rounded-lg text-emerald-800 hover:bg-emerald-100"
+                                        >
+                                            <X className="w-4 h-4" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Live Voice Recording Bar */}
+                                {isRecordingVoice && (
+                                    <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-rose-700">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse" />
+                                            <span>ভয়েস রেকর্ড হচ্ছে…</span>
+                                            <span className="tabular-nums font-mono">
+                                                {formatRecordingTime(recordingSec)}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={cancelVoiceRecording}
+                                                className="px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-600 hover:bg-white border border-gray-200"
+                                            >
+                                                বাতিল
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={stopVoiceRecording}
+                                                className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white hover:bg-rose-700"
+                                            >
+                                                <Square className="w-3 h-3 fill-current" aria-hidden="true" />
+                                                <span>থামান</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Recorded Voice Draft Preview */}
+                                {voiceDraft && !isRecordingVoice && (
+                                    <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-indigo-50/80 border border-indigo-200">
+                                        <audio
+                                            controls
+                                            src={voiceDraft.objectUrl}
+                                            className="h-8 max-w-full flex-1 min-w-[180px]"
+                                        />
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={cancelVoiceRecording}
+                                                disabled={isUploadingMedia || isSendingReply}
+                                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+                                            >
+                                                বাতিল
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleSendVoiceDraft}
+                                                disabled={isUploadingMedia || isSendingReply}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                                            >
+                                                {isUploadingMedia || isSendingReply ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                                                ) : (
+                                                    <Send className="w-3.5 h-3.5" aria-hidden="true" />
+                                                )}
+                                                <span>ভয়েস পাঠান</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                                    onChange={handleImageSelect}
+                                    className="hidden"
+                                />
+
                                 <div className="flex gap-2 items-end">
+                                    <div className="flex flex-col gap-1.5 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={isUploadingMedia || isRecordingVoice}
+                                            title="ছবি অ্যাটাচ ও সেন্ড করুন"
+                                            aria-label="ছবি অ্যাটাচ করুন"
+                                            className="p-2 rounded-xl border border-gray-200 bg-slate-50 text-gray-700 hover:bg-slate-100 hover:text-emerald-700 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                        >
+                                            {isUploadingMedia && !voiceDraft ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                                            ) : (
+                                                <ImagePlus className="w-4 h-4" aria-hidden="true" />
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={isRecordingVoice ? stopVoiceRecording : startVoiceRecording}
+                                            disabled={isUploadingMedia}
+                                            title={isRecordingVoice ? "রেকর্ডিং থামান" : "ভয়েস মেসেজ রেকর্ড করুন"}
+                                            aria-label={isRecordingVoice ? "রেকর্ডিং থামান" : "ভয়েস মেসেজ রেকর্ড করুন"}
+                                            className={`p-2 rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:opacity-50 ${
+                                                isRecordingVoice
+                                                    ? "bg-rose-600 text-white border-rose-600 animate-pulse"
+                                                    : "border-gray-200 bg-slate-50 text-gray-700 hover:bg-rose-50 hover:text-rose-700"
+                                            }`}
+                                        >
+                                            {isRecordingVoice ? (
+                                                <Square className="w-4 h-4 fill-current" aria-hidden="true" />
+                                            ) : (
+                                                <Mic className="w-4 h-4" aria-hidden="true" />
+                                            )}
+                                        </button>
+                                    </div>
                                     <label htmlFor="inbox-reply-input" className="sr-only">
                                         কাস্টমারকে মেসেজ লিখুন
                                     </label>
@@ -1144,13 +1682,13 @@ export default function SocialInboxWorkspace() {
                                             }
                                         }}
                                         placeholder={`${activeConvMeta?.label || "Inbox"}-এ রিপ্লাই লিখুন… (Enter চাপলে সেন্ড)`}
-                                        className="flex-1 text-sm bg-slate-50 border border-gray-200 rounded-xl px-3 py-2 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 resize-none"
+                                        className="flex-1 text-sm bg-slate-50 border border-gray-200 rounded-xl px-3 py-2 focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 resize-none min-h-[70px]"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => handleSendReply()}
-                                        disabled={isSendingReply || !replyText.trim()}
-                                        className="h-[58px] px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 touch-manipulation transition-[background-color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                        disabled={isSendingReply || isUploadingMedia || (!replyText.trim() && !pendingMedia)}
+                                        className="h-[70px] px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 touch-manipulation transition-[background-color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                     >
                                         {isSendingReply ? (
                                             <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
@@ -1646,6 +2184,46 @@ export default function SocialInboxWorkspace() {
                     )}
                 </section>
             </div>
+
+            {lightboxImage && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Image preview"
+                    onClick={() => setLightboxImage(null)}
+                    className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="relative max-w-4xl max-h-[90vh] flex flex-col items-center gap-3"
+                    >
+                        <div className="flex items-center gap-2 self-end">
+                            <a
+                                href={lightboxImage}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/15 text-white text-xs font-semibold hover:bg-white/25"
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                                <span>নতুন ট্যাবে খুলুন</span>
+                            </a>
+                            <button
+                                type="button"
+                                onClick={() => setLightboxImage(null)}
+                                aria-label="ছবি বন্ধ করুন"
+                                className="p-1.5 rounded-lg bg-white/15 text-white hover:bg-white/25"
+                            >
+                                <X className="w-5 h-5" aria-hidden="true" />
+                            </button>
+                        </div>
+                        <img
+                            src={lightboxImage}
+                            alt="Full size chat attachment"
+                            className="max-h-[80vh] max-w-full rounded-xl object-contain shadow-2xl"
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

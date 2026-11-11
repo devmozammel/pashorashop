@@ -24,6 +24,7 @@ import {
     AlertTriangle,
     RefreshCw,
     Database,
+    Trash2,
 } from "lucide-react";
 
 function SecretInput({ id, label, value, onChange, placeholder = "" }) {
@@ -67,6 +68,8 @@ export default function InboxSettingsPage() {
     const [saving, setSaving] = useState(false);
     const [diag, setDiag] = useState(null);
     const [diagLoading, setDiagLoading] = useState(false);
+    const [retentionInfo, setRetentionInfo] = useState(null);
+    const [cleaningUp, setCleaningUp] = useState(false);
 
     const runDiagnostics = async () => {
         setDiagLoading(true);
@@ -86,6 +89,28 @@ export default function InboxSettingsPage() {
         }
     };
 
+    const handleManualCleanup = async () => {
+        setCleaningUp(true);
+        try {
+            const res = await fetch("/api/admin/inbox/cleanup", { method: "POST" });
+            const json = await res.json();
+            if (json.ok) {
+                setRetentionInfo({ retentionDays: json.retentionDays, stats: json.stats });
+                toast.success(
+                    `ক্লিনআপ সম্পন্ন! ${json.stats?.deletedMessages || 0}টি পুরনো মেসেজ ও ${
+                        json.stats?.deletedMediaFiles || 0
+                    }টি মিডিয়া ফাইল রিমুভ হয়েছে।`
+                );
+            } else {
+                toast.error(json.message || "ক্লিনআপ করা যায়নি");
+            }
+        } catch {
+            toast.error("সার্ভারে কানেক্ট করা যায়নি");
+        } finally {
+            setCleaningUp(false);
+        }
+    };
+
     useEffect(() => {
         fetch("/api/admin/inbox/settings")
             .then((r) => r.json())
@@ -98,6 +123,15 @@ export default function InboxSettingsPage() {
             })
             .catch(() => toast.error("সেটিংস লোড করা যায়নি"))
             .finally(() => setLoading(false));
+
+        fetch("/api/admin/inbox/cleanup")
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.ok) {
+                    setRetentionInfo({ retentionDays: data.retentionDays, stats: data.stats });
+                }
+            })
+            .catch(() => {});
     }, []);
 
     const handleSave = async (e) => {
@@ -440,6 +474,58 @@ export default function InboxSettingsPage() {
                             </div>
                         </div>
                     )}
+                </section>
+            )}
+
+            {!loading && settings && (
+                <section className="max-w-4xl mt-6 bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                <Trash2 className="w-4 h-4 text-rose-600 shrink-0" aria-hidden="true" />
+                                <span>অটো-ক্লিনআপ (১ মাসের ডেটা রিটেনশন)</span>
+                            </h2>
+                            <p className="text-xs text-gray-500">
+                                সার্ভার হালকা রাখতে{" "}
+                                <strong>{retentionInfo?.retentionDays || 30} দিনের</strong> পুরনো চ্যাট মেসেজ, ইমেজ ও ভয়েস ফাইল অটোমেটিক রিমুভ হয়ে যাবে (কাস্টমারের অর্ডার তথ্য সংরক্ষিত থাকবে)।
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleManualCleanup}
+                            disabled={cleaningUp}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold hover:bg-rose-100 disabled:opacity-50 touch-manipulation transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                        >
+                            {cleaningUp ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                            ) : (
+                                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                            )}
+                            <span>{cleaningUp ? "ক্লিন হচ্ছে…" : "এখনই ৩০+ দিনের ডেটা ক্লিন করুন"}</span>
+                        </button>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-200 bg-slate-50/70 p-3.5 text-xs text-gray-600 flex flex-wrap items-center justify-between gap-2">
+                        {retentionInfo?.stats ? (
+                            <>
+                                <span>
+                                    সর্বশেষ অটো-ক্লিনআপ:{" "}
+                                    <strong>
+                                        {new Date(retentionInfo.stats.lastRunAt).toLocaleString()}
+                                    </strong>
+                                </span>
+                                <span className="tabular-nums">
+                                    রিমুভ হয়েছে: <strong>{retentionInfo.stats.deletedMessages || 0}</strong> মেসেজ ·{" "}
+                                    <strong>{retentionInfo.stats.deletedMediaFiles || 0}</strong> মিডিয়া ·{" "}
+                                    <strong>{retentionInfo.stats.deletedConversations || 0}</strong> পুরনো থ্রেড
+                                </span>
+                            </>
+                        ) : (
+                            <span>
+                                অটো-ক্লিনআপ সক্রিয় আছে — ৩০ দিনের পুরনো ডাম্প হওয়া ডেটা স্বয়ংক্রিয়ভাবে পরিষ্কার হবে।
+                            </span>
+                        )}
+                    </div>
                 </section>
             )}
         </AdminShell>

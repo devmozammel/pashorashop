@@ -178,7 +178,38 @@ export async function checkMetaConnections() {
 }
 
 /**
- * Send an outbound message/reply to the appropriate Meta / WhatsApp channel.
+ * Download binary stream + mime type for a WhatsApp inbound media_id.
+ */
+export async function fetchWhatsAppMedia(mediaId) {
+    if (!mediaId) return null;
+    const settings = await getSocialSettings();
+    if (!settings.waAccessToken) return null;
+
+    const metaRes = await fetchWithTimeout(
+        `${GRAPH_BASE}/${encodeURIComponent(mediaId)}`,
+        { headers: { Authorization: `Bearer ${settings.waAccessToken}` } },
+        8000
+    );
+    if (!metaRes.ok) return null;
+    const metaJson = await metaRes.json().catch(() => ({}));
+    if (!metaJson?.url) return null;
+
+    const fileRes = await fetchWithTimeout(
+        metaJson.url,
+        { headers: { Authorization: `Bearer ${settings.waAccessToken}` } },
+        15000
+    );
+    if (!fileRes.ok) return null;
+
+    const buffer = await fileRes.arrayBuffer();
+    return {
+        buffer,
+        mimeType: metaJson.mime_type || fileRes.headers.get("content-type") || "application/octet-stream",
+    };
+}
+
+/**
+ * Send an outbound message/reply (text, image, audio, or video) to the appropriate Meta / WhatsApp channel.
  * Falls back cleanly to `simulated: true` when API tokens are not yet configured,
  * allowing full end-to-end testing in the admin inbox before Meta App Review.
  */
@@ -187,30 +218,68 @@ export async function sendChannelReply({
     externalUserId,
     externalThreadId,
     commentId,
-    text,
+    text = "",
+    mediaUrl = null,
+    mediaType = "TEXT", // TEXT, IMAGE, AUDIO, VIDEO
     isPublicCommentReply = false,
 }) {
     const settings = await getSocialSettings();
+    const hasPublicMediaUrl = Boolean(mediaUrl && /^https:\/\//i.test(mediaUrl));
 
     // 1. WhatsApp Cloud API
     if (channel === "WHATSAPP") {
         if (!settings.waPhoneNumberId || !settings.waAccessToken) {
             return { ok: true, simulated: true, externalMessageId: `sim_wa_${Date.now()}` };
         }
+        if (mediaUrl && !hasPublicMediaUrl) {
+            return {
+                ok: false,
+                message: "লাইভ WhatsApp-এ ছবি/ভয়েস পাঠাতে Cloudinary কনফিগার (HTTPS URL) প্রয়োজন।",
+            };
+        }
+
         const to = (externalUserId || externalThreadId || "").replace(/\D/g, "");
+        let payload = {
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to,
+            type: "text",
+            text: { preview_url: true, body: text },
+        };
+
+        if (mediaUrl && mediaType === "IMAGE") {
+            payload = {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "image",
+                image: text ? { link: mediaUrl, caption: text } : { link: mediaUrl },
+            };
+        } else if (mediaUrl && mediaType === "AUDIO") {
+            payload = {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "audio",
+                audio: { link: mediaUrl },
+            };
+        } else if (mediaUrl && mediaType === "VIDEO") {
+            payload = {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "video",
+                video: text ? { link: mediaUrl, caption: text } : { link: mediaUrl },
+            };
+        }
+
         const res = await fetchWithTimeout(`${GRAPH_BASE}/${settings.waPhoneNumberId}/messages`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${settings.waAccessToken}`,
             },
-            body: JSON.stringify({
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                to,
-                type: "text",
-                text: { preview_url: true, body: text },
-            }),
+            body: JSON.stringify(payload),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -228,13 +297,18 @@ export async function sendChannelReply({
         if (!settings.fbPageAccessToken || !commentId) {
             return { ok: true, simulated: true, externalMessageId: `sim_cmt_${Date.now()}` };
         }
+        const commentPayload =
+            mediaUrl && hasPublicMediaUrl
+                ? { message: text || "", attachment_url: mediaUrl }
+                : { message: text };
+
         const res = await fetchWithTimeout(`${GRAPH_BASE}/${commentId}/comments`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${settings.fbPageAccessToken}`,
             },
-            body: JSON.stringify({ message: text }),
+            body: JSON.stringify(commentPayload),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -248,32 +322,74 @@ export async function sendChannelReply({
         return { ok: true, simulated: true, externalMessageId: `sim_meta_${Date.now()}` };
     }
 
+    if (mediaUrl && !hasPublicMediaUrl) {
+        return {
+            ok: false,
+            message: "লাইভ Messenger-এ ছবি/ভয়েস পাঠাতে Cloudinary কনফিগার (HTTPS URL) প্রয়োজন।",
+        };
+    }
+
     const pageId = settings.fbPageId || "me";
     const recipient = commentId && channel === "FB_COMMENT"
         ? { comment_id: commentId }
         : { id: externalUserId || externalThreadId };
 
-    const res = await fetchWithTimeout(`${GRAPH_BASE}/${pageId}/messages`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${settings.fbPageAccessToken}`,
-        },
-        body: JSON.stringify({
-            recipient,
-            messaging_type: "RESPONSE",
-            message: { text },
-        }),
-    });
+    let sentMessageId = null;
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-        return { ok: false, message: data?.error?.message || "Meta send API failed", raw: data };
+    if (mediaUrl) {
+        const attachmentType =
+            mediaType === "AUDIO" ? "audio" : mediaType === "VIDEO" ? "video" : "image";
+        const mediaRes = await fetchWithTimeout(`${GRAPH_BASE}/${pageId}/messages`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${settings.fbPageAccessToken}`,
+            },
+            body: JSON.stringify({
+                recipient,
+                messaging_type: "RESPONSE",
+                message: {
+                    attachment: {
+                        type: attachmentType,
+                        payload: { url: mediaUrl, is_reusable: true },
+                    },
+                },
+            }),
+        });
+        const mediaData = await mediaRes.json().catch(() => ({}));
+        if (!mediaRes.ok) {
+            return {
+                ok: false,
+                message: mediaData?.error?.message || "Meta media send API failed",
+                raw: mediaData,
+            };
+        }
+        sentMessageId = mediaData?.message_id || null;
+    }
+
+    if (text) {
+        const res = await fetchWithTimeout(`${GRAPH_BASE}/${pageId}/messages`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${settings.fbPageAccessToken}`,
+            },
+            body: JSON.stringify({
+                recipient,
+                messaging_type: "RESPONSE",
+                message: { text },
+            }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            return { ok: false, message: data?.error?.message || "Meta send API failed", raw: data };
+        }
+        sentMessageId = sentMessageId || data?.message_id;
     }
 
     return {
         ok: true,
         simulated: false,
-        externalMessageId: data?.message_id || `meta_${Date.now()}`,
+        externalMessageId: sentMessageId || `meta_${Date.now()}`,
     };
 }

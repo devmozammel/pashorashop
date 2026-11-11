@@ -4,20 +4,35 @@ import { prisma } from "@/lib/prisma";
 import { getSocialSettings } from "@/lib/social-settings";
 import { fetchFacebookUserProfile, fetchMessengerConversations } from "@/lib/meta-api";
 import { formatBangladeshiPhone } from "@/lib/steadfast";
+import { INBOX_RETENTION_DAYS } from "@/lib/inbox-retention";
 
 export const dynamic = "force-dynamic";
 
 function extractMessageTextAndMedia(msg) {
     const firstAtt = msg?.attachments?.data?.[0];
+    const mime = String(firstAtt?.mime_type || "").toLowerCase();
     const mediaUrl =
         firstAtt?.image_data?.url ||
         firstAtt?.file_url ||
         firstAtt?.video_data?.url ||
         null;
-    const text =
-        msg?.message?.trim() ||
-        (firstAtt?.mime_type ? `[${firstAtt.mime_type.split("/")[0]}]` : mediaUrl ? "[attachment]" : "");
-    return { text, mediaUrl };
+    const messageType = mime.startsWith("audio/")
+        ? "AUDIO"
+        : mime.startsWith("video/")
+        ? "VIDEO"
+        : mediaUrl
+        ? "IMAGE"
+        : "TEXT";
+    const fallbackText =
+        messageType === "AUDIO"
+            ? "[Voice Message]"
+            : messageType === "VIDEO"
+            ? "[Video]"
+            : mediaUrl
+            ? "[Image]"
+            : "";
+    const text = msg?.message?.trim() || fallbackText;
+    return { text, mediaUrl, messageType };
 }
 
 export async function POST() {
@@ -39,10 +54,14 @@ export async function POST() {
             );
         }
 
+        const retentionCutoff = new Date(Date.now() - INBOX_RETENTION_DAYS * 24 * 60 * 60 * 1000);
         let syncedConversations = 0;
         let importedMessages = 0;
 
         for (const thread of fbRes.conversations) {
+            const threadUpdatedAt = thread.updated_time ? new Date(thread.updated_time) : new Date();
+            if (threadUpdatedAt < retentionCutoff) continue;
+
             const participants = Array.isArray(thread?.participants?.data)
                 ? thread.participants.data
                 : [];
@@ -50,10 +69,10 @@ export async function POST() {
                 ? thread.messages.data
                 : [];
 
-            // Sort oldest -> newest so timeline order stays accurate
-            const sortedMessages = [...rawMessages].sort(
-                (a, b) => new Date(a.created_time || 0) - new Date(b.created_time || 0)
-            );
+            // Sort oldest -> newest so timeline order stays accurate and keep only within retention window
+            const sortedMessages = [...rawMessages]
+                .filter((m) => !m.created_time || new Date(m.created_time) >= retentionCutoff)
+                .sort((a, b) => new Date(a.created_time || 0) - new Date(b.created_time || 0));
 
             // Identify customer participant (anyone other than the FB Page)
             let customerParticipant = participants.find(
@@ -80,12 +99,12 @@ export async function POST() {
             // Detect phone number & latest timestamps from synced messages
             let detectedPhone = null;
             let lastCustomerMessageAt = null;
-            let lastMessageAt = thread.updated_time ? new Date(thread.updated_time) : new Date();
+            let lastMessageAt = threadUpdatedAt;
             let lastMessagePreview = "";
 
             const parsedMessages = [];
             for (const m of sortedMessages) {
-                const { text, mediaUrl } = extractMessageTextAndMedia(m);
+                const { text, mediaUrl, messageType } = extractMessageTextAndMedia(m);
                 if (!text && !mediaUrl) continue;
 
                 const isPage = Boolean(settings.fbPageId && m.from?.id === settings.fbPageId);
@@ -109,7 +128,7 @@ export async function POST() {
                     externalMessageId: m.id,
                     direction: isPage ? "OUTBOUND" : "INBOUND",
                     senderType: isPage ? "MODERATOR" : "CUSTOMER",
-                    messageType: mediaUrl ? "IMAGE" : "TEXT",
+                    messageType,
                     body: text || "[attachment]",
                     mediaUrl,
                     createdAt: msgDate,
