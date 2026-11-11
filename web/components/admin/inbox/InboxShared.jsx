@@ -4,11 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     MessageCircle,
-    MessageSquare,
-    Instagram,
+    MessageSquareReply,
     Facebook,
     PhoneCall,
-    Sparkles,
     BarChart3,
     Settings,
     Inbox,
@@ -36,20 +34,6 @@ export const CHANNEL_META = {
         bg: "bg-indigo-50 text-indigo-700 border-indigo-200",
         dot: "bg-indigo-600",
         icon: Facebook,
-    },
-    INSTAGRAM_DM: {
-        label: "IG DM",
-        short: "IG",
-        bg: "bg-pink-50 text-pink-700 border-pink-200",
-        dot: "bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600",
-        icon: Instagram,
-    },
-    INSTAGRAM_COMMENT: {
-        label: "IG Comment",
-        short: "IGC",
-        bg: "bg-purple-50 text-purple-700 border-purple-200",
-        dot: "bg-purple-600",
-        icon: MessageSquare,
     },
 };
 
@@ -80,12 +64,9 @@ export function AdAttributionBadge({ adPlatform, adName, campaignName }) {
 
     const platformColors = {
         FACEBOOK: "bg-blue-50 text-blue-700 border-blue-200",
-        TIKTOK: "bg-slate-900 text-white border-slate-800",
-        INSTAGRAM: "bg-pink-50 text-pink-700 border-pink-200",
     };
 
-    const platformLabel =
-        adPlatform === "TIKTOK" ? "TikTok Ad" : adPlatform === "INSTAGRAM" ? "IG Ad" : "FB Boost";
+    const platformLabel = "FB Boost";
 
     return (
         <span
@@ -107,9 +88,9 @@ export function InboxSubNav({ unreadTotal = 0 }) {
     const pathname = usePathname();
     const tabs = [
         { href: "/admin/inbox", label: "Unified Inbox", icon: Inbox, exact: true },
-        { href: "/admin/inbox/automations", label: "Comment-to-Inbox & AI", icon: Sparkles },
+        { href: "/admin/inbox/automations", label: "Comment-to-Inbox", icon: MessageSquareReply },
         { href: "/admin/inbox/analytics", label: "Ad ROI & Team Report", icon: BarChart3 },
-        { href: "/admin/inbox/settings", label: "API Integrations", icon: Settings },
+        { href: "/admin/inbox/settings", label: "FB & WhatsApp API", icon: Settings },
     ];
 
     return (

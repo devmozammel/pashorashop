@@ -29,7 +29,7 @@ const inboxOrderSchema = z.object({
     paymentMethod: z.enum(["COD", "ONLINE"]).optional().default("COD"),
     paymentStatus: z.enum(["PENDING", "PARTIAL_PAID", "PAID"]).optional().default("PENDING"),
     adminNote: z.string().max(1000).optional().default(""),
-    courierName: z.enum(["Steadfast", "Pathao", "RedX"]).optional().default("Steadfast"),
+    courierName: z.enum(["Steadfast"]).optional().default("Steadfast"),
     autoBookCourier: z.boolean().optional().default(true),
     sendConfirmationMessage: z.boolean().optional().default(true),
     items: z
@@ -45,7 +45,7 @@ const inboxOrderSchema = z.object({
 });
 
 /**
- * 1-Click Order Creation from Chat + Optional Instant Courier Booking (Steadfast / Pathao / RedX).
+ * 1-Click Order Creation from Chat + Optional Instant Steadfast Courier Booking.
  */
 export async function POST(req, props) {
     const params = await props.params;

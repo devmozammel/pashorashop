@@ -58,9 +58,8 @@ export async function POST(req) {
         const entries = Array.isArray(payload.entry) ? payload.entry : [];
 
         for (const entry of entries) {
-            // 1) Messenger or Instagram DM messaging events
-            if (Array.isArray(entry.messaging)) {
-                const isIg = objectType === "instagram";
+            // 1) Facebook Messenger messaging events
+            if (objectType === "page" && Array.isArray(entry.messaging)) {
                 for (const event of entry.messaging) {
                     if (event.message?.is_echo) continue;
                     const senderId = event.sender?.id;
@@ -73,14 +72,14 @@ export async function POST(req) {
                     const adName = referral?.ads_context_data?.ad_title || (adId ? `Ad #${adId}` : null);
 
                     await ingestInboundSocialEvent({
-                        channel: isIg ? "INSTAGRAM_DM" : "MESSENGER",
+                        channel: "MESSENGER",
                         externalThreadId: senderId,
                         externalUserId: senderId,
                         externalMessageId: event.message?.mid,
-                        customerName: isIg ? `IG User ${senderId.slice(-4)}` : `FB User ${senderId.slice(-4)}`,
+                        customerName: `FB User ${senderId.slice(-4)}`,
                         body: text,
                         mediaUrl,
-                        adPlatform: adId ? (isIg ? "INSTAGRAM" : "FACEBOOK") : "ORGANIC",
+                        adPlatform: adId ? "FACEBOOK" : "ORGANIC",
                         adId,
                         adName,
                         adRef: referral?.ref || null,
@@ -88,7 +87,7 @@ export async function POST(req) {
                 }
             }
 
-            // 2) Facebook Page Feed Comments OR Instagram Comments OR WhatsApp
+            // 2) Facebook Page Feed Comments OR WhatsApp Cloud API
             if (Array.isArray(entry.changes)) {
                 for (const change of entry.changes) {
                     const val = change.value || {};
@@ -142,24 +141,6 @@ export async function POST(req) {
                             postId: val.post_id || null,
                             postUrl: val.post?.permalink_url || null,
                             postTitle: val.post?.status_type ? `Facebook Post (${val.post_id})` : "Facebook Page Post",
-                        });
-                    }
-
-                    // Instagram Post Comment
-                    if (objectType === "instagram" && change.field === "comments") {
-                        if (!val.text) continue;
-                        const igUserId = val.from?.id || val.id;
-                        await ingestInboundSocialEvent({
-                            channel: "INSTAGRAM_COMMENT",
-                            externalThreadId: `${val.media?.id || "media"}_${igUserId}`,
-                            externalUserId: igUserId,
-                            externalMessageId: val.id,
-                            commentId: val.id,
-                            customerName: val.from?.username ? `@${val.from.username}` : "Instagram User",
-                            customerHandle: val.from?.username ? `@${val.from.username}` : null,
-                            body: val.text,
-                            postId: val.media?.id || null,
-                            postTitle: "Instagram Post",
                         });
                     }
                 }

@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import {
     Search,
     Send,
-    Sparkles,
     RefreshCw,
     ShieldCheck,
     ShieldAlert,
@@ -19,8 +18,6 @@ import {
     ExternalLink,
     ShoppingBag,
     Loader2,
-    Bot,
-    Copy,
     MessageSquare,
     ChevronLeft,
 } from "lucide-react";
@@ -78,7 +75,6 @@ export default function SocialInboxWorkspace() {
     const [replyText, setReplyText] = useState("");
     const [isPublicCommentReply, setIsPublicCommentReply] = useState(false);
     const [isSendingReply, setIsSendingReply] = useState(false);
-    const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
     // Simulator dropdown
     const [showSimMenu, setShowSimMenu] = useState(false);
@@ -225,7 +221,7 @@ export default function SocialInboxWorkspace() {
                 if (!textOverride) setReplyText("");
                 toast.success(
                     data.simulated
-                        ? "রিপ্লাই সেভ হয়েছে (Demo Mode — Meta Token দিলে সরাসরি লাইভ যাবে)"
+                        ? "রিপ্লাই সেভ হয়েছে (Demo Mode — FB/WhatsApp Token দিলে সরাসরি লাইভ যাবে)"
                         : "মেসেজ পাঠানো হয়েছে!"
                 );
                 mutateActive();
@@ -237,45 +233,6 @@ export default function SocialInboxWorkspace() {
             toast.error("নেটওয়ার্ক সমস্যার কারণে মেসেজ পাঠানো যায়নি");
         } finally {
             setIsSendingReply(false);
-        }
-    };
-
-    const handleRegenerateAi = async () => {
-        if (!selectedId) return;
-        setIsGeneratingAi(true);
-        try {
-            const res = await fetch(`/api/admin/inbox/conversations/${selectedId}/ai-draft`, {
-                method: "POST",
-            });
-            const data = await res.json();
-            if (data.ok) {
-                toast.success(
-                    data.provider === "GEMINI"
-                        ? "Gemini AI ড্রাফট ও কাস্টমার তথ্য আপডেট হয়েছে!"
-                        : "ক্যাটালগ রুল ইঞ্জিন থেকে ড্রাফট তৈরি হয়েছে"
-                );
-                if (data.extractedData) {
-                    setOrderForm((prev) => ({
-                        ...prev,
-                        customerName: data.extractedData.customerName || prev.customerName,
-                        phone: data.extractedData.phone || prev.phone,
-                        address: data.extractedData.address || prev.address,
-                        city: data.extractedData.city || prev.city,
-                        deliveryArea: data.extractedData.deliveryArea || prev.deliveryArea,
-                        deliveryFee:
-                            (data.extractedData.deliveryArea || prev.deliveryArea) === "OUTSIDE_DHAKA"
-                                ? 130
-                                : 70,
-                    }));
-                }
-                mutateActive();
-            } else {
-                toast.error(data.message || "AI ড্রাফট তৈরি করা যায়নি");
-            }
-        } catch {
-            toast.error("AI ড্রাফট রিকোয়েস্ট ব্যর্থ হয়েছে");
-        } finally {
-            setIsGeneratingAi(false);
         }
     };
 
@@ -457,8 +414,6 @@ export default function SocialInboxWorkspace() {
                         { key: "WHATSAPP", label: "WhatsApp" },
                         { key: "MESSENGER", label: "Messenger" },
                         { key: "FB_COMMENT", label: "FB Comments" },
-                        { key: "INSTAGRAM_DM", label: "IG DM" },
-                        { key: "INSTAGRAM_COMMENT", label: "IG Comments" },
                     ].map((ch) => {
                         const unread = ch.key === "ALL" ? totalUnread : unreadByChannel[ch.key] || 0;
                         const active = channelFilter === ch.key;
@@ -531,18 +486,10 @@ export default function SocialInboxWorkspace() {
                             <button
                                 type="button"
                                 role="menuitem"
-                                onClick={() => handleSimulate("INSTAGRAM_DM")}
-                                className="w-full text-left px-2.5 py-2 rounded-lg text-xs hover:bg-pink-50 text-gray-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
-                            >
-                                Instagram DM (ডেলিভারি চার্জ জিজ্ঞাসা)
-                            </button>
-                            <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => handleSimulate("WHATSAPP_TIKTOK")}
+                                onClick={() => handleSimulate("WHATSAPP_AD")}
                                 className="w-full text-left px-2.5 py-2 rounded-lg text-xs hover:bg-emerald-50 text-gray-800 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
-                                WhatsApp (TikTok Ad থেকে মেসেজ)
+                                WhatsApp (Click-to-WhatsApp Ad মেসেজ)
                             </button>
                         </div>
                     )}
@@ -553,7 +500,7 @@ export default function SocialInboxWorkspace() {
             <div className="grid grid-cols-3 gap-1.5 mb-3 lg:hidden bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm">
                 {[
                     { id: "list", label: `চ্যাট (${conversations.length})` },
-                    { id: "chat", label: "মেসেজ ও AI" },
+                    { id: "chat", label: "মেসেজ ও চ্যাট" },
                     { id: "order", label: "১-ক্লিক অর্ডার" },
                 ].map((pane) => (
                     <button
@@ -858,7 +805,7 @@ export default function SocialInboxWorkspace() {
                                             <span className="text-[10px] text-gray-400 mt-1 px-1 flex items-center gap-1 tabular-nums">
                                                 {msg.senderType === "AI_AUTO" && (
                                                     <>
-                                                        <Bot className="w-3 h-3 text-violet-500" aria-hidden="true" />
+                                                        <MessageSquare className="w-3 h-3 text-indigo-600" aria-hidden="true" />
                                                         Auto-Reply
                                                     </>
                                                 )}
@@ -871,69 +818,16 @@ export default function SocialInboxWorkspace() {
                                                     </>
                                                 )}
                                                 {msg.senderType === "CUSTOMER" && activeConv.customerName}
-                                                {" · "}
-                                                {formatShortTime(msg.createdAt)}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                                <div ref={messagesEndRef} />
-                            </div>
+                                                 {" · "}
+                                                 {formatShortTime(msg.createdAt)}
+                                             </span>
+                                         </div>
+                                     );
+                                 })}
+                                 <div ref={messagesEndRef} />
+                             </div>
 
-                            {/* Gemini AI Co-pilot Suggested Draft Bar */}
-                            <div className="p-3 bg-gradient-to-r from-violet-50 to-indigo-50 border-t border-indigo-100">
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-900">
-                                        <Sparkles className="w-3.5 h-3.5 text-violet-600" aria-hidden="true" />
-                                        Gemini AI কো-পাইলট ড্রাফট
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={handleRegenerateAi}
-                                        disabled={isGeneratingAi}
-                                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 px-2 py-1 rounded-md hover:bg-indigo-100/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                                    >
-                                        <RefreshCw
-                                            className={`w-3 h-3 ${isGeneratingAi ? "animate-spin" : ""}`}
-                                            aria-hidden="true"
-                                        />
-                                        {isGeneratingAi ? "তৈরি হচ্ছে…" : "নতুন ড্রাফট তৈরি করুন"}
-                                    </button>
-                                </div>
-
-                                {activeConv.aiSuggestedReply ? (
-                                    <div className="space-y-2">
-                                        <p className="text-xs text-gray-800 bg-white/95 rounded-lg p-2.5 border border-indigo-100 leading-relaxed text-pretty">
-                                            {activeConv.aiSuggestedReply}
-                                        </p>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleSendReply(activeConv.aiSuggestedReply)}
-                                                disabled={isSendingReply}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 touch-manipulation transition-[background-color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                                            >
-                                                <Send className="w-3 h-3" aria-hidden="true" />
-                                                ১-ক্লিকে পাঠান
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setReplyText(activeConv.aiSuggestedReply)}
-                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 touch-manipulation transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                                            >
-                                                <Copy className="w-3 h-3" aria-hidden="true" />
-                                                এডিট করে পাঠান
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-xs text-indigo-700 text-pretty">
-                                        “নতুন ড্রাফট তৈরি করুন” বাটনে ক্লিক করলে Gemini প্রোডাক্ট দাম ও ডেলিভারি চার্জ দেখে উত্তর রেডি করবে।
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Reply Input Box + Quick Replies */}
+                             {/* Reply Input Box + Quick Replies */}
                             <div className="p-3 border-t border-gray-200 bg-white space-y-2">
                                 <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
                                     {QUICK_REPLIES.map((qr) => (
@@ -1385,23 +1279,14 @@ export default function SocialInboxWorkspace() {
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                <Truck className="w-4 h-4 text-gray-600 shrink-0" aria-hidden="true" />
-                                <label htmlFor="order-courier" className="sr-only">
-                                    কুরিয়ার সিলেক্ট করুন
-                                </label>
-                                <select
-                                    id="order-courier"
-                                    value={orderForm.courierName}
-                                    onChange={(e) =>
-                                        setOrderForm({ ...orderForm, courierName: e.target.value })
-                                    }
-                                    className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-900 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                >
-                                    <option value="Steadfast">Steadfast Courier</option>
-                                    <option value="Pathao">Pathao Courier</option>
-                                    <option value="RedX">RedX Courier</option>
-                                </select>
+                            <div className="flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
+                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-800">
+                                    <Truck className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                                    Steadfast Courier
+                                </span>
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                    Connected
+                                </span>
                             </div>
 
                             <label
@@ -1417,7 +1302,7 @@ export default function SocialInboxWorkspace() {
                                     }
                                     className="rounded text-emerald-600 focus-visible:ring-emerald-500"
                                 />
-                                <span>অর্ডার সাবমিটের সাথেই কুরিয়ারে অটো-বুকিং করুন</span>
+                                <span>অর্ডার সাবমিটের সাথেই Steadfast-এ অটো-বুকিং করুন</span>
                             </label>
 
                             <label

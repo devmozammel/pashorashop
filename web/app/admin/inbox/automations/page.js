@@ -5,7 +5,7 @@ import useSWR from "swr";
 import AdminShell from "@/components/admin/AdminShell";
 import { InboxSubNav } from "@/components/admin/inbox/InboxShared";
 import { toast } from "sonner";
-import { Sparkles, Plus, Trash2, Bot, MessageSquareReply, Loader2 } from "lucide-react";
+import { Sparkles, Plus, Trash2, MessageSquareReply, Loader2 } from "lucide-react";
 
 const fetcher = (url) => fetch(url).then((r) => r.json());
 
@@ -13,15 +13,10 @@ export default function InboxAutomationsPage() {
     const { data: res, mutate, isLoading } = useSWR("/api/admin/inbox/automations", fetcher);
     const rules = res?.data?.rules || [];
     const products = res?.data?.products || [];
-    const aiSettings = res?.data?.aiSettings || {
-        aiAutoDraftEnabled: true,
-        aiAutoReplyEnabled: false,
-        hasGeminiKey: false,
-    };
 
     const [form, setForm] = useState({
         name: "",
-        channel: "ALL",
+        channel: "FB_COMMENT",
         postId: "",
         keywords: "price, order, দাম, অর্ডার, dam",
         productId: "",
@@ -79,94 +74,9 @@ export default function InboxAutomationsPage() {
         }
     };
 
-    const handleAiToggle = async (field, value) => {
-        const r = await fetch("/api/admin/inbox/automations", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                type: "AI_TOGGLE",
-                aiAutoDraftEnabled: field === "aiAutoDraftEnabled" ? value : aiSettings.aiAutoDraftEnabled,
-                aiAutoReplyEnabled: field === "aiAutoReplyEnabled" ? value : aiSettings.aiAutoReplyEnabled,
-            }),
-        });
-        const data = await r.json();
-        if (data.ok) {
-            toast.success("Gemini AI সেটিংস আপডেট হয়েছে");
-            mutate();
-        } else {
-            toast.error(data.message || "শুধুমাত্র Admin এই সেটিংস পরিবর্তন করতে পারবেন");
-        }
-    };
-
     return (
-        <AdminShell title="Comment-to-Inbox & Gemini AI">
+        <AdminShell title="Facebook Comment-to-Inbox">
             <InboxSubNav />
-
-            {/* Gemini AI Co-pilot Settings Card */}
-            <section aria-labelledby="gemini-copilot-heading" className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
-                            <Bot className="w-5 h-5" aria-hidden="true" />
-                        </div>
-                        <div>
-                            <h2 id="gemini-copilot-heading" className="font-bold text-gray-900 text-balance">
-                                স্মার্ট Gemini AI অ্যাসিস্ট্যান্ট (কো-পাইলট)
-                            </h2>
-                            <p className="text-xs text-gray-500 text-pretty">
-                                প্রোডাক্ট লিস্ট ও ডেলিভারি চার্জ দেখে অটো ড্রাফট এবং প্রয়োজনে অটো রিপ্লাই দেয়।{" "}
-                                {aiSettings.hasGeminiKey ? (
-                                    <span className="text-emerald-700 font-semibold">● Gemini API Connected</span>
-                                ) : (
-                                    <span className="text-amber-700 font-semibold">
-                                        ● Catalog Fallback Active (API Integrations থেকে Gemini Key দিন)
-                                    </span>
-                                )}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label
-                        htmlFor="toggle-ai-draft"
-                        className="flex items-start gap-3 p-3.5 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors select-none"
-                    >
-                        <input
-                            id="toggle-ai-draft"
-                            type="checkbox"
-                            checked={aiSettings.aiAutoDraftEnabled}
-                            onChange={(e) => handleAiToggle("aiAutoDraftEnabled", e.target.checked)}
-                            className="mt-1 rounded text-violet-600 focus-visible:ring-violet-500"
-                        />
-                        <div>
-                            <p className="text-sm font-bold text-gray-900">Co-pilot Auto Draft (১-ক্লিক সেন্ড)</p>
-                            <p className="text-xs text-gray-500 text-pretty">
-                                প্রতিটি নতুন মেসেজে মডারেটরের জন্য রেডি উত্তর ড্রাফট তৈরি করে রাখবে।
-                            </p>
-                        </div>
-                    </label>
-
-                    <label
-                        htmlFor="toggle-ai-autoreply"
-                        className="flex items-start gap-3 p-3.5 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors select-none"
-                    >
-                        <input
-                            id="toggle-ai-autoreply"
-                            type="checkbox"
-                            checked={aiSettings.aiAutoReplyEnabled}
-                            onChange={(e) => handleAiToggle("aiAutoReplyEnabled", e.target.checked)}
-                            className="mt-1 rounded text-violet-600 focus-visible:ring-violet-500"
-                        />
-                        <div>
-                            <p className="text-sm font-bold text-gray-900">Auto-Reply Simple Price/Delivery FAQs</p>
-                            <p className="text-xs text-gray-500 text-pretty">
-                                কেউ সরাসরি “দাম কত?” বা “ডেলিভারি চার্জ কত?” লিখলে কাস্টমারকে সাথে সাথে অটো রিপ্লাই পাঠাবে।
-                            </p>
-                        </div>
-                    </label>
-                </div>
-            </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Create New Rule */}
@@ -176,7 +86,7 @@ export default function InboxAutomationsPage() {
                 >
                     <h2 className="font-bold text-gray-900 flex items-center gap-2 border-b pb-2 text-balance">
                         <MessageSquareReply className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
-                        নতুন Comment-to-Inbox রুল তৈরি করুন
+                        নতুন Facebook Comment-to-Inbox রুল তৈরি করুন
                     </h2>
 
                     <div>
@@ -209,9 +119,8 @@ export default function InboxAutomationsPage() {
                                 onChange={(e) => setForm({ ...form, channel: e.target.value })}
                                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 mt-1 bg-white text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
-                                <option value="ALL">FB + Instagram (সব)</option>
                                 <option value="FB_COMMENT">Facebook Comments</option>
-                                <option value="INSTAGRAM_COMMENT">Instagram Comments</option>
+                                <option value="ALL">All Facebook Posts</option>
                             </select>
                         </div>
                         <div>

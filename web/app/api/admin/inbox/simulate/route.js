@@ -28,26 +28,16 @@ const PRESETS = {
         adName: "Combo Post Boost",
         campaignName: "Combo Conversion Boost",
     },
-    INSTAGRAM_DM: {
-        channel: "INSTAGRAM_DM",
-        customerName: "Farhana Islam",
-        customerHandle: "@farhana_style",
-        body: "Hi, delivery charge koto Dhaka er baire? Chattogram nite chai.",
-        adPlatform: "INSTAGRAM",
-        adId: "ig_reel_boost_03",
-        adName: "IG Reels Fashion Ad",
-        campaignName: "IG Reels Awareness",
-    },
-    WHATSAPP_TIKTOK: {
+    WHATSAPP_AD: {
         channel: "WHATSAPP",
         customerName: "Rakibul Hasan",
         customerHandle: "+8801812345678",
         phone: "01812345678",
-        body: "TikTok video dekhe msg dilam. Cash on delivery hobe? Uttara Sector 7, Dhaka.",
-        adPlatform: "TIKTOK",
-        adId: "tt_spark_ad_04",
-        adName: "TikTok Spark Video #4",
-        campaignName: "TikTok Viral Boost",
+        body: "Facebook ad dekhe WhatsApp e msg dilam. Cash on delivery hobe? Uttara Sector 7, Dhaka.",
+        adPlatform: "FACEBOOK",
+        adId: "ctwa_boost_04",
+        adName: "Click-to-WhatsApp Ad #4",
+        campaignName: "WhatsApp Conversion Boost",
     },
 };
 

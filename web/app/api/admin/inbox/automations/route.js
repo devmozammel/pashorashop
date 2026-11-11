@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireStaff, requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
-import { getSocialSettings, saveSocialSettings } from "@/lib/social-settings";
+import { requireStaff, unauthorizedResponse } from "@/lib/require-admin";
 
 export const dynamic = "force-dynamic";
 
-const channelEnum = z.enum(["ALL", "FB_COMMENT", "IG_COMMENT"]);
-
-const aiToggleSchema = z.object({
-    type: z.literal("AI_TOGGLE"),
-    aiAutoDraftEnabled: z.boolean().optional(),
-    aiAutoReplyEnabled: z.boolean().optional(),
-});
+const channelEnum = z.enum(["ALL", "FB_COMMENT"]);
 
 const createRuleSchema = z.object({
     name: z.string().trim().min(1, "Rule name is required").max(120),
@@ -41,7 +34,7 @@ export async function GET() {
         const staff = await requireStaff();
         if (!staff) return unauthorizedResponse();
 
-        const [rules, settings, products] = await Promise.all([
+        const [rules, products] = await Promise.all([
             prisma.commentAutomationRule.findMany({
                 orderBy: { createdAt: "desc" },
                 include: {
@@ -50,7 +43,6 @@ export async function GET() {
                     },
                 },
             }),
-            getSocialSettings(),
             prisma.product.findMany({
                 where: { isActive: true },
                 select: { id: true, name: true, price: true, salePrice: true },
@@ -64,11 +56,6 @@ export async function GET() {
             data: {
                 rules,
                 products,
-                aiSettings: {
-                    aiAutoDraftEnabled: settings.aiAutoDraftEnabled,
-                    aiAutoReplyEnabled: settings.aiAutoReplyEnabled,
-                    hasGeminiKey: Boolean(settings.geminiApiKey),
-                },
             },
         });
     } catch (error) {
@@ -82,37 +69,6 @@ export async function POST(req) {
         if (!staff) return unauthorizedResponse();
 
         const body = await req.json();
-
-        // Update AI toggle settings if requested (ADMIN only)
-        if (body?.type === "AI_TOGGLE") {
-            const admin = await requireAdmin();
-            if (!admin) return unauthorizedResponse();
-
-            const parsedToggle = aiToggleSchema.safeParse(body);
-            if (!parsedToggle.success) {
-                return NextResponse.json(
-                    { ok: false, message: parsedToggle.error.issues?.[0]?.message || "Invalid AI toggle payload" },
-                    { status: 400 }
-                );
-            }
-
-            const updated = await saveSocialSettings({
-                ...(parsedToggle.data.aiAutoDraftEnabled !== undefined && {
-                    aiAutoDraftEnabled: parsedToggle.data.aiAutoDraftEnabled,
-                }),
-                ...(parsedToggle.data.aiAutoReplyEnabled !== undefined && {
-                    aiAutoReplyEnabled: parsedToggle.data.aiAutoReplyEnabled,
-                }),
-            });
-            return NextResponse.json({
-                ok: true,
-                data: {
-                    aiAutoDraftEnabled: updated.aiAutoDraftEnabled,
-                    aiAutoReplyEnabled: updated.aiAutoReplyEnabled,
-                },
-            });
-        }
-
         const parsed = createRuleSchema.safeParse(body);
         if (!parsed.success) {
             return NextResponse.json(

@@ -74,10 +74,10 @@ export default function InboxAnalyticsPage() {
                             <Megaphone className="w-5 h-5 text-blue-600 shrink-0" aria-hidden="true" />
                             <div>
                                 <h2 className="font-bold text-gray-900 text-balance">
-                                    অ্যাড ও বুস্ট ROI রিপোর্ট (Facebook / TikTok / Instagram)
+                                    অ্যাড ও বুস্ট ROI রিপোর্ট (Facebook / WhatsApp)
                                 </h2>
                                 <p className="text-xs text-gray-500 text-pretty">
-                                    কোন বুস্ট বা অ্যাড থেকে শুধু জিজ্ঞাসাবাদ আসছে আর কোনটা থেকে আসল অর্ডার ও সেলস হচ্ছে।
+                                    কোন ফেসবুক বুস্ট বা অ্যাড থেকে শুধু জিজ্ঞাসাবাদ আসছে আর কোনটা থেকে আসল অর্ডার ও সেলস হচ্ছে।
                                 </p>
                             </div>
                         </div>
@@ -207,7 +207,7 @@ export default function InboxAnalyticsPage() {
                                 <TrendingUp className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
                                 চ্যানেল অনুযায়ী পারফরম্যান্স
                             </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 tabular-nums">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 tabular-nums">
                                 {report.channelBreakdown.map((ch) => (
                                     <div key={ch.channel} className="p-3 rounded-xl border border-gray-200 bg-gray-50 space-y-1.5">
                                         <ChannelBadge channel={ch.channel} />

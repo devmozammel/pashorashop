@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { formatBangladeshiPhone } from "@/lib/steadfast";
-import { generateGeminiCopilot } from "@/lib/gemini";
 import { sendChannelReply } from "@/lib/meta-api";
-import { getSocialSettings, getStoreBasicConfig } from "@/lib/social-settings";
+import { getStoreBasicConfig } from "@/lib/social-settings";
 
 /**
  * Fill template placeholders like {{product_name}}, {{price}}, {{delivery_fee}}, {{order_link}}.
@@ -32,10 +31,10 @@ async function renderAutomationTemplate(template, product) {
 }
 
 /**
- * Core ingestion pipeline for any inbound social message or comment (real webhook OR simulator).
+ * Core ingestion pipeline for Facebook & WhatsApp inbound messages or FB comments.
  */
 export async function ingestInboundSocialEvent({
-    channel, // MESSENGER, FB_COMMENT, INSTAGRAM_DM, INSTAGRAM_COMMENT, WHATSAPP
+    channel, // MESSENGER, FB_COMMENT, WHATSAPP
     externalThreadId,
     externalUserId,
     externalMessageId,
@@ -152,13 +151,13 @@ export async function ingestInboundSocialEvent({
         },
     });
 
-    // ─── Comment-to-Inbox Automation ───
+    // ─── Facebook Comment-to-Inbox Automation ───
     let commentAutoTriggered = null;
-    if (channel === "FB_COMMENT" || channel === "INSTAGRAM_COMMENT") {
+    if (channel === "FB_COMMENT") {
         const rules = await prisma.commentAutomationRule.findMany({
             where: {
                 isActive: true,
-                channel: { in: ["ALL", channel] },
+                channel: { in: ["ALL", "FB_COMMENT"] },
             },
             include: { product: true },
         });
@@ -197,7 +196,7 @@ export async function ingestInboundSocialEvent({
                 isPublicCommentReply: false,
             }).catch((e) => ({ ok: false, message: e.message }));
 
-            // Log both in the unified inbox thread + create/update DM conversation so moderator sees the sent product details
+            // Log both in the unified inbox thread
             await prisma.socialMessage.create({
                 data: {
                     conversationId: conversation.id,
@@ -219,74 +218,11 @@ export async function ingestInboundSocialEvent({
         }
     }
 
-    // ─── Gemini AI Co-pilot Draft + Optional Auto-Reply ───
-    const settings = await getSocialSettings();
-    let aiCopilot = null;
-
-    if (settings.aiAutoDraftEnabled || settings.aiAutoReplyEnabled) {
-        const recentMessages = await prisma.socialMessage.findMany({
-            where: { conversationId: conversation.id },
-            orderBy: { createdAt: "asc" },
-            take: 20,
-        });
-
-        aiCopilot = await generateGeminiCopilot({
-            conversation,
-            messages: recentMessages,
-        });
-
-        const extractedPhone = aiCopilot?.extractedData?.phone;
-        const updateData = {
-            aiSuggestedReply: aiCopilot.suggestedReply || null,
-            extractedData: aiCopilot.extractedData || undefined,
-            ...(extractedPhone && !conversation.phone ? { phone: extractedPhone } : {}),
-        };
-
-        // If Auto-Reply is enabled AND it's a direct DM/WA message with a simple price/delivery FAQ (and comment rule didn't already reply)
-        if (
-            settings.aiAutoReplyEnabled &&
-            !commentAutoTriggered &&
-            !channel.includes("COMMENT") &&
-            aiCopilot.isSimpleFaq &&
-            aiCopilot.suggestedReply
-        ) {
-            const sendRes = await sendChannelReply({
-                channel,
-                externalUserId: conversation.externalUserId,
-                externalThreadId: conversation.externalThreadId,
-                text: aiCopilot.suggestedReply,
-            });
-
-            if (sendRes.ok) {
-                await prisma.socialMessage.create({
-                    data: {
-                        conversationId: conversation.id,
-                        externalMessageId: sendRes.externalMessageId || null,
-                        direction: "OUTBOUND",
-                        messageType: "AUTO_REPLY",
-                        senderType: "AI_AUTO",
-                        body: aiCopilot.suggestedReply,
-                        isAutoReply: true,
-                        metadata: { provider: aiCopilot.provider, simulated: sendRes.simulated },
-                    },
-                });
-                updateData.lastMessagePreview = aiCopilot.suggestedReply.slice(0, 200);
-                updateData.lastMessageAt = new Date();
-                updateData.unreadCount = 0;
-            }
-        }
-
-        conversation = await prisma.socialConversation.update({
-            where: { id: conversation.id },
-            data: updateData,
-        });
-    }
-
     return {
         ok: true,
         conversation,
         message: inboundMessage,
         commentAutoTriggered,
-        aiCopilot,
     };
 }
+

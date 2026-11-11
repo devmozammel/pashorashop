@@ -58,23 +58,18 @@ export async function sendChannelReply({
         };
     }
 
-    // 2. Facebook / Instagram Public Comment Reply
-    if ((channel === "FB_COMMENT" || channel === "INSTAGRAM_COMMENT") && isPublicCommentReply) {
+    // 2. Facebook Public Comment Reply
+    if (channel === "FB_COMMENT" && isPublicCommentReply) {
         if (!settings.fbPageAccessToken || !commentId) {
             return { ok: true, simulated: true, externalMessageId: `sim_cmt_${Date.now()}` };
         }
-        const endpoint =
-            channel === "INSTAGRAM_COMMENT"
-                ? `${GRAPH_BASE}/${commentId}/replies?message=${encodeURIComponent(text)}`
-                : `${GRAPH_BASE}/${commentId}/comments`;
-
-        const res = await fetchWithTimeout(endpoint, {
+        const res = await fetchWithTimeout(`${GRAPH_BASE}/${commentId}/comments`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${settings.fbPageAccessToken}`,
             },
-            body: channel === "INSTAGRAM_COMMENT" ? undefined : JSON.stringify({ message: text }),
+            body: JSON.stringify({ message: text }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -83,13 +78,13 @@ export async function sendChannelReply({
         return { ok: true, simulated: false, externalMessageId: data?.id || `cmt_${Date.now()}` };
     }
 
-    // 3. Messenger / Instagram DM / Comment-to-Private-Inbox
+    // 3. Facebook Messenger / Comment-to-Private-Inbox
     if (!settings.fbPageAccessToken) {
         return { ok: true, simulated: true, externalMessageId: `sim_meta_${Date.now()}` };
     }
 
     const pageId = settings.fbPageId || "me";
-    const recipient = commentId && (channel === "FB_COMMENT" || channel === "INSTAGRAM_COMMENT")
+    const recipient = commentId && channel === "FB_COMMENT"
         ? { comment_id: commentId }
         : { id: externalUserId || externalThreadId };
 

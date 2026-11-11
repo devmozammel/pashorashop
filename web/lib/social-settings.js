@@ -4,36 +4,15 @@ import { encrypt, decrypt } from "@/lib/security";
 export const SOCIAL_SETTINGS_KEY = "social_commerce_settings";
 
 export const DEFAULT_SOCIAL_SETTINGS = {
-    // Meta (Facebook Page, Messenger, Instagram)
+    // Meta (Facebook Page, Messenger)
     metaAppSecret: "",
     metaVerifyToken: "pashora_meta_verify_2026",
-    tiktokWebhookSecret: "pashora_tiktok_verify_2026",
     fbPageId: "",
     fbPageAccessToken: "",
-    igAccountId: "",
 
     // WhatsApp Cloud API
     waPhoneNumberId: "",
     waAccessToken: "",
-
-    // Gemini AI Co-pilot
-    geminiApiKey: "",
-    geminiModel: "gemini-2.5-flash",
-    aiAutoDraftEnabled: true,
-    aiAutoReplyEnabled: false, // When true, auto-replies to clear price/delivery questions
-
-    // Pathao Courier
-    pathaoClientId: "",
-    pathaoClientSecret: "",
-    pathaoUsername: "",
-    pathaoPassword: "",
-    pathaoStoreId: "",
-    pathaoSandbox: false,
-
-    // RedX Courier
-    redxApiToken: "",
-    redxStoreId: "",
-    redxSandbox: false,
 
     // Default Courier & Delivery
     defaultCourier: "Steadfast",
@@ -41,13 +20,8 @@ export const DEFAULT_SOCIAL_SETTINGS = {
 
 const SECRET_FIELDS = [
     "metaAppSecret",
-    "tiktokWebhookSecret",
     "fbPageAccessToken",
     "waAccessToken",
-    "geminiApiKey",
-    "pathaoClientSecret",
-    "pathaoPassword",
-    "redxApiToken",
 ];
 
 function safeDecrypt(val, fallback = "") {
@@ -58,7 +32,7 @@ function safeDecrypt(val, fallback = "") {
 }
 
 /**
- * Retrieve decrypted Social Commerce, Courier, and Gemini settings.
+ * Retrieve decrypted Facebook, WhatsApp, and Steadfast inbox settings.
  */
 export async function getSocialSettings() {
     let raw = {};
@@ -77,39 +51,20 @@ export async function getSocialSettings() {
 
     // Decrypt secret fields and allow env fallbacks
     return {
-        ...merged,
         metaAppSecret: safeDecrypt(merged.metaAppSecret, process.env.META_APP_SECRET || ""),
         metaVerifyToken: merged.metaVerifyToken || process.env.META_VERIFY_TOKEN || DEFAULT_SOCIAL_SETTINGS.metaVerifyToken,
-        tiktokWebhookSecret: safeDecrypt(merged.tiktokWebhookSecret, process.env.TIKTOK_WEBHOOK_SECRET || DEFAULT_SOCIAL_SETTINGS.tiktokWebhookSecret),
         fbPageId: merged.fbPageId || process.env.FB_PAGE_ID || "",
         fbPageAccessToken: safeDecrypt(merged.fbPageAccessToken, process.env.FB_PAGE_ACCESS_TOKEN || ""),
-        igAccountId: merged.igAccountId || process.env.IG_ACCOUNT_ID || "",
 
         waPhoneNumberId: merged.waPhoneNumberId || process.env.WA_PHONE_NUMBER_ID || "",
         waAccessToken: safeDecrypt(merged.waAccessToken, process.env.WA_ACCESS_TOKEN || ""),
 
-        geminiApiKey: safeDecrypt(merged.geminiApiKey, process.env.GEMINI_API_KEY || ""),
-        geminiModel: merged.geminiModel || process.env.GEMINI_MODEL || "gemini-2.5-flash",
-        aiAutoDraftEnabled: merged.aiAutoDraftEnabled !== false,
-        aiAutoReplyEnabled: Boolean(merged.aiAutoReplyEnabled),
-
-        pathaoClientId: merged.pathaoClientId || process.env.PATHAO_CLIENT_ID || "",
-        pathaoClientSecret: safeDecrypt(merged.pathaoClientSecret, process.env.PATHAO_CLIENT_SECRET || ""),
-        pathaoUsername: merged.pathaoUsername || process.env.PATHAO_USERNAME || "",
-        pathaoPassword: safeDecrypt(merged.pathaoPassword, process.env.PATHAO_PASSWORD || ""),
-        pathaoStoreId: merged.pathaoStoreId || process.env.PATHAO_STORE_ID || "",
-        pathaoSandbox: Boolean(merged.pathaoSandbox),
-
-        redxApiToken: safeDecrypt(merged.redxApiToken, process.env.REDX_API_TOKEN || ""),
-        redxStoreId: merged.redxStoreId || process.env.REDX_STORE_ID || "",
-        redxSandbox: Boolean(merged.redxSandbox),
-
-        defaultCourier: merged.defaultCourier || "Steadfast",
+        defaultCourier: "Steadfast",
     };
 }
 
 /**
- * Save Social Commerce settings with AES-256 encryption for secrets.
+ * Save Facebook & WhatsApp inbox settings with AES-256 encryption for secrets.
  */
 export async function saveSocialSettings(input) {
     const current = await getSocialSettings();
@@ -124,10 +79,7 @@ export async function saveSocialSettings(input) {
     const updated = {
         ...current,
         ...sanitizedInput,
-        aiAutoDraftEnabled: sanitizedInput.aiAutoDraftEnabled !== undefined ? Boolean(sanitizedInput.aiAutoDraftEnabled) : current.aiAutoDraftEnabled,
-        aiAutoReplyEnabled: sanitizedInput.aiAutoReplyEnabled !== undefined ? Boolean(sanitizedInput.aiAutoReplyEnabled) : current.aiAutoReplyEnabled,
-        pathaoSandbox: sanitizedInput.pathaoSandbox !== undefined ? Boolean(sanitizedInput.pathaoSandbox) : current.pathaoSandbox,
-        redxSandbox: sanitizedInput.redxSandbox !== undefined ? Boolean(sanitizedInput.redxSandbox) : current.redxSandbox,
+        defaultCourier: "Steadfast",
     };
 
     const toStore = { ...updated };
