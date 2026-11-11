@@ -1,9 +1,32 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { fetchFacebookUserProfile } from "@/lib/meta-api";
 import { getSocialSettings } from "@/lib/social-settings";
 import { ingestInboundSocialEvent } from "@/lib/social-ingestion";
 
 export const dynamic = "force-dynamic";
+
+const LAST_WEBHOOK_KEY = "social_last_webhook_event";
+
+async function recordWebhookStatus({ status, objectType = null, summary = null, error = null }) {
+    try {
+        const payload = JSON.stringify({
+            timestamp: new Date().toISOString(),
+            status,
+            objectType,
+            summary,
+            error: error ? String(error).slice(0, 200) : null,
+        });
+        await prisma.siteSetting.upsert({
+            where: { key: LAST_WEBHOOK_KEY },
+            update: { value: payload, type: "json", isPublic: false },
+            create: { key: LAST_WEBHOOK_KEY, value: payload, type: "json", isPublic: false },
+        });
+    } catch {
+        // Non-blocking diagnostic logging must never break webhook ACK
+    }
+}
 
 /**
  * Meta Webhook Verification (Facebook Page, Instagram, WhatsApp Cloud API).
@@ -44,18 +67,25 @@ function verifyMetaSignature(rawBody, signatureHeader, appSecret) {
  * Meta Webhook Event Ingestion (Messenger, FB Comments, IG DM, IG Comments, WhatsApp).
  */
 export async function POST(req) {
+    let objectType = null;
     try {
         const rawBody = await req.text();
         const settings = await getSocialSettings();
         const sig = req.headers.get("x-hub-signature-256");
 
         if (!verifyMetaSignature(rawBody, sig, settings.metaAppSecret)) {
+            await recordWebhookStatus({
+                status: "ERROR",
+                error: "Invalid X-Hub-Signature-256 header",
+            });
             return NextResponse.json({ ok: false, message: "Invalid signature" }, { status: 401 });
         }
 
         const payload = JSON.parse(rawBody || "{}");
-        const objectType = payload.object;
+        objectType = payload.object || null;
         const entries = Array.isArray(payload.entry) ? payload.entry : [];
+        const profileCache = new Map();
+        let ingestedCount = 0;
 
         for (const entry of entries) {
             // 1) Facebook Messenger messaging events
@@ -63,9 +93,22 @@ export async function POST(req) {
                 for (const event of entry.messaging) {
                     if (event.message?.is_echo) continue;
                     const senderId = event.sender?.id;
-                    const text = event.message?.text || (event.message?.attachments?.[0]?.type ? `[${event.message.attachments[0].type}]` : "");
+                    if (!senderId || (settings.fbPageId && senderId === settings.fbPageId)) continue;
+
                     const mediaUrl = event.message?.attachments?.[0]?.payload?.url || null;
-                    if (!senderId || !text) continue;
+                    const text =
+                        event.message?.text ||
+                        event.postback?.title ||
+                        (event.message?.attachments?.[0]?.type
+                            ? `[${event.message.attachments[0].type}]`
+                            : "");
+                    if (!text) continue;
+
+                    let profile = profileCache.get(senderId);
+                    if (!profile) {
+                        profile = await fetchFacebookUserProfile(senderId, settings.fbPageAccessToken);
+                        profileCache.set(senderId, profile);
+                    }
 
                     const referral = event.referral || event.message?.referral || event.postback?.referral;
                     const adId = referral?.ad_id || referral?.ads_context_data?.ad_id || null;
@@ -76,7 +119,8 @@ export async function POST(req) {
                         externalThreadId: senderId,
                         externalUserId: senderId,
                         externalMessageId: event.message?.mid,
-                        customerName: `FB User ${senderId.slice(-4)}`,
+                        customerName: profile?.name || `FB User ${senderId.slice(-4)}`,
+                        customerAvatar: profile?.avatarUrl || null,
                         body: text,
                         mediaUrl,
                         adPlatform: adId ? "FACEBOOK" : "ORGANIC",
@@ -84,6 +128,7 @@ export async function POST(req) {
                         adName,
                         adRef: referral?.ref || null,
                     });
+                    ingestedCount++;
                 }
             }
 
@@ -121,6 +166,7 @@ export async function POST(req) {
                                 adName: referral.headline || (adId ? `Click-to-WA Ad #${adId}` : null),
                                 adRef: referral.ctwa_clid || null,
                             });
+                            ingestedCount++;
                         }
                     }
 
@@ -142,14 +188,26 @@ export async function POST(req) {
                             postUrl: val.post?.permalink_url || null,
                             postTitle: val.post?.status_type ? `Facebook Post (${val.post_id})` : "Facebook Page Post",
                         });
+                        ingestedCount++;
                     }
                 }
             }
         }
 
+        await recordWebhookStatus({
+            status: "OK",
+            objectType,
+            summary: `${ingestedCount} message/comment event(s) processed`,
+        });
+
         return NextResponse.json({ ok: true, received: true });
     } catch (error) {
         console.error("[Meta Webhook Error]:", error);
+        await recordWebhookStatus({
+            status: "ERROR",
+            objectType,
+            error: error?.message || "Webhook handler failure",
+        });
         return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
     }
 }

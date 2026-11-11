@@ -10,7 +10,21 @@ import {
     WhatsAppLogo,
 } from "@/components/admin/inbox/InboxShared";
 import { toast } from "sonner";
-import { Save, Loader2, Copy, Truck, Globe, Eye, EyeOff, ExternalLink } from "lucide-react";
+import {
+    Save,
+    Loader2,
+    Copy,
+    Truck,
+    Globe,
+    Eye,
+    EyeOff,
+    ExternalLink,
+    Activity,
+    CheckCircle2,
+    AlertTriangle,
+    RefreshCw,
+    Database,
+} from "lucide-react";
 
 function SecretInput({ id, label, value, onChange, placeholder = "" }) {
     const [visible, setVisible] = useState(false);
@@ -51,6 +65,26 @@ export default function InboxSettingsPage() {
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [diag, setDiag] = useState(null);
+    const [diagLoading, setDiagLoading] = useState(false);
+
+    const runDiagnostics = async () => {
+        setDiagLoading(true);
+        try {
+            const res = await fetch("/api/admin/inbox/diagnostics");
+            const json = await res.json();
+            if (json.ok) {
+                setDiag(json.data);
+                toast.success("কানেকশন ও ডাটাবেস চেক সম্পন্ন হয়েছে!");
+            } else {
+                toast.error(json.message || "ডায়াগনস্টিকস চালানো যায়নি");
+            }
+        } catch {
+            toast.error("সার্ভারে কানেক্ট করা যায়নি");
+        } finally {
+            setDiagLoading(false);
+        }
+    };
 
     useEffect(() => {
         fetch("/api/admin/inbox/settings")
@@ -262,6 +296,151 @@ export default function InboxSettingsPage() {
                         </button>
                     </div>
                 </form>
+            )}
+
+            {!loading && settings && (
+                <section className="max-w-4xl mt-6 bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                                <span>লাইভ কানেকশন ও ওয়েবহুক ডায়াগনস্টিকস</span>
+                            </h2>
+                            <p className="text-xs text-gray-500">
+                                আপনার ডাটাবেস টেবিল, Facebook Page টোকেন, অ্যাপ সাবস্ক্রিপশন এবং সর্বশেষ ওয়েবহুক হিট যাচাই করুন।
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={runDiagnostics}
+                            disabled={diagLoading}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 disabled:opacity-50 touch-manipulation transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+                        >
+                            {diagLoading ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                            ) : (
+                                <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
+                            )}
+                            <span>{diagLoading ? "চেক করা হচ্ছে…" : "কানেকশন ও ডাটাবেস চেক করুন"}</span>
+                        </button>
+                    </div>
+
+                    {diag && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                            {/* Database */}
+                            <div className="rounded-xl border border-gray-200 bg-slate-50/70 p-3.5 space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                        <Database className="w-3.5 h-3.5 text-slate-600" aria-hidden="true" />
+                                        ডাটাবেস (Inbox Tables)
+                                    </span>
+                                    {diag.database?.ok ? (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                            <CheckCircle2 className="w-3 h-3" aria-hidden="true" /> OK
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                                            <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Error
+                                        </span>
+                                    )}
+                                </div>
+                                {diag.database?.ok ? (
+                                    <p className="text-xs text-gray-600 tabular-nums">
+                                        Conversations: <strong>{diag.database.conversations}</strong> · Messages:{" "}
+                                        <strong>{diag.database.messages}</strong>
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-rose-700">{diag.database?.error}</p>
+                                )}
+                            </div>
+
+                            {/* Last Webhook */}
+                            <div className="rounded-xl border border-gray-200 bg-slate-50/70 p-3.5 space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                        <Globe className="w-3.5 h-3.5 text-slate-600" aria-hidden="true" />
+                                        সর্বশেষ Meta Webhook হিট
+                                    </span>
+                                    {diag.lastWebhook ? (
+                                        <span
+                                            className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                                                diag.lastWebhook.status === "OK"
+                                                    ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                                                    : "text-rose-700 bg-rose-50 border-rose-200"
+                                            }`}
+                                        >
+                                            {diag.lastWebhook.status}
+                                        </span>
+                                    ) : (
+                                        <span className="text-[11px] font-semibold text-gray-500">No hit yet</span>
+                                    )}
+                                </div>
+                                {diag.lastWebhook ? (
+                                    <div className="text-xs text-gray-600 space-y-0.5">
+                                        <p className="truncate">
+                                            {diag.lastWebhook.summary || diag.lastWebhook.error || diag.lastWebhook.objectType}
+                                        </p>
+                                        <p className="text-[11px] text-gray-400">
+                                            {new Date(diag.lastWebhook.timestamp).toLocaleString()}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-gray-500">
+                                        এখনো কোনো লাইভ ওয়েবহুক মেসেজ সার্ভারে আসেনি।
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Facebook Page & Webhook Subscription */}
+                            <div className="rounded-xl border border-gray-200 bg-slate-50/70 p-3.5 space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                        <MessengerLogo className="w-3.5 h-3.5" />
+                                        Facebook Page ও App Subscription
+                                    </span>
+                                    {diag.meta?.facebook?.ok ? (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                            <CheckCircle2 className="w-3 h-3" aria-hidden="true" /> Connected
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                            <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Check
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-700">{diag.meta?.facebook?.message}</p>
+                                {diag.meta?.facebook?.ok && (
+                                    <p className="text-[11px] text-gray-600">
+                                        Webhook Subscribed:{" "}
+                                        <strong>
+                                            {diag.meta.facebook.appSubscribed
+                                                ? `হ্যাঁ (${(diag.meta.facebook.subscribedFields || []).join(", ") || "active"})`
+                                                : "না — Meta Dashboard থেকে Page-টি App-এ Subscribe করুন"}
+                                        </strong>
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* WhatsApp Cloud API */}
+                            <div className="rounded-xl border border-gray-200 bg-slate-50/70 p-3.5 space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                        <WhatsAppLogo className="w-3.5 h-3.5" />
+                                        WhatsApp Cloud API
+                                    </span>
+                                    {diag.meta?.whatsapp?.ok ? (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                            <CheckCircle2 className="w-3 h-3" aria-hidden="true" /> Connected
+                                        </span>
+                                    ) : (
+                                        <span className="text-[11px] font-semibold text-gray-500">Not configured</span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-600">{diag.meta?.whatsapp?.message}</p>
+                            </div>
+                        </div>
+                    )}
+                </section>
             )}
         </AdminShell>
     );

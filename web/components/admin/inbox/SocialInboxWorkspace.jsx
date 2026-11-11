@@ -115,6 +115,7 @@ export default function SocialInboxWorkspace() {
     const [productSearch, setProductSearch] = useState("");
     const [orderItems, setOrderItems] = useState([]);
     const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+    const [isSyncingMessenger, setIsSyncingMessenger] = useState(false);
 
     const messagesEndRef = useRef(null);
 
@@ -412,6 +413,27 @@ export default function SocialInboxWorkspace() {
             toast.error("ডেমো মেসেজ সিমুলেট করা যায়নি");
         } finally {
             setIsSimulating(false);
+        }
+    };
+
+    const handleSyncMessenger = async () => {
+        setIsSyncingMessenger(true);
+        try {
+            const res = await fetch("/api/admin/inbox/sync-messenger", { method: "POST" });
+            const data = await res.json();
+            if (data.ok) {
+                toast.success(
+                    `Messenger সিঙ্ক সফল! ${data.syncedConversations}টি চ্যাট ও ${data.importedMessages}টি নতুন মেসেজ আনা হয়েছে।`
+                );
+                await mutateList();
+                if (selectedId) await mutateActive();
+            } else {
+                toast.error(data.message || "Messenger সিঙ্ক করা যায়নি");
+            }
+        } catch {
+            toast.error("Messenger সিঙ্ক করতে নেটওয়ার্ক সমস্যা হয়েছে");
+        } finally {
+            setIsSyncingMessenger(false);
         }
     };
 
@@ -724,9 +746,26 @@ export default function SocialInboxWorkspace() {
                                     {activeChannelMeta.label}
                                 </h2>
                             </div>
-                            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 tabular-nums shrink-0">
-                                {conversations.length}
-                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                {(channelFilter === "ALL" || channelFilter === "MESSENGER") && (
+                                    <button
+                                        type="button"
+                                        onClick={handleSyncMessenger}
+                                        disabled={isSyncingMessenger}
+                                        title="Facebook থেকে পুরনো ও নতুন Messenger চ্যাট সিঙ্ক করুন"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/80 hover:bg-blue-100 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                    >
+                                        <RefreshCw
+                                            className={`w-3 h-3 ${isSyncingMessenger ? "animate-spin" : ""}`}
+                                            aria-hidden="true"
+                                        />
+                                        <span>{isSyncingMessenger ? "সিঙ্ক…" : "Sync"}</span>
+                                    </button>
+                                )}
+                                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 tabular-nums shrink-0">
+                                    {conversations.length}
+                                </span>
+                            </div>
                         </div>
 
                         <div className="relative">
@@ -760,25 +799,43 @@ export default function SocialInboxWorkspace() {
                                 </div>
                                 <p className="font-semibold text-gray-700">এখনো কোনো মেসেজ নেই</p>
                                 <p className="text-xs text-gray-400 text-pretty">
-                                    নিচের বাটনে ক্লিক করে একটি ডেমো ইনবাউন্ড চ্যাট টেস্ট করুন।
+                                    {(channelFilter === "ALL" || channelFilter === "MESSENGER")
+                                        ? "Facebook Messenger থেকে মেসেজ আনতে Sync বাটনে ক্লিক করুন অথবা ডেমো চ্যাট টেস্ট করুন।"
+                                        : "নিচের বাটনে ক্লিক করে একটি ডেমো ইনবাউন্ড চ্যাট টেস্ট করুন।"}
                                 </p>
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        handleSimulate(
-                                            channelFilter === "WHATSAPP"
-                                                ? "WHATSAPP_AD"
-                                                : channelFilter === "FB_COMMENT"
-                                                ? "FB_COMMENT_PRICE"
-                                                : "MESSENGER_AD"
-                                        )
-                                    }
-                                    disabled={isSimulating}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                >
-                                    <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-                                    ডেমো চ্যাট পাঠান
-                                </button>
+                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                    {(channelFilter === "ALL" || channelFilter === "MESSENGER") && (
+                                        <button
+                                            type="button"
+                                            onClick={handleSyncMessenger}
+                                            disabled={isSyncingMessenger}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                        >
+                                            <RefreshCw
+                                                className={`w-3.5 h-3.5 ${isSyncingMessenger ? "animate-spin" : ""}`}
+                                                aria-hidden="true"
+                                            />
+                                            Messenger Sync করুন
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            handleSimulate(
+                                                channelFilter === "WHATSAPP"
+                                                    ? "WHATSAPP_AD"
+                                                    : channelFilter === "FB_COMMENT"
+                                                    ? "FB_COMMENT_PRICE"
+                                                    : "MESSENGER_AD"
+                                            )
+                                        }
+                                        disabled={isSimulating}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    >
+                                        <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                                        ডেমো চ্যাট পাঠান
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             conversations.map((conv) => {
@@ -803,6 +860,7 @@ export default function SocialInboxWorkspace() {
                                             <ChannelAvatar
                                                 name={conv.customerName}
                                                 channel={conv.channel}
+                                                avatarUrl={conv.customerAvatar}
                                                 size="md"
                                             />
                                             <div className="flex-1 min-w-0">
@@ -899,6 +957,7 @@ export default function SocialInboxWorkspace() {
                                         <ChannelAvatar
                                             name={activeConv.customerName}
                                             channel={activeConv.channel}
+                                            avatarUrl={activeConv.customerAvatar}
                                             size="lg"
                                         />
                                         <div className="min-w-0">

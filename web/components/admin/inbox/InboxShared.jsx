@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -118,8 +118,14 @@ function getInitials(name = "") {
     return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export function ChannelAvatar({ name, channel, size = "md" }) {
+export function ChannelAvatar({ name, channel, avatarUrl, size = "md" }) {
     const meta = CHANNEL_META[channel] || CHANNEL_META.MESSENGER;
+    const [imgError, setImgError] = useState(false);
+
+    useEffect(() => {
+        setImgError(false);
+    }, [avatarUrl]);
+
     const sizeClasses =
         size === "lg"
             ? { box: "w-10 h-10 text-xs", badge: "w-[18px] h-[18px] -bottom-0.5 -right-0.5" }
@@ -127,12 +133,21 @@ export function ChannelAvatar({ name, channel, size = "md" }) {
 
     return (
         <div className="relative shrink-0">
-            <span
-                aria-hidden="true"
-                className={`${sizeClasses.box} rounded-full ${meta.avatarBg} font-bold flex items-center justify-center tracking-tight`}
-            >
-                {getInitials(name)}
-            </span>
+            {avatarUrl && !imgError ? (
+                <img
+                    src={avatarUrl}
+                    alt={name || "Customer"}
+                    onError={() => setImgError(true)}
+                    className={`${sizeClasses.box} rounded-full object-cover bg-slate-100 ring-1 ring-gray-200/80`}
+                />
+            ) : (
+                <span
+                    aria-hidden="true"
+                    className={`${sizeClasses.box} rounded-full ${meta.avatarBg} font-bold flex items-center justify-center tracking-tight`}
+                >
+                    {getInitials(name)}
+                </span>
+            )}
             <span
                 title={meta.label}
                 className={`absolute ${sizeClasses.badge} rounded-full bg-white ring-2 ring-white flex items-center justify-center shadow-sm`}
