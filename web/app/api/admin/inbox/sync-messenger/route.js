@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
 import { getSocialSettings } from "@/lib/social-settings";
-import { fetchFacebookUserProfile, fetchMessengerConversations } from "@/lib/meta-api";
+import { fetchFacebookUserProfile, fetchMessengerConversations, rememberEphemeralImage } from "@/lib/meta-api";
 import { formatBangladeshiPhone } from "@/lib/steadfast";
 import { INBOX_RETENTION_DAYS } from "@/lib/inbox-retention";
 
@@ -29,7 +29,7 @@ function extractMessageTextAndMedia(msg) {
             : messageType === "VIDEO"
             ? "[Video]"
             : mediaUrl
-            ? "[Image]"
+            ? "[Customer Image]"
             : "";
     const text = msg?.message?.trim() || fallbackText;
     return { text, mediaUrl, messageType };
@@ -124,13 +124,17 @@ export async function POST() {
                 lastMessageAt = msgDate;
                 lastMessagePreview = (text || "[attachment]").slice(0, 120);
 
+                if (messageType === "IMAGE" && mediaUrl && m.id) {
+                    rememberEphemeralImage(m.id, mediaUrl);
+                }
+
                 parsedMessages.push({
                     externalMessageId: m.id,
                     direction: isPage ? "OUTBOUND" : "INBOUND",
                     senderType: isPage ? "MODERATOR" : "CUSTOMER",
                     messageType,
                     body: text || "[attachment]",
-                    mediaUrl,
+                    mediaUrl: messageType === "IMAGE" ? null : mediaUrl,
                     createdAt: msgDate,
                 });
             }

@@ -86,6 +86,98 @@ export async function fetchMessengerConversations({ pageId, accessToken, limit =
     }
 }
 
+// Short-lived RAM-only cache for inbound image previews (never persisted to DB)
+const EPHEMERAL_IMAGE_TTL_MS = 30 * 60 * 1000;
+
+function getEphemeralStore() {
+    if (!globalThis.__pashoraEphemeralInboxImages) {
+        globalThis.__pashoraEphemeralInboxImages = new Map();
+    }
+    return globalThis.__pashoraEphemeralInboxImages;
+}
+
+export function normalizeMetaMessageId(mid) {
+    return String(mid || "").replace(/^m_/, "");
+}
+
+export function rememberEphemeralImage(mid, url) {
+    if (!mid || !url) return;
+    const store = getEphemeralStore();
+    if (store.size >= 250) {
+        const firstKey = store.keys().next().value;
+        if (firstKey) store.delete(firstKey);
+    }
+    store.set(normalizeMetaMessageId(mid), {
+        url,
+        expiresAt: Date.now() + EPHEMERAL_IMAGE_TTL_MS,
+    });
+}
+
+export function getRememberedEphemeralImage(mid) {
+    if (!mid) return null;
+    const store = getEphemeralStore();
+    const key = normalizeMetaMessageId(mid);
+    const entry = store.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt < Date.now()) {
+        store.delete(key);
+        return null;
+    }
+    return entry.url;
+}
+
+/**
+ * Fetch temporary attachment URLs for a Messenger user directly from Graph API
+ * without writing any images or URLs into our database.
+ */
+export async function fetchMessengerThreadMedia({ psid, limit = 25 }) {
+    if (!psid) return { byId: new Map(), list: [] };
+    try {
+        const settings = await getSocialSettings();
+        if (!settings.fbPageId || !settings.fbPageAccessToken) {
+            return { byId: new Map(), list: [] };
+        }
+        const fields = encodeURIComponent(
+            `messages.limit(${limit}){id,created_time,attachments}`
+        );
+        const url = `${GRAPH_BASE}/${encodeURIComponent(
+            settings.fbPageId
+        )}/conversations?platform=messenger&user_id=${encodeURIComponent(psid)}&fields=${fields}`;
+
+        const res = await fetchWithTimeout(
+            url,
+            { headers: { Authorization: `Bearer ${settings.fbPageAccessToken}` } },
+            5000
+        );
+        if (!res.ok) return { byId: new Map(), list: [] };
+        const data = await res.json().catch(() => ({}));
+        const msgs = data?.data?.[0]?.messages?.data || [];
+
+        const byId = new Map();
+        const list = [];
+        for (const m of msgs) {
+            const firstAtt = m?.attachments?.data?.[0];
+            const mediaUrl =
+                firstAtt?.image_data?.url ||
+                firstAtt?.file_url ||
+                firstAtt?.video_data?.url ||
+                null;
+            if (!mediaUrl) continue;
+            const normId = normalizeMetaMessageId(m.id);
+            byId.set(normId, mediaUrl);
+            list.push({
+                id: normId,
+                createdTime: m.created_time ? new Date(m.created_time).getTime() : 0,
+                url: mediaUrl,
+            });
+            rememberEphemeralImage(m.id, mediaUrl);
+        }
+        return { byId, list };
+    } catch {
+        return { byId: new Map(), list: [] };
+    }
+}
+
 /**
  * Diagnostic test for saved Facebook Page, Subscribed Apps, and WhatsApp Cloud API credentials.
  */
@@ -393,3 +485,174 @@ export async function sendChannelReply({
         externalMessageId: sentMessageId || `meta_${Date.now()}`,
     };
 }
+
+/**
+ * Send an admin image directly to WhatsApp Cloud API or Facebook Messenger / Comment
+ * from multipart FormData in memory — zero database, disk, or Cloudinary storage.
+ */
+export async function sendDirectImageReply({
+    channel,
+    externalUserId,
+    externalThreadId,
+    commentId,
+    text = "",
+    file,
+    isPublicCommentReply = false,
+}) {
+    if (!file) {
+        return { ok: false, message: "কোনো ছবির ফাইল পাওয়া যায়নি।" };
+    }
+
+    const settings = await getSocialSettings();
+
+    // 1. WhatsApp Cloud API direct media upload (temporary Meta media_id only)
+    if (channel === "WHATSAPP") {
+        if (!settings.waPhoneNumberId || !settings.waAccessToken) {
+            return { ok: true, simulated: true, externalMessageId: `sim_wa_${Date.now()}` };
+        }
+        const to = (externalUserId || externalThreadId || "").replace(/[^0-9]/g, "");
+        const uploadForm = new FormData();
+        uploadForm.append("messaging_product", "whatsapp");
+        uploadForm.append("file", file, file.name || "image.jpg");
+
+        const uploadRes = await fetchWithTimeout(
+            `${GRAPH_BASE}/${settings.waPhoneNumberId}/media`,
+            {
+                method: "POST",
+                headers: { Authorization: `Bearer ${settings.waAccessToken}` },
+                body: uploadForm,
+            },
+            20000
+        );
+        const uploadData = await uploadRes.json().catch(() => ({}));
+        if (!uploadRes.ok || !uploadData?.id) {
+            return {
+                ok: false,
+                message: uploadData?.error?.message || "WhatsApp media upload failed",
+                raw: uploadData,
+            };
+        }
+
+        const msgRes = await fetchWithTimeout(`${GRAPH_BASE}/${settings.waPhoneNumberId}/messages`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${settings.waAccessToken}`,
+            },
+            body: JSON.stringify({
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "image",
+                image: text ? { id: uploadData.id, caption: text } : { id: uploadData.id },
+            }),
+        });
+        const msgData = await msgRes.json().catch(() => ({}));
+        if (!msgRes.ok) {
+            return { ok: false, message: msgData?.error?.message || "WhatsApp send failed", raw: msgData };
+        }
+        return {
+            ok: true,
+            simulated: false,
+            externalMessageId: msgData?.messages?.[0]?.id || `wa_${Date.now()}`,
+            waMediaId: uploadData.id,
+        };
+    }
+
+    // 2. Facebook Public Comment with Photo
+    if (channel === "FB_COMMENT" && isPublicCommentReply) {
+        if (!settings.fbPageAccessToken || !commentId) {
+            return { ok: true, simulated: true, externalMessageId: `sim_cmt_${Date.now()}` };
+        }
+        const form = new FormData();
+        form.append("source", file, file.name || "image.jpg");
+        if (text) form.append("message", text);
+
+        const res = await fetchWithTimeout(
+            `${GRAPH_BASE}/${commentId}/comments`,
+            {
+                method: "POST",
+                headers: { Authorization: `Bearer ${settings.fbPageAccessToken}` },
+                body: form,
+            },
+            20000
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            return { ok: false, message: data?.error?.message || "Comment photo reply failed", raw: data };
+        }
+        return { ok: true, simulated: false, externalMessageId: data?.id || `cmt_${Date.now()}` };
+    }
+
+    // 3. Facebook Messenger / Comment-to-Private-Inbox direct binary upload (filedata)
+    if (!settings.fbPageAccessToken) {
+        return { ok: true, simulated: true, externalMessageId: `sim_meta_${Date.now()}` };
+    }
+
+    const pageId = settings.fbPageId || "me";
+    const recipient =
+        commentId && channel === "FB_COMMENT"
+            ? { comment_id: commentId }
+            : { id: externalUserId || externalThreadId };
+
+    const msgForm = new FormData();
+    msgForm.append("recipient", JSON.stringify(recipient));
+    msgForm.append("messaging_type", "RESPONSE");
+    msgForm.append(
+        "message",
+        JSON.stringify({
+            attachment: {
+                type: "image",
+                payload: { is_reusable: false },
+            },
+        })
+    );
+    msgForm.append("filedata", file, file.name || "image.jpg");
+
+    const mediaRes = await fetchWithTimeout(
+        `${GRAPH_BASE}/${pageId}/messages`,
+        {
+            method: "POST",
+            headers: { Authorization: `Bearer ${settings.fbPageAccessToken}` },
+            body: msgForm,
+        },
+        20000
+    );
+    const mediaData = await mediaRes.json().catch(() => ({}));
+    if (!mediaRes.ok) {
+        return {
+            ok: false,
+            message: mediaData?.error?.message || "Meta direct image send failed",
+            raw: mediaData,
+        };
+    }
+
+    let sentMessageId = mediaData?.message_id || null;
+
+    if (text) {
+        const textRes = await fetchWithTimeout(`${GRAPH_BASE}/${pageId}/messages`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${settings.fbPageAccessToken}`,
+            },
+            body: JSON.stringify({
+                recipient,
+                messaging_type: "RESPONSE",
+                message: { text },
+            }),
+        });
+        const textData = await textRes.json().catch(() => ({}));
+        if (!textRes.ok) {
+            return { ok: false, message: textData?.error?.message || "Meta send API failed", raw: textData };
+        }
+        sentMessageId = sentMessageId || textData?.message_id;
+    }
+
+    return {
+        ok: true,
+        simulated: false,
+        externalMessageId: sentMessageId || `meta_${Date.now()}`,
+    };
+}
+

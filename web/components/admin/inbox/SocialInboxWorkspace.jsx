@@ -154,6 +154,7 @@ export default function SocialInboxWorkspace() {
     // Media, Voice Recording, Call & Lightbox states
     const [lightboxImage, setLightboxImage] = useState(null);
     const [pendingMedia, setPendingMedia] = useState(null);
+    const [ephemeralSentPreviews, setEphemeralSentPreviews] = useState({});
     const [isUploadingMedia, setIsUploadingMedia] = useState(false);
     const [isRecordingVoice, setIsRecordingVoice] = useState(false);
     const [recordingSec, setRecordingSec] = useState(0);
@@ -310,28 +311,46 @@ export default function SocialInboxWorkspace() {
     const handleSendReply = async (textOverride = null, mediaOverride = null) => {
         const text = (textOverride ?? replyText).trim();
         const mediaToUse = mediaOverride || pendingMedia;
-        if ((!text && !mediaToUse?.url) || !selectedId) return;
+        if ((!text && !mediaToUse?.url && !mediaToUse?.file) || !selectedId) return;
 
         setIsSendingReply(true);
         try {
-            const res = await fetch(`/api/admin/inbox/conversations/${selectedId}/reply`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    text,
-                    mediaUrl: mediaToUse?.url || null,
-                    mediaType: mediaToUse?.mediaType || "TEXT",
-                    mediaMeta: mediaToUse
-                        ? {
-                              publicId: mediaToUse.publicId || null,
-                              resourceType: mediaToUse.resourceType || null,
-                          }
-                        : {},
-                    isPublicCommentReply,
-                }),
-            });
+            let res;
+            if (mediaToUse?.file) {
+                const form = new FormData();
+                form.append("file", mediaToUse.file);
+                form.append("text", text);
+                form.append("isPublicCommentReply", String(Boolean(isPublicCommentReply)));
+                res = await fetch(`/api/admin/inbox/conversations/${selectedId}/reply`, {
+                    method: "POST",
+                    body: form,
+                });
+            } else {
+                res = await fetch(`/api/admin/inbox/conversations/${selectedId}/reply`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        text,
+                        mediaUrl: mediaToUse?.url || null,
+                        mediaType: mediaToUse?.mediaType || "TEXT",
+                        mediaMeta: mediaToUse
+                            ? {
+                                  publicId: mediaToUse.publicId || null,
+                                  resourceType: mediaToUse.resourceType || null,
+                              }
+                            : {},
+                        isPublicCommentReply,
+                    }),
+                });
+            }
             const data = await res.json();
             if (data.ok) {
+                if (mediaToUse?.file && mediaToUse?.objectUrl && data.data?.message?.id) {
+                    setEphemeralSentPreviews((prev) => ({
+                        ...prev,
+                        [data.data.message.id]: mediaToUse.objectUrl,
+                    }));
+                }
                 if (textOverride === null) setReplyText("");
                 if (!mediaOverride) setPendingMedia(null);
                 toast.success(
@@ -339,6 +358,8 @@ export default function SocialInboxWorkspace() {
                         ? "রিপ্লাই সেভ হয়েছে (Demo Mode — FB/WhatsApp Token দিলে সরাসরি লাইভ যাবে)"
                         : mediaToUse?.mediaType === "AUDIO"
                         ? "ভয়েস মেসেজ পাঠানো হয়েছে!"
+                        : mediaToUse?.file
+                        ? "ছবি সরাসরি পাঠানো হয়েছে (ডাটাবেসে সেভ করা হয়নি)!"
                         : "মেসেজ পাঠানো হয়েছে!"
                 );
                 mutateActive();
@@ -353,37 +374,29 @@ export default function SocialInboxWorkspace() {
         }
     };
 
-    const handleImageSelect = async (e) => {
+    const handleImageSelect = (e) => {
         const file = e.target.files?.[0];
         e.target.value = "";
         if (!file) return;
-        setIsUploadingMedia(true);
-        try {
-            const form = new FormData();
-            form.append("file", file);
-            form.append("kind", "IMAGE");
-            const res = await fetch("/api/admin/inbox/media/upload", {
-                method: "POST",
-                body: form,
-            });
-            const data = await res.json();
-            if (data.ok) {
-                setPendingMedia({
-                    url: data.url,
-                    mediaType: "IMAGE",
-                    publicId: data.publicId,
-                    resourceType: data.resourceType,
-                    name: file.name,
-                });
-                toast.success("ছবি যুক্ত হয়েছে — এখন Send বাটনে ক্লিক করুন");
-            } else {
-                toast.error(data.message || "ছবি আপলোড করা যায়নি");
-            }
-        } catch {
-            toast.error("ছবি আপলোড করতে সমস্যা হয়েছে");
-        } finally {
-            setIsUploadingMedia(false);
+        if (!String(file.type || "").startsWith("image/")) {
+            toast.error("শুধুমাত্র ছবির ফাইল (JPG, PNG, WebP) নির্বাচন করুন");
+            return;
         }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("ছবির সাইজ সর্বোচ্চ ৫ এমবি হতে পারবে");
+            return;
+        }
+        if (pendingMedia?.objectUrl) {
+            URL.revokeObjectURL(pendingMedia.objectUrl);
+        }
+        const objectUrl = URL.createObjectURL(file);
+        setPendingMedia({
+            file,
+            objectUrl,
+            mediaType: "IMAGE",
+            name: file.name,
+        });
+        toast.success("ছবি যুক্ত হয়েছে (ডাটাবেসে আপলোড হবে না) — Send চাপুন");
     };
 
     const stopStreamTracks = () => {
@@ -1402,14 +1415,19 @@ export default function SocialInboxWorkspace() {
                                         msg.senderType === "AI_AUTO"
                                             ? "bg-indigo-600 text-white"
                                             : activeConvMeta?.bubbleOutbound || "bg-emerald-700 text-white";
+                                    const displayMediaUrl =
+                                        msg.mediaUrl ||
+                                        msg.ephemeralMediaUrl ||
+                                        ephemeralSentPreviews[msg.id] ||
+                                        null;
                                     const isAudio =
-                                        msg.mediaUrl &&
+                                        displayMediaUrl &&
                                         (msg.messageType === "AUDIO" ||
-                                            /\.(mp3|ogg|wav|m4a|webm)(\?|$)/i.test(msg.mediaUrl));
-                                    const isVideo = msg.mediaUrl && msg.messageType === "VIDEO";
+                                            /\.(mp3|ogg|wav|m4a|webm)(\?|$)/i.test(displayMediaUrl));
+                                    const isVideo = displayMediaUrl && msg.messageType === "VIDEO";
                                     const isGenericMediaPlaceholder =
-                                        msg.mediaUrl &&
-                                        /^\[(image|audio|voice message|video|attachment)\]$/i.test(
+                                        (Boolean(displayMediaUrl) || msg.messageType === "IMAGE") &&
+                                        /^\[(image|audio|voice message|video|attachment|ছবি পাঠানো হয়েছে)\]$/i.test(
                                             String(msg.body || "").trim()
                                         );
                                     return (
@@ -1426,7 +1444,7 @@ export default function SocialInboxWorkspace() {
                                                         : "bg-white text-gray-800 border border-gray-200/90 rounded-bl-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                                                 }`}
                                             >
-                                                {msg.mediaUrl && isAudio && (
+                                                {displayMediaUrl && isAudio && (
                                                     <div className="space-y-1">
                                                         <div className="flex items-center gap-1.5 text-[11px] font-semibold opacity-90">
                                                             <Volume2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
@@ -1435,28 +1453,28 @@ export default function SocialInboxWorkspace() {
                                                         <audio
                                                             controls
                                                             preload="metadata"
-                                                            src={msg.mediaUrl}
+                                                            src={displayMediaUrl}
                                                             className="w-60 sm:w-64 max-w-full h-9 rounded-lg"
                                                         />
                                                     </div>
                                                 )}
-                                                {msg.mediaUrl && isVideo && (
+                                                {displayMediaUrl && isVideo && (
                                                     <video
                                                         controls
                                                         preload="metadata"
-                                                        src={msg.mediaUrl}
+                                                        src={displayMediaUrl}
                                                         className="rounded-lg max-h-56 w-auto mb-1.5 bg-black"
                                                     />
                                                 )}
-                                                {msg.mediaUrl && !isAudio && !isVideo && (
+                                                {displayMediaUrl && !isAudio && !isVideo && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => setLightboxImage(msg.mediaUrl)}
-                                                        title="বড় করে দেখতে ক্লিক করুন"
+                                                        onClick={() => setLightboxImage(displayMediaUrl)}
+                                                        title="সাময়িক প্রিভিউ (ডাটাবেসে সেভ নেই) — বড় করে দেখতে ক্লিক করুন"
                                                         className="group relative block rounded-lg overflow-hidden mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
                                                     >
                                                         <img
-                                                            src={msg.mediaUrl}
+                                                            src={displayMediaUrl}
                                                             alt="Chat attachment"
                                                             width={320}
                                                             height={240}
@@ -1467,6 +1485,18 @@ export default function SocialInboxWorkspace() {
                                                             <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" />
                                                         </span>
                                                     </button>
+                                                )}
+                                                {!displayMediaUrl && msg.messageType === "IMAGE" && (
+                                                    <div
+                                                        className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg mb-1 border ${
+                                                            isOutbound
+                                                                ? "bg-white/15 border-white/25 text-white/95"
+                                                                : "bg-slate-50 border-slate-200 text-slate-600"
+                                                        }`}
+                                                    >
+                                                        <ImagePlus className="w-3.5 h-3.5 shrink-0 opacity-80" aria-hidden="true" />
+                                                        <span>সাময়িক ছবি (সার্ভারে সেভ করা হয়নি)</span>
+                                                    </div>
                                                 )}
                                                 {msg.body && !isGenericMediaPlaceholder && (
                                                     <p className="leading-relaxed">{msg.body}</p>
@@ -1535,7 +1565,7 @@ export default function SocialInboxWorkspace() {
                                     <div className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-emerald-50/70 border border-emerald-200">
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <img
-                                                src={pendingMedia.url}
+                                                src={pendingMedia.objectUrl || pendingMedia.url}
                                                 alt="Selected upload"
                                                 className="w-10 h-10 rounded-lg object-cover border border-emerald-200 shrink-0"
                                             />
@@ -1544,13 +1574,18 @@ export default function SocialInboxWorkspace() {
                                                     {pendingMedia.name || "ছবি যুক্ত হয়েছে"}
                                                 </p>
                                                 <p className="text-[11px] text-emerald-700">
-                                                    চাইলে সাথে ক্যাপশন লিখে Send চাপুন
+                                                    ডাটাবেসে সেভ হবে না — সরাসরি মেসেজে যাবে, Send চাপুন
                                                 </p>
                                             </div>
                                         </div>
                                         <button
                                             type="button"
-                                            onClick={() => setPendingMedia(null)}
+                                            onClick={() => {
+                                                if (pendingMedia?.objectUrl) {
+                                                    URL.revokeObjectURL(pendingMedia.objectUrl);
+                                                }
+                                                setPendingMedia(null);
+                                            }}
                                             aria-label="ছবি সরান"
                                             className="p-1 rounded-lg text-emerald-800 hover:bg-emerald-100"
                                         >

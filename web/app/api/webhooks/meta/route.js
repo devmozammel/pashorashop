@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { fetchFacebookUserProfile } from "@/lib/meta-api";
+import { fetchFacebookUserProfile, rememberEphemeralImage } from "@/lib/meta-api";
 import { getSocialSettings } from "@/lib/social-settings";
 import { ingestInboundSocialEvent } from "@/lib/social-ingestion";
 import { maybeRunInboxRetentionCleanup } from "@/lib/inbox-retention";
@@ -100,24 +100,31 @@ export async function POST(req) {
 
                     const att = event.message?.attachments?.[0];
                     const attType = String(att?.type || "").toLowerCase();
-                    const mediaUrl = att?.payload?.url || null;
+                    const rawMediaUrl = att?.payload?.url || null;
                     const messageType =
                         attType === "audio"
                             ? "AUDIO"
                             : attType === "video"
                             ? "VIDEO"
-                            : mediaUrl
+                            : rawMediaUrl
                             ? "IMAGE"
                             : "TEXT";
+                    // Never store customer images/image URLs in our database — hold briefly in RAM only
+                    if (messageType === "IMAGE" && rawMediaUrl && event.message?.mid) {
+                        rememberEphemeralImage(event.message.mid, rawMediaUrl);
+                    }
+                    const mediaUrlToPersist = messageType === "IMAGE" ? null : rawMediaUrl;
                     const text =
                         event.message?.text ||
                         event.postback?.title ||
                         (attType === "audio"
                             ? "[Voice Message]"
+                            : messageType === "IMAGE"
+                            ? "[Customer Image]"
                             : attType
                             ? `[${attType}]`
                             : "");
-                    if (!text && !mediaUrl) continue;
+                    if (!text && !rawMediaUrl) continue;
 
                     let profile = profileCache.get(senderId);
                     if (!profile) {
@@ -138,7 +145,7 @@ export async function POST(req) {
                         customerAvatar: profile?.avatarUrl || null,
                         body: text || `[${messageType}]`,
                         messageType,
-                        mediaUrl,
+                        mediaUrl: mediaUrlToPersist,
                         adPlatform: adId ? "FACEBOOK" : "ORGANIC",
                         adId,
                         adName,
@@ -165,7 +172,6 @@ export async function POST(req) {
                                 msg.voice?.id ||
                                 msg.video?.id ||
                                 null;
-                            const mediaUrl = mediaId ? `/api/admin/inbox/media/${mediaId}` : null;
                             const messageType =
                                 msgKind === "audio" || msgKind === "voice"
                                     ? "AUDIO"
@@ -174,14 +180,21 @@ export async function POST(req) {
                                     : mediaId
                                     ? "IMAGE"
                                     : "TEXT";
+                            // Images never persist URL in DB; keep tiny ephemeral Meta ID only for live view
+                            const mediaUrlToPersist =
+                                mediaId && messageType !== "IMAGE" ? `/api/admin/inbox/media/${mediaId}` : null;
                             const text =
                                 msg.text?.body ||
                                 msg.image?.caption ||
                                 msg.video?.caption ||
                                 msg.button?.text ||
                                 msg.interactive?.button_reply?.title ||
-                                (messageType === "AUDIO" ? "[Voice Message]" : `[${msgKind || "media"}]`);
-                            if (!msg.from || (!text && !mediaUrl)) continue;
+                                (messageType === "AUDIO"
+                                    ? "[Voice Message]"
+                                    : messageType === "IMAGE"
+                                    ? "[Customer Image]"
+                                    : `[${msgKind || "media"}]`);
+                            if (!msg.from || (!text && !mediaId)) continue;
 
                             const referral = msg.referral || {};
                             const adId = referral.source_id || null;
@@ -196,7 +209,11 @@ export async function POST(req) {
                                 phone: msg.from,
                                 body: text,
                                 messageType,
-                                mediaUrl,
+                                mediaUrl: mediaUrlToPersist,
+                                metadata:
+                                    mediaId && messageType === "IMAGE"
+                                        ? { waMediaId: mediaId }
+                                        : undefined,
                                 adPlatform: adId ? "FACEBOOK" : "ORGANIC",
                                 adId,
                                 adName: referral.headline || (adId ? `Click-to-WA Ad #${adId}` : null),

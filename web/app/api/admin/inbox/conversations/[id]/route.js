@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { requireStaff, unauthorizedResponse } from "@/lib/require-admin";
 import { getUnifiedCustomerRisk } from "@/lib/couriers";
 import { formatBangladeshiPhone } from "@/lib/steadfast";
+import {
+    getRememberedEphemeralImage,
+    fetchMessengerThreadMedia,
+    normalizeMetaMessageId,
+} from "@/lib/meta-api";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +49,49 @@ export async function GET(req, props) {
                 data: { unreadCount: 0 },
             });
             conversation.unreadCount = 0;
+        }
+
+        // Hydrate temporary image previews strictly in memory (never written to DB)
+        const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+        const missingMessengerImages = [];
+        for (const msg of conversation.messages) {
+            if (msg.messageType !== "IMAGE" || msg.mediaUrl) continue;
+            if (conversation.channel === "WHATSAPP" && msg.metadata?.waMediaId) {
+                msg.ephemeralMediaUrl = `/api/admin/inbox/media/${msg.metadata.waMediaId}`;
+                continue;
+            }
+            const cachedUrl = getRememberedEphemeralImage(msg.externalMessageId);
+            if (cachedUrl) {
+                msg.ephemeralMediaUrl = cachedUrl;
+                continue;
+            }
+            if (
+                conversation.channel === "MESSENGER" &&
+                new Date(msg.createdAt).getTime() >= fourteenDaysAgo
+            ) {
+                missingMessengerImages.push(msg);
+            }
+        }
+
+        if (missingMessengerImages.length > 0 && conversation.externalUserId) {
+            const threadMedia = await fetchMessengerThreadMedia({
+                psid: conversation.externalUserId,
+                limit: 25,
+            });
+            for (const msg of missingMessengerImages) {
+                const normId = normalizeMetaMessageId(msg.externalMessageId);
+                let liveUrl = normId ? threadMedia.byId.get(normId) || null : null;
+                if (!liveUrl && threadMedia.list.length > 0) {
+                    const msgTime = new Date(msg.createdAt).getTime();
+                    const nearMatch = threadMedia.list.find(
+                        (item) => item.createdTime && Math.abs(item.createdTime - msgTime) <= 15000
+                    );
+                    if (nearMatch) liveUrl = nearMatch.url;
+                }
+                if (liveUrl) {
+                    msg.ephemeralMediaUrl = liveUrl;
+                }
+            }
         }
 
         // Lookup customer risk / fraud / delivery success ratio if phone is known

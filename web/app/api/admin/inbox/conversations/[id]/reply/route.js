@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, resolveStaffDbUserId, unauthorizedResponse } from "@/lib/require-admin";
-import { sendChannelReply } from "@/lib/meta-api";
+import { sendChannelReply, sendDirectImageReply } from "@/lib/meta-api";
 
 export const dynamic = "force-dynamic";
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export async function POST(req, props) {
     const params = await props.params;
@@ -12,19 +14,45 @@ export async function POST(req, props) {
         if (!staff) return unauthorizedResponse();
 
         const { id } = await params;
-        const body = await req.json();
-        const text = (body.text || "").trim();
-        const mediaUrl = body.mediaUrl ? String(body.mediaUrl).trim() : null;
-        const rawMediaType = String(body.mediaType || "").toUpperCase();
-        const mediaType = mediaUrl
-            ? ["AUDIO", "IMAGE", "VIDEO"].includes(rawMediaType)
-                ? rawMediaType
-                : "IMAGE"
-            : "TEXT";
-        const mediaMeta = body.mediaMeta && typeof body.mediaMeta === "object" ? body.mediaMeta : {};
-        const isPublicCommentReply = Boolean(body.isPublicCommentReply);
+        const contentType = req.headers.get("content-type") || "";
 
-        if (!text && !mediaUrl) {
+        let text = "";
+        let mediaUrl = null;
+        let mediaType = "TEXT";
+        let mediaMeta = {};
+        let isPublicCommentReply = false;
+        let directImageFile = null;
+
+        if (contentType.includes("multipart/form-data")) {
+            const form = await req.formData();
+            text = String(form.get("text") || "").trim();
+            isPublicCommentReply = form.get("isPublicCommentReply") === "true";
+            const file = form.get("file");
+            if (file && typeof file === "object" && file.size > 0) {
+                if (!String(file.type || "").startsWith("image/")) {
+                    return NextResponse.json({ ok: false, message: "শুধুমাত্র ছবি আপলোড করা যাবে" }, { status: 400 });
+                }
+                if (file.size > MAX_IMAGE_BYTES) {
+                    return NextResponse.json({ ok: false, message: "ছবির সাইজ ৫ এমবি-এর বেশি হতে পারবে না" }, { status: 400 });
+                }
+                directImageFile = file;
+                mediaType = "IMAGE";
+            }
+        } else {
+            const body = await req.json();
+            text = (body.text || "").trim();
+            mediaUrl = body.mediaUrl ? String(body.mediaUrl).trim() : null;
+            const rawMediaType = String(body.mediaType || "").toUpperCase();
+            mediaType = mediaUrl
+                ? ["AUDIO", "IMAGE", "VIDEO"].includes(rawMediaType)
+                    ? rawMediaType
+                    : "IMAGE"
+                : "TEXT";
+            mediaMeta = body.mediaMeta && typeof body.mediaMeta === "object" ? body.mediaMeta : {};
+            isPublicCommentReply = Boolean(body.isPublicCommentReply);
+        }
+
+        if (!text && !mediaUrl && !directImageFile) {
             return NextResponse.json({ ok: false, message: "মেসেজ বা মিডিয়া খালি হতে পারবে না" }, { status: 400 });
         }
 
@@ -46,16 +74,26 @@ export async function POST(req, props) {
         const latestInbound = conversation.messages[0];
         const commentId = latestInbound?.metadata?.commentId || null;
 
-        const sendRes = await sendChannelReply({
-            channel: conversation.channel,
-            externalUserId: conversation.externalUserId,
-            externalThreadId: conversation.externalThreadId,
-            commentId,
-            text,
-            mediaUrl,
-            mediaType,
-            isPublicCommentReply,
-        });
+        const sendRes = directImageFile
+            ? await sendDirectImageReply({
+                  channel: conversation.channel,
+                  externalUserId: conversation.externalUserId,
+                  externalThreadId: conversation.externalThreadId,
+                  commentId,
+                  text,
+                  file: directImageFile,
+                  isPublicCommentReply,
+              })
+            : await sendChannelReply({
+                  channel: conversation.channel,
+                  externalUserId: conversation.externalUserId,
+                  externalThreadId: conversation.externalThreadId,
+                  commentId,
+                  text,
+                  mediaUrl,
+                  mediaType,
+                  isPublicCommentReply,
+              });
 
         if (!sendRes.ok) {
             return NextResponse.json({ ok: false, message: sendRes.message || "Failed to send message" }, { status: 502 });
@@ -78,9 +116,15 @@ export async function POST(req, props) {
         }
 
         const fallbackLabel =
-            mediaType === "AUDIO" ? "[Voice Message]" : mediaType === "VIDEO" ? "[Video]" : "[Image]";
+            mediaType === "AUDIO"
+                ? "[Voice Message]"
+                : mediaType === "VIDEO"
+                ? "[Video]"
+                : "[ছবি পাঠানো হয়েছে]";
         const bodyToStore = text || fallbackLabel;
         const messageTypeToStore = isPublicCommentReply ? "COMMENT" : mediaType;
+        // Never store IMAGE URLs in database — images are transmitted ephemerally
+        const persistedMediaUrl = mediaType === "IMAGE" ? null : mediaUrl;
 
         const [message, updatedConversation] = await prisma.$transaction([
             prisma.socialMessage.create({
@@ -92,13 +136,16 @@ export async function POST(req, props) {
                     senderType: "MODERATOR",
                     senderId: dbUserId,
                     body: bodyToStore,
-                    mediaUrl,
+                    mediaUrl: persistedMediaUrl,
                     metadata: {
                         simulated: sendRes.simulated,
                         isPublicCommentReply,
                         staffName: staff.user?.name || staff.user?.email,
-                        ...(mediaMeta.publicId ? { cloudinaryPublicId: mediaMeta.publicId } : {}),
-                        ...(mediaMeta.resourceType ? { cloudinaryResourceType: mediaMeta.resourceType } : {}),
+                        ...(sendRes.waMediaId ? { waMediaId: sendRes.waMediaId } : {}),
+                        ...(mediaType !== "IMAGE" && mediaMeta.publicId ? { cloudinaryPublicId: mediaMeta.publicId } : {}),
+                        ...(mediaType !== "IMAGE" && mediaMeta.resourceType
+                            ? { cloudinaryResourceType: mediaMeta.resourceType }
+                            : {}),
                     },
                 },
                 include: {
