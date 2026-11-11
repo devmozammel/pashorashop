@@ -19,7 +19,7 @@ export async function PATCH(req, props) {
         const { role, name, phone } = body;
 
         // Role validation
-        if (role && !["USER", "ADMIN"].includes(role)) {
+        if (role && !["USER", "MODERATOR", "ADMIN"].includes(role)) {
             return NextResponse.json({ ok: false, message: "Invalid role specified" }, { status: 400 });
         }
 

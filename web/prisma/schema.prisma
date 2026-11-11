@@ -41,7 +41,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("USER") // USER, ADMIN
+  role          String    @default("USER") // USER, ADMIN, MODERATOR
   password      String?   // For credentials provider
   phone         String?
   resetToken    String?   @unique
@@ -49,6 +49,9 @@ model User {
   accounts      Account[]
   sessions      Session[]
   orders        Order[]
+  createdOrders Order[]   @relation("CreatedOrders")
+  assignedConversations SocialConversation[] @relation("AssignedModerator")
+  sentSocialMessages    SocialMessage[]      @relation("ModeratorMessages")
   addresses     Address[]
   notifications Notification[]
   wishlist      Wishlist[]
@@ -124,6 +127,7 @@ model Product {
   cartItems     CartItem[]
   flashSaleItems FlashSaleItem[]
   coupons       Coupon[]
+  commentAutomationRules CommentAutomationRule[]
 
   @@index([isActive])
   @@index([isFeatured])
@@ -264,12 +268,24 @@ model Order {
   adminNote       String?   @db.Text
   
   shippingAddress Json?     // Legacy snapshot backup
+
+  conversationId  String?
+  conversation    SocialConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  createdById     String?
+  createdBy       User?     @relation("CreatedOrders", fields: [createdById], references: [id], onDelete: SetNull)
+  adSource        String?   // FACEBOOK, TIKTOK, INSTAGRAM, ORGANIC
+  adId            String?
+  adCampaign      String?
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
   history         OrderStatusHistory[]
   affiliateTransaction AffiliateTransaction?
+
+  @@index([conversationId])
+  @@index([createdById])
+  @@index([adId])
 }
 
 model OrderItem {
@@ -604,3 +620,94 @@ model AbandonedCheckout {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model SocialConversation {
+  id                  String   @id @default(cuid())
+  channel             String   // MESSENGER, FB_COMMENT, INSTAGRAM_DM, INSTAGRAM_COMMENT, WHATSAPP
+  externalThreadId    String   // Unique thread/sender key per channel
+  externalUserId      String?  // Platform user ID (PSID, IGID, WA phone)
+  customerName        String
+  customerHandle      String?  // @username or phone display
+  customerAvatar      String?  @db.Text
+  phone               String?  // Extracted or WA phone (01XXXXXXXXX)
+
+  // Post context for comments
+  postId              String?
+  postTitle           String?  @db.Text
+  postUrl             String?  @db.Text
+
+  // Ad / Boost Attribution
+  adPlatform          String?  // FACEBOOK, TIKTOK, INSTAGRAM, ORGANIC
+  adId                String?
+  adName              String?
+  campaignName        String?
+  adRef               String?  @db.Text
+
+  // Moderator & SLA Metrics
+  assignedToId        String?
+  assignedTo          User?    @relation("AssignedModerator", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedAt          DateTime?
+  status              String   @default("OPEN") // OPEN, PENDING, ORDERED, RESOLVED, SPAM
+  unreadCount         Int      @default(0)
+  lastMessagePreview  String?  @db.Text
+  lastMessageAt       DateTime @default(now())
+  lastCustomerMessageAt DateTime?
+  firstResponseAt     DateTime?
+  firstResponseSeconds Int?
+
+  // Gemini AI Co-pilot state
+  aiSuggestedReply    String?  @db.Text
+  extractedData       Json?    // { customerName, phone, address, city, deliveryArea, productHints }
+
+  messages            SocialMessage[]
+  orders              Order[]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([channel, externalThreadId])
+  @@index([channel])
+  @@index([status])
+  @@index([assignedToId])
+  @@index([adId])
+  @@index([lastMessageAt])
+}
+
+model SocialMessage {
+  id                String   @id @default(cuid())
+  conversationId    String
+  conversation      SocialConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  externalMessageId String?  @unique
+  direction         String   // INBOUND, OUTBOUND
+  messageType       String   @default("TEXT") // TEXT, IMAGE, COMMENT, SYSTEM, AUTO_REPLY
+  senderType        String   // CUSTOMER, MODERATOR, AI_AUTO
+  senderId          String?
+  sender            User?    @relation("ModeratorMessages", fields: [senderId], references: [id], onDelete: SetNull)
+  body              String   @db.Text
+  mediaUrl          String?  @db.Text
+  metadata          Json?
+  isAutoReply       Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+model CommentAutomationRule {
+  id                  String   @id @default(cuid())
+  name                String
+  channel             String   @default("ALL") // ALL, FB_COMMENT, INSTAGRAM_COMMENT
+  postId              String?  // Optional specific post ID
+  keywords            String   @db.Text // Comma-separated keywords e.g. "price,order,দাম,অর্ডার"
+  publicReplyTemplate String   @db.Text
+  dmTemplate          String   @db.Text
+  productId           String?
+  product             Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  isActive            Boolean  @default(true)
+  triggerCount        Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([isActive])
+}
+

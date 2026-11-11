@@ -78,9 +78,9 @@ export default function UsersPage() {
         }
     };
 
-    const toggleRole = async (user) => {
-        const newRole = user.role === "ADMIN" ? "USER" : "ADMIN";
-        if (!confirm(`Change ${user.email} to ${newRole}?`)) return;
+    const updateRole = async (user, newRole) => {
+        if (newRole === user.role) return;
+        if (!confirm(`Change ${user.email} role to ${newRole}?`)) return;
 
         try {
             const res = await fetch(`/api/admin/users/${user.id}`, {
@@ -104,18 +104,21 @@ export default function UsersPage() {
         { header: "Name", accessor: "name" },
         { header: "Email", accessor: "email" },
         { header: "Phone", accessor: "phone" },
-        { header: "Role", cell: (row) => <Badge variant={row.role === 'ADMIN' ? 'primary' : 'secondary'}>{row.role}</Badge> },
+        { header: "Role", cell: (row) => <Badge variant={row.role === 'ADMIN' ? 'primary' : row.role === 'MODERATOR' ? 'success' : 'secondary'}>{row.role}</Badge> },
         { header: "Total Orders", accessor: "totalOrders" },
         { header: "Status", cell: () => <Badge variant="success">ACTIVE</Badge> },
         {
             header: "Actions",
             cell: (row) => (
-                <button
-                    onClick={() => toggleRole(row)}
-                    className="text-xs text-blue-600 hover:underline font-medium"
+                <select
+                    value={row.role}
+                    onChange={(e) => updateRole(row, e.target.value)}
+                    className="text-xs border rounded-md px-2 py-1 bg-white text-gray-700 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
-                    Switch to {row.role === 'ADMIN' ? 'User' : 'Admin'}
-                </button>
+                    <option value="USER">USER</option>
+                    <option value="MODERATOR">MODERATOR</option>
+                    <option value="ADMIN">ADMIN</option>
+                </select>
             )
         }
     ];

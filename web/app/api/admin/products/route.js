@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sanitizeImageUrls } from "@/lib/productImages";
 import { createAuditLog } from "@/lib/audit";
-import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
+import { requireAdmin, requireStaff, unauthorizedResponse } from "@/lib/require-admin";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { revalidatePath } from "next/cache";
 import { generateProductSlug } from "@/lib/slug";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 // GET: List all products for admin
 export async function GET(req) {
-    const admin = await requireAdmin();
+    const admin = await requireStaff();
     if (!admin) return unauthorizedResponse();
 
     try {

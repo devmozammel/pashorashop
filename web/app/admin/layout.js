@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/require-admin";
+import { requireStaff } from "@/lib/require-admin";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -7,7 +7,7 @@ export const metadata = {
 };
 
 export default async function AdminLayout({ children }) {
-    const session = await requireAdmin();
+    const session = await requireStaff();
     
     if (!session) {
         return redirect("/auth/login"); // Or wherever your login page is

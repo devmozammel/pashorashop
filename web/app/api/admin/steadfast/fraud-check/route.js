@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
+import { requireStaff, unauthorizedResponse } from "@/lib/require-admin";
 import { checkSteadfastFraud } from "@/lib/steadfast";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
     try {
-        const admin = await requireAdmin();
-        if (!admin) return unauthorizedResponse();
+        const staff = await requireStaff();
+        if (!staff) return unauthorizedResponse();
 
         const { searchParams } = new URL(req.url);
         const phone = searchParams.get("phone");

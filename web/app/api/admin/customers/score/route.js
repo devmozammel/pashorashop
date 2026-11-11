@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireAdmin, unauthorizedResponse } from "@/lib/require-admin";
+import { requireStaff, unauthorizedResponse } from "@/lib/require-admin";
 import { getCustomerScore } from "@/lib/customer-scoring";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
     try {
-        const admin = await requireAdmin();
+        const admin = await requireStaff();
         if (!admin) return unauthorizedResponse();
 
         const { searchParams } = new URL(req.url);

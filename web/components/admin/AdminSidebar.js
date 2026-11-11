@@ -6,14 +6,16 @@ import { useState, useEffect } from "react";
 import {
     LayoutDashboard, Settings, Layers, Box, Tag, Image as ImageIcon,
     ShoppingCart, Truck, Users, Activity, FileText, Gift, Star,
-    Monitor, DollarSign, ToggleLeft, BarChart, LogOut, List, TrendingUp, Mail, Ban, Calculator
+    Monitor, DollarSign, ToggleLeft, BarChart, LogOut, List, TrendingUp, Mail, Ban, Calculator,
+    MessageSquare
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 // Nav items optionally have a featureKey bounding them to toggles
 const NAV_ITEMS = [
     { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { title: "Orders", href: "/admin/orders", icon: ShoppingCart },
+    { title: "Social Inbox", href: "/admin/inbox", icon: MessageSquare, staffAllowed: true },
+    { title: "Orders", href: "/admin/orders", icon: ShoppingCart, staffAllowed: true },
     { title: "Pre-Orders", href: "/admin/pre-orders", icon: ShoppingCart },
     { title: "Abandoned Carts", href: "/admin/abandoned-carts", icon: ShoppingCart },
     { title: "Products", href: "/admin/products", icon: Box },
@@ -50,6 +52,8 @@ const NAV_ITEMS = [
 
 export default function AdminSidebar({ isOpen }) {
     const pathname = usePathname();
+    const { data: session } = useSession();
+    const userRole = session?.user?.role || "ADMIN";
     const [toggles, setToggles] = useState({});
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -70,12 +74,16 @@ export default function AdminSidebar({ isOpen }) {
         fetchToggles();
     }, []);
 
-    // Filter items based on toggles
+    // Filter items based on role and feature toggles
     const visibleItems = NAV_ITEMS.filter(item => {
+        if (userRole === "MODERATOR" && !item.staffAllowed) return false;
         if (!item.featureKey) return true; // Core feature
         if (!isLoaded) return false; // Hide toggled features until loaded to prevent flicker
         return toggles[item.featureKey] === true;
     });
+
+    const userName = session?.user?.name || "Admin User";
+    const userInitials = userName.slice(0, 2).toUpperCase();
 
     return (
         <aside
@@ -117,11 +125,11 @@ export default function AdminSidebar({ isOpen }) {
             <div className="p-4 border-t bg-gray-50 mt-auto shrink-0">
                 <div className="flex items-center gap-3 mb-3">
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
-                        AD
+                        {userInitials}
                     </div>
                     <div className="overflow-hidden">
-                        <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
-                        <p className="text-xs text-gray-500 truncate">Super Admin</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
+                        <p className="text-xs text-gray-500 truncate">{userRole === "MODERATOR" ? "Moderator" : "Super Admin"}</p>
                     </div>
                 </div>
                 <button
