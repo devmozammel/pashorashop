@@ -157,20 +157,33 @@ export async function fetchMessengerThreadMedia({ psid, limit = 25 }) {
         const list = [];
         for (const m of msgs) {
             const firstAtt = m?.attachments?.data?.[0];
+            const mime = String(firstAtt?.mime_type || "").toLowerCase();
+            const attType = String(firstAtt?.type || "").toLowerCase();
             const mediaUrl =
                 firstAtt?.image_data?.url ||
                 firstAtt?.file_url ||
                 firstAtt?.video_data?.url ||
                 null;
             if (!mediaUrl) continue;
+            const kind =
+                attType === "audio" ||
+                mime.startsWith("audio/") ||
+                /audioclip|\.(mp3|ogg|wav|m4a|aac|opus)(\?|$)/i.test(mediaUrl)
+                    ? "AUDIO"
+                    : attType === "video" || mime.startsWith("video/")
+                    ? "VIDEO"
+                    : "IMAGE";
             const normId = normalizeMetaMessageId(m.id);
-            byId.set(normId, mediaUrl);
+            byId.set(normId, { url: mediaUrl, type: kind });
             list.push({
                 id: normId,
                 createdTime: m.created_time ? new Date(m.created_time).getTime() : 0,
                 url: mediaUrl,
+                type: kind,
             });
-            rememberEphemeralImage(m.id, mediaUrl);
+            if (kind === "IMAGE") {
+                rememberEphemeralImage(m.id, mediaUrl);
+            }
         }
         return { byId, list };
     } catch {
@@ -300,6 +313,78 @@ export async function fetchWhatsAppMedia(mediaId) {
     };
 }
 
+function isMetaOutsideWindowError(data) {
+    const err = data?.error;
+    if (!err) return false;
+    if (err.code === 10) return true;
+    if (err.error_subcode === 2018278 || err.error_subcode === 2018065) return true;
+    return /outside of allowed window|24.?hour|allowed window/i.test(String(err.message || ""));
+}
+
+function formatMetaSendError(data, fallbackMessage) {
+    const err = data?.error;
+    if (!err) return fallbackMessage;
+    if (isMetaOutsideWindowError(data) || err.code === 10903 || err.code === 2022) {
+        return "Messenger-এর ২৪ ঘণ্টার রিপ্লাই উইন্ডো শেষ হয়ে গেছে — কাস্টমার নতুন করে মেসেজ না দিলে API থেকে ভয়েস/মেসেজ পাঠানো যায় না। অনুগ্রহ করে Meta Business Suite থেকে রিপ্লাই দিন অথবা কাস্টমারকে কল/WhatsApp করুন।";
+    }
+    if (err.code === 131047) {
+        return "WhatsApp-এর ২৪ ঘণ্টার রিপ্লাই উইন্ডো শেষ হয়ে গেছে — কাস্টমার নতুন করে মেসেজ না দিলে সাধারণ মেসেজ বা ভয়েস পাঠানো যায় না।";
+    }
+    return err.message || fallbackMessage;
+}
+
+async function postMessengerMessage({
+    pageId,
+    accessToken,
+    buildPayload,
+    buildFormData,
+    timeoutMs = 20000,
+    fallbackMessage = "Meta send API failed",
+}) {
+    const url = `${GRAPH_BASE}/${pageId}/messages`;
+
+    const sendOnce = async (useHumanAgentTag) => {
+        const extra = useHumanAgentTag
+            ? { messaging_type: "MESSAGE_TAG", tag: "HUMAN_AGENT" }
+            : { messaging_type: "RESPONSE" };
+
+        const options = buildFormData
+            ? {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${accessToken}` },
+                  body: buildFormData(extra),
+              }
+            : {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${accessToken}`,
+                  },
+                  body: JSON.stringify(buildPayload(extra)),
+              };
+
+        const res = await fetchWithTimeout(url, options, timeoutMs);
+        const data = await res.json().catch(() => ({}));
+        return { ok: res.ok, data };
+    };
+
+    let attempt = await sendOnce(false);
+    if (!attempt.ok && isMetaOutsideWindowError(attempt.data)) {
+        attempt = await sendOnce(true);
+    }
+
+    if (!attempt.ok) {
+        return {
+            ok: false,
+            message: formatMetaSendError(attempt.data, fallbackMessage),
+            code: attempt.data?.error?.code || null,
+            raw: attempt.data,
+        };
+    }
+
+    return { ok: true, data: attempt.data };
+}
+
 /**
  * Send an outbound message/reply (text, image, audio, or video) to the appropriate Meta / WhatsApp channel.
  * Falls back cleanly to `simulated: true` when API tokens are not yet configured,
@@ -365,17 +450,26 @@ export async function sendChannelReply({
             };
         }
 
-        const res = await fetchWithTimeout(`${GRAPH_BASE}/${settings.waPhoneNumberId}/messages`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${settings.waAccessToken}`,
+        const res = await fetchWithTimeout(
+            `${GRAPH_BASE}/${settings.waPhoneNumberId}/messages`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${settings.waAccessToken}`,
+                },
+                body: JSON.stringify(payload),
             },
-            body: JSON.stringify(payload),
-        });
+            mediaUrl ? 25000 : 12000
+        );
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            return { ok: false, message: data?.error?.message || "WhatsApp send failed", raw: data };
+            return {
+                ok: false,
+                message: formatMetaSendError(data, "WhatsApp send failed"),
+                code: data?.error?.code || null,
+                raw: data,
+            };
         }
         return {
             ok: true,
@@ -386,6 +480,12 @@ export async function sendChannelReply({
 
     // 2. Facebook Public Comment Reply
     if (channel === "FB_COMMENT" && isPublicCommentReply) {
+        if (mediaType === "AUDIO") {
+            return {
+                ok: false,
+                message: "Facebook পোস্টের পাবলিক কমেন্টে ভয়েস মেসেজ দেওয়া যায় না — পাবলিক কমেন্ট অপশন আনচেক করে ইনবক্সে পাঠান।",
+            };
+        }
         if (!settings.fbPageAccessToken || !commentId) {
             return { ok: true, simulated: true, externalMessageId: `sim_cmt_${Date.now()}` };
         }
@@ -404,7 +504,11 @@ export async function sendChannelReply({
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            return { ok: false, message: data?.error?.message || "Comment reply failed", raw: data };
+            return {
+                ok: false,
+                message: formatMetaSendError(data, "Comment reply failed"),
+                raw: data,
+            };
         }
         return { ok: true, simulated: false, externalMessageId: data?.id || `cmt_${Date.now()}` };
     }
@@ -431,15 +535,14 @@ export async function sendChannelReply({
     if (mediaUrl) {
         const attachmentType =
             mediaType === "AUDIO" ? "audio" : mediaType === "VIDEO" ? "video" : "image";
-        const mediaRes = await fetchWithTimeout(`${GRAPH_BASE}/${pageId}/messages`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${settings.fbPageAccessToken}`,
-            },
-            body: JSON.stringify({
+        const mediaSend = await postMessengerMessage({
+            pageId,
+            accessToken: settings.fbPageAccessToken,
+            timeoutMs: 25000,
+            fallbackMessage: "Meta media send API failed",
+            buildPayload: (extra) => ({
                 recipient,
-                messaging_type: "RESPONSE",
+                ...extra,
                 message: {
                     attachment: {
                         type: attachmentType,
@@ -448,35 +551,28 @@ export async function sendChannelReply({
                 },
             }),
         });
-        const mediaData = await mediaRes.json().catch(() => ({}));
-        if (!mediaRes.ok) {
-            return {
-                ok: false,
-                message: mediaData?.error?.message || "Meta media send API failed",
-                raw: mediaData,
-            };
+        if (!mediaSend.ok) {
+            return mediaSend;
         }
-        sentMessageId = mediaData?.message_id || null;
+        sentMessageId = mediaSend.data?.message_id || null;
     }
 
     if (text) {
-        const res = await fetchWithTimeout(`${GRAPH_BASE}/${pageId}/messages`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${settings.fbPageAccessToken}`,
-            },
-            body: JSON.stringify({
+        const textSend = await postMessengerMessage({
+            pageId,
+            accessToken: settings.fbPageAccessToken,
+            timeoutMs: 12000,
+            fallbackMessage: "Meta send API failed",
+            buildPayload: (extra) => ({
                 recipient,
-                messaging_type: "RESPONSE",
+                ...extra,
                 message: { text },
             }),
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            return { ok: false, message: data?.error?.message || "Meta send API failed", raw: data };
+        if (!textSend.ok) {
+            return textSend;
         }
-        sentMessageId = sentMessageId || data?.message_id;
+        sentMessageId = sentMessageId || textSend.data?.message_id;
     }
 
     return {
@@ -528,7 +624,7 @@ export async function sendDirectImageReply({
         if (!uploadRes.ok || !uploadData?.id) {
             return {
                 ok: false,
-                message: uploadData?.error?.message || "WhatsApp media upload failed",
+                message: formatMetaSendError(uploadData, "WhatsApp media upload failed"),
                 raw: uploadData,
             };
         }
@@ -549,7 +645,11 @@ export async function sendDirectImageReply({
         });
         const msgData = await msgRes.json().catch(() => ({}));
         if (!msgRes.ok) {
-            return { ok: false, message: msgData?.error?.message || "WhatsApp send failed", raw: msgData };
+            return {
+                ok: false,
+                message: formatMetaSendError(msgData, "WhatsApp send failed"),
+                raw: msgData,
+            };
         }
         return {
             ok: true,
@@ -579,7 +679,11 @@ export async function sendDirectImageReply({
         );
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            return { ok: false, message: data?.error?.message || "Comment photo reply failed", raw: data };
+            return {
+                ok: false,
+                message: formatMetaSendError(data, "Comment photo reply failed"),
+                raw: data,
+            };
         }
         return { ok: true, simulated: false, externalMessageId: data?.id || `cmt_${Date.now()}` };
     }
@@ -595,58 +699,51 @@ export async function sendDirectImageReply({
             ? { comment_id: commentId }
             : { id: externalUserId || externalThreadId };
 
-    const msgForm = new FormData();
-    msgForm.append("recipient", JSON.stringify(recipient));
-    msgForm.append("messaging_type", "RESPONSE");
-    msgForm.append(
-        "message",
-        JSON.stringify({
-            attachment: {
-                type: "image",
-                payload: { is_reusable: false },
-            },
-        })
-    );
-    msgForm.append("filedata", file, file.name || "image.jpg");
-
-    const mediaRes = await fetchWithTimeout(
-        `${GRAPH_BASE}/${pageId}/messages`,
-        {
-            method: "POST",
-            headers: { Authorization: `Bearer ${settings.fbPageAccessToken}` },
-            body: msgForm,
+    const mediaSend = await postMessengerMessage({
+        pageId,
+        accessToken: settings.fbPageAccessToken,
+        timeoutMs: 25000,
+        fallbackMessage: "Meta direct image send failed",
+        buildFormData: (extra) => {
+            const msgForm = new FormData();
+            msgForm.append("recipient", JSON.stringify(recipient));
+            msgForm.append("messaging_type", extra.messaging_type);
+            if (extra.tag) msgForm.append("tag", extra.tag);
+            msgForm.append(
+                "message",
+                JSON.stringify({
+                    attachment: {
+                        type: "image",
+                        payload: { is_reusable: false },
+                    },
+                })
+            );
+            msgForm.append("filedata", file, file.name || "image.jpg");
+            return msgForm;
         },
-        20000
-    );
-    const mediaData = await mediaRes.json().catch(() => ({}));
-    if (!mediaRes.ok) {
-        return {
-            ok: false,
-            message: mediaData?.error?.message || "Meta direct image send failed",
-            raw: mediaData,
-        };
+    });
+    if (!mediaSend.ok) {
+        return mediaSend;
     }
 
-    let sentMessageId = mediaData?.message_id || null;
+    let sentMessageId = mediaSend.data?.message_id || null;
 
     if (text) {
-        const textRes = await fetchWithTimeout(`${GRAPH_BASE}/${pageId}/messages`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${settings.fbPageAccessToken}`,
-            },
-            body: JSON.stringify({
+        const textSend = await postMessengerMessage({
+            pageId,
+            accessToken: settings.fbPageAccessToken,
+            timeoutMs: 12000,
+            fallbackMessage: "Meta send API failed",
+            buildPayload: (extra) => ({
                 recipient,
-                messaging_type: "RESPONSE",
+                ...extra,
                 message: { text },
             }),
         });
-        const textData = await textRes.json().catch(() => ({}));
-        if (!textRes.ok) {
-            return { ok: false, message: textData?.error?.message || "Meta send API failed", raw: textData };
+        if (!textSend.ok) {
+            return textSend;
         }
-        sentMessageId = sentMessageId || textData?.message_id;
+        sentMessageId = sentMessageId || textSend.data?.message_id;
     }
 
     return {
@@ -655,4 +752,79 @@ export async function sendDirectImageReply({
         externalMessageId: sentMessageId || `meta_${Date.now()}`,
     };
 }
+
+/**
+ * Edit an existing Facebook Page public comment via Graph API.
+ */
+export async function updateFacebookComment({ commentId, message }) {
+    if (!commentId || !message) {
+        return { ok: false, message: "Comment ID এবং মেসেজ প্রয়োজন।" };
+    }
+    const settings = await getSocialSettings();
+    if (!settings.fbPageAccessToken || /^(sim_|cmt_)/.test(String(commentId))) {
+        return { ok: true, simulated: true };
+    }
+    try {
+        const res = await fetchWithTimeout(
+            `${GRAPH_BASE}/${encodeURIComponent(commentId)}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${settings.fbPageAccessToken}`,
+                },
+                body: JSON.stringify({ message }),
+            },
+            10000
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            return {
+                ok: false,
+                message: formatMetaSendError(data, "Facebook কমেন্ট এডিট করা যায়নি"),
+                raw: data,
+            };
+        }
+        return { ok: true, simulated: false };
+    } catch (error) {
+        return { ok: false, message: error.message || "Facebook API নেটওয়ার্ক সমস্যা" };
+    }
+}
+
+/**
+ * Delete an existing Facebook Page public comment via Graph API.
+ */
+export async function deleteFacebookComment({ commentId }) {
+    if (!commentId) {
+        return { ok: false, message: "Comment ID পাওয়া যায়নি।" };
+    }
+    const settings = await getSocialSettings();
+    if (!settings.fbPageAccessToken || /^(sim_|cmt_)/.test(String(commentId))) {
+        return { ok: true, simulated: true };
+    }
+    try {
+        const res = await fetchWithTimeout(
+            `${GRAPH_BASE}/${encodeURIComponent(commentId)}`,
+            {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${settings.fbPageAccessToken}`,
+                },
+            },
+            10000
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            return {
+                ok: false,
+                message: formatMetaSendError(data, "Facebook কমেন্ট ডিলিট করা যায়নি"),
+                raw: data,
+            };
+        }
+        return { ok: true, simulated: false };
+    } catch (error) {
+        return { ok: false, message: error.message || "Facebook API নেটওয়ার্ক সমস্যা" };
+    }
+}
+
 

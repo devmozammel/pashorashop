@@ -33,6 +33,9 @@ import {
     X,
     Maximize2,
     Volume2,
+    Pencil,
+    Check,
+    RotateCcw,
 } from "lucide-react";
 import {
     CHANNEL_META,
@@ -111,6 +114,51 @@ function formatShortTime(dateStr) {
     }
 }
 
+function ChatImageAttachment({ src, isOutbound, onOpen }) {
+    const [hasError, setHasError] = useState(false);
+
+    useEffect(() => {
+        setHasError(false);
+    }, [src]);
+
+    if (hasError) {
+        return (
+            <div
+                className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg mb-1 border ${
+                    isOutbound
+                        ? "bg-white/15 border-white/25 text-white/95"
+                        : "bg-slate-50 border-slate-200 text-slate-600"
+                }`}
+            >
+                <ImagePlus className="w-3.5 h-3.5 shrink-0 opacity-80" aria-hidden="true" />
+                <span>সাময়িক ছবি (লোড করা যায়নি বা মেয়াদ শেষ)</span>
+            </div>
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={onOpen}
+            title="সাময়িক প্রিভিউ (ডাটাবেসে সেভ নেই) — বড় করে দেখতে ক্লিক করুন"
+            className="group relative block rounded-lg overflow-hidden mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        >
+            <img
+                src={src}
+                alt="Chat attachment"
+                width={320}
+                height={240}
+                loading="lazy"
+                onError={() => setHasError(true)}
+                className="rounded-lg max-h-56 w-auto object-cover outline outline-1 outline-black/10 -outline-offset-1 transition-transform duration-150 group-hover:scale-[1.01]"
+            />
+            <span className="absolute bottom-1.5 right-1.5 p-1 rounded-md bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" />
+            </span>
+        </button>
+    );
+}
+
 export default function SocialInboxWorkspace() {
     const [channelFilter, setChannelFilter] = useState("ALL");
     const [statusFilter, setStatusFilter] = useState("ALL");
@@ -162,18 +210,25 @@ export default function SocialInboxWorkspace() {
     const [showCallPopover, setShowCallPopover] = useState(false);
     const [callPhoneInput, setCallPhoneInput] = useState("");
     const [isSavingCallPhone, setIsSavingCallPhone] = useState(false);
+    const [editingMessageId, setEditingMessageId] = useState(null);
+    const [editingMessageText, setEditingMessageText] = useState("");
+    const [isSavingMessageEdit, setIsSavingMessageEdit] = useState(false);
+    const [deletingMessageId, setDeletingMessageId] = useState(null);
+    const [undoSendState, setUndoSendState] = useState(null); // { conversationId, text, media, isPublicCommentReply, secondsLeft }
 
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const mediaRecorderRef = useRef(null);
     const mediaStreamRef = useRef(null);
     const recordTimerRef = useRef(null);
+    const undoTimerRef = useRef(null);
     const audioChunksRef = useRef([]);
     const callPopoverRef = useRef(null);
 
     useEffect(() => {
         return () => {
             if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+            if (undoTimerRef.current) clearInterval(undoTimerRef.current);
             if (mediaStreamRef.current) {
                 mediaStreamRef.current.getTracks().forEach((t) => t.stop());
             }
@@ -308,11 +363,18 @@ export default function SocialInboxWorkspace() {
     );
     const codPayable = Math.max(0, orderTotal - Number(orderForm.advancePayment || 0));
 
-    const handleSendReply = async (textOverride = null, mediaOverride = null) => {
+    const handleSendReply = async (textOverride = null, mediaOverride = null, options = {}) => {
         const text = (textOverride ?? replyText).trim();
         const mediaToUse = mediaOverride || pendingMedia;
-        if ((!text && !mediaToUse?.url && !mediaToUse?.file) || !selectedId) return;
+        const targetConvId = options.targetConversationId || selectedId;
+        if ((!text && !mediaToUse?.url && !mediaToUse?.file) || !targetConvId) return false;
 
+        const effectivePublicCommentReply =
+            options.explicitPublicCommentReply !== undefined
+                ? Boolean(options.explicitPublicCommentReply)
+                : options.forcePrivate
+                ? false
+                : Boolean(isPublicCommentReply);
         setIsSendingReply(true);
         try {
             let res;
@@ -320,13 +382,13 @@ export default function SocialInboxWorkspace() {
                 const form = new FormData();
                 form.append("file", mediaToUse.file);
                 form.append("text", text);
-                form.append("isPublicCommentReply", String(Boolean(isPublicCommentReply)));
-                res = await fetch(`/api/admin/inbox/conversations/${selectedId}/reply`, {
+                form.append("isPublicCommentReply", String(effectivePublicCommentReply));
+                res = await fetch(`/api/admin/inbox/conversations/${targetConvId}/reply`, {
                     method: "POST",
                     body: form,
                 });
             } else {
-                res = await fetch(`/api/admin/inbox/conversations/${selectedId}/reply`, {
+                res = await fetch(`/api/admin/inbox/conversations/${targetConvId}/reply`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -339,7 +401,7 @@ export default function SocialInboxWorkspace() {
                                   resourceType: mediaToUse.resourceType || null,
                               }
                             : {},
-                        isPublicCommentReply,
+                        isPublicCommentReply: effectivePublicCommentReply,
                     }),
                 });
             }
@@ -364,14 +426,161 @@ export default function SocialInboxWorkspace() {
                 );
                 mutateActive();
                 mutateList();
-            } else {
-                toast.error(data.message || "মেসেজ পাঠানো যায়নি");
+                return true;
             }
+            toast.error(data.message || "মেসেজ পাঠানো যায়নি");
+            return false;
         } catch {
             toast.error("নেটওয়ার্ক সমস্যার কারণে মেসেজ পাঠানো যায়নি");
+            return false;
         } finally {
             setIsSendingReply(false);
         }
+    };
+
+    const dispatchQueuedReply = (payload) => {
+        if (!payload) return;
+        handleSendReply(payload.text, payload.media, {
+            targetConversationId: payload.conversationId,
+            explicitPublicCommentReply: payload.isPublicCommentReply,
+        });
+    };
+
+    const handleQueueOrSendReply = () => {
+        const text = replyText.trim();
+        const mediaToUse = pendingMedia;
+        if ((!text && !mediaToUse?.url && !mediaToUse?.file) || !selectedId || isSendingReply) {
+            return;
+        }
+
+        // If another message is already waiting in the undo queue, send it immediately first
+        if (undoSendState) {
+            if (undoTimerRef.current) clearInterval(undoTimerRef.current);
+            dispatchQueuedReply(undoSendState);
+            setUndoSendState(null);
+        }
+
+        const queued = {
+            conversationId: selectedId,
+            text,
+            media: mediaToUse,
+            isPublicCommentReply: Boolean(isPublicCommentReply),
+            secondsLeft: 3,
+        };
+        setReplyText("");
+        setPendingMedia(null);
+        setUndoSendState(queued);
+
+        if (undoTimerRef.current) clearInterval(undoTimerRef.current);
+        let remaining = 3;
+        undoTimerRef.current = setInterval(() => {
+            remaining -= 1;
+            if (remaining <= 0) {
+                clearInterval(undoTimerRef.current);
+                undoTimerRef.current = null;
+                setUndoSendState(null);
+                dispatchQueuedReply(queued);
+            } else {
+                setUndoSendState((prev) => (prev ? { ...prev, secondsLeft: remaining } : null));
+            }
+        }, 1000);
+    };
+
+    const handleUndoQueuedSend = () => {
+        if (!undoSendState) return;
+        if (undoTimerRef.current) clearInterval(undoTimerRef.current);
+        if (undoSendState.text) setReplyText(undoSendState.text);
+        if (undoSendState.media) setPendingMedia(undoSendState.media);
+        setUndoSendState(null);
+        toast.info("মেসেজ পাঠানো বাতিল করা হয়েছে — এখন এডিট করতে পারবেন");
+        setTimeout(() => document.getElementById("inbox-reply-input")?.focus(), 40);
+    };
+
+    const handleSendQueuedNow = () => {
+        if (!undoSendState) return;
+        if (undoTimerRef.current) clearInterval(undoTimerRef.current);
+        const payload = undoSendState;
+        setUndoSendState(null);
+        dispatchQueuedReply(payload);
+    };
+
+    const handleStartEditMessage = (msg) => {
+        setEditingMessageId(msg.id);
+        setEditingMessageText(msg.body || "");
+    };
+
+    const handleSaveEditMessage = async (msgId) => {
+        const trimmed = editingMessageText.trim();
+        if (!trimmed || !selectedId) {
+            toast.error("মেসেজ খালি রাখা যাবে না");
+            return;
+        }
+        setIsSavingMessageEdit(true);
+        try {
+            const res = await fetch(
+                `/api/admin/inbox/conversations/${selectedId}/messages/${msgId}`,
+                {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ body: trimmed }),
+                }
+            );
+            const data = await res.json();
+            if (data.ok) {
+                setEditingMessageId(null);
+                setEditingMessageText("");
+                toast.success(data.remoteNote || "মেসেজ এডিট হয়েছে");
+                mutateActive();
+                mutateList();
+            } else {
+                toast.error(data.message || "মেসেজ এডিট করা যায়নি");
+            }
+        } catch {
+            toast.error("নেটওয়ার্ক সমস্যার কারণে এডিট করা যায়নি");
+        } finally {
+            setIsSavingMessageEdit(false);
+        }
+    };
+
+    const handleDeleteMessage = async (msg) => {
+        if (!selectedId || !msg?.id) return;
+        const isLiveFbComment =
+            activeConv?.channel === "FB_COMMENT" &&
+            msg.direction === "OUTBOUND" &&
+            Boolean(msg.metadata?.isPublicCommentReply);
+
+        const confirmText = isLiveFbComment
+            ? "এই কমেন্টটি ড্যাশবোর্ড এবং Facebook পোস্ট থেকেও ডিলিট হয়ে যাবে। নিশ্চিত?"
+            : "এই মেসেজটি শুধু ড্যাশবোর্ড থেকে ডিলিট হবে (কাস্টমারের Messenger/WhatsApp থেকে মুছবে না)। নিশ্চিত?";
+
+        if (!window.confirm(confirmText)) return;
+
+        setDeletingMessageId(msg.id);
+        try {
+            const res = await fetch(
+                `/api/admin/inbox/conversations/${selectedId}/messages/${msg.id}`,
+                { method: "DELETE" }
+            );
+            const data = await res.json();
+            if (data.ok) {
+                toast.success(data.remoteNote || "মেসেজ ডিলিট হয়েছে");
+                mutateActive();
+                mutateList();
+            } else {
+                toast.error(data.message || "মেসেজ ডিলিট করা যায়নি");
+            }
+        } catch {
+            toast.error("নেটওয়ার্ক সমস্যার কারণে ডিলিট করা যায়নি");
+        } finally {
+            setDeletingMessageId(null);
+        }
+    };
+
+    const handleCorrectionReply = (msg) => {
+        const snippet = String(msg?.body || "").trim().slice(0, 80);
+        const prefix = snippet ? `সংশোধন ("${snippet}"): ` : "সংশোধন: ";
+        setReplyText(prefix);
+        setTimeout(() => document.getElementById("inbox-reply-input")?.focus(), 40);
     };
 
     const handleImageSelect = (e) => {
@@ -411,6 +620,11 @@ export default function SocialInboxWorkspace() {
     };
 
     const startVoiceRecording = async () => {
+        if (isUploadingMedia || isSendingReply) return;
+        if (typeof window !== "undefined" && !window.isSecureContext) {
+            toast.error("মাইক্রোফোন রেকর্ডিংয়ের জন্য HTTPS সংযোগ প্রয়োজন");
+            return;
+        }
         if (!navigator?.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
             toast.error("আপনার ব্রাউজার মাইক্রোফোন রেকর্ডিং সাপোর্ট করছে না");
             return;
@@ -419,15 +633,23 @@ export default function SocialInboxWorkspace() {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaStreamRef.current = stream;
             audioChunksRef.current = [];
+            if (voiceDraft?.objectUrl) {
+                URL.revokeObjectURL(voiceDraft.objectUrl);
+            }
             setVoiceDraft(null);
             setRecordingSec(0);
 
             const preferredMime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"].find(
                 (m) => MediaRecorder.isTypeSupported?.(m)
             );
-            const recorder = preferredMime
-                ? new MediaRecorder(stream, { mimeType: preferredMime })
-                : new MediaRecorder(stream);
+            let recorder;
+            try {
+                recorder = preferredMime
+                    ? new MediaRecorder(stream, { mimeType: preferredMime })
+                    : new MediaRecorder(stream);
+            } catch {
+                recorder = new MediaRecorder(stream);
+            }
 
             recorder.ondataavailable = (ev) => {
                 if (ev.data && ev.data.size > 0) {
@@ -438,11 +660,13 @@ export default function SocialInboxWorkspace() {
             recorder.onstop = () => {
                 stopStreamTracks();
                 const chunks = audioChunksRef.current;
-                if (chunks.length > 0) {
-                    const mime = recorder.mimeType || "audio/webm";
-                    const blob = new Blob(chunks, { type: mime });
+                const mime = recorder.mimeType || preferredMime || "audio/webm";
+                const blob = new Blob(chunks, { type: mime });
+                if (chunks.length > 0 && blob.size > 0) {
                     const objectUrl = URL.createObjectURL(blob);
-                    setVoiceDraft({ blob, objectUrl, mime });
+                    setVoiceDraft({ blob, objectUrl, mime, uploaded: null });
+                } else {
+                    toast.error("ভয়েস রেকর্ড হয়নি — অনুগ্রহ করে একটু সময় নিয়ে বলুন এবং আবার চেষ্টা করুন");
                 }
                 setIsRecordingVoice(false);
             };
@@ -453,9 +677,15 @@ export default function SocialInboxWorkspace() {
             recordTimerRef.current = setInterval(() => {
                 setRecordingSec((s) => s + 1);
             }, 1000);
-        } catch {
+        } catch (err) {
             stopStreamTracks();
-            toast.error("মাইক্রোফোনের অনুমতি (Permission) পাওয়া যায়নি");
+            if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+                toast.error("ডিভাইসে কোনো মাইক্রোফোন পাওয়া যায়নি");
+            } else if (err?.name === "NotReadableError" || err?.name === "TrackStartError") {
+                toast.error("মাইক্রোফোন অন্য অ্যাপে ব্যবহৃত হচ্ছে — সেটি বন্ধ করে আবার চেষ্টা করুন");
+            } else {
+                toast.error("মাইক্রোফোনের অনুমতি (Permission) পাওয়া যায়নি");
+            }
         }
     };
 
@@ -484,35 +714,54 @@ export default function SocialInboxWorkspace() {
     };
 
     const handleSendVoiceDraft = async () => {
-        if (!voiceDraft?.blob || !selectedId) return;
+        if (!voiceDraft?.blob || !selectedId || isUploadingMedia || isSendingReply) return;
         setIsUploadingMedia(true);
         try {
-            const ext = voiceDraft.mime?.includes("mp4") ? "m4a" : voiceDraft.mime?.includes("ogg") ? "ogg" : "webm";
-            const file = new File([voiceDraft.blob], `voice-${Date.now()}.${ext}`, {
-                type: voiceDraft.mime || "audio/webm",
-            });
-            const form = new FormData();
-            form.append("file", file);
-            form.append("kind", "AUDIO");
+            let uploaded = voiceDraft.uploaded;
+            if (!uploaded?.url) {
+                const ext = voiceDraft.mime?.includes("mp4")
+                    ? "m4a"
+                    : voiceDraft.mime?.includes("ogg")
+                    ? "ogg"
+                    : "webm";
+                const file = new File([voiceDraft.blob], `voice-${Date.now()}.${ext}`, {
+                    type: voiceDraft.mime || "audio/webm",
+                });
+                const form = new FormData();
+                form.append("file", file);
+                form.append("kind", "AUDIO");
 
-            const upRes = await fetch("/api/admin/inbox/media/upload", {
-                method: "POST",
-                body: form,
-            });
-            const upData = await upRes.json();
-            if (!upData.ok) {
-                toast.error(upData.message || "ভয়েস আপলোড ব্যর্থ হয়েছে");
-                return;
+                const upRes = await fetch("/api/admin/inbox/media/upload", {
+                    method: "POST",
+                    body: form,
+                });
+                const upData = await upRes.json();
+                if (!upData.ok) {
+                    toast.error(upData.message || "ভয়েস আপলোড ব্যর্থ হয়েছে");
+                    return;
+                }
+                uploaded = {
+                    url: upData.url,
+                    publicId: upData.publicId,
+                    resourceType: upData.resourceType,
+                };
+                setVoiceDraft((prev) => (prev ? { ...prev, uploaded } : prev));
             }
 
-            if (voiceDraft.objectUrl) URL.revokeObjectURL(voiceDraft.objectUrl);
-            setVoiceDraft(null);
-            await handleSendReply("", {
-                url: upData.url,
-                mediaType: "AUDIO",
-                publicId: upData.publicId,
-                resourceType: upData.resourceType,
-            });
+            const sent = await handleSendReply(
+                "",
+                {
+                    url: uploaded.url,
+                    mediaType: "AUDIO",
+                    publicId: uploaded.publicId,
+                    resourceType: uploaded.resourceType,
+                },
+                { forcePrivate: activeConv?.channel === "FB_COMMENT" }
+            );
+            if (sent) {
+                if (voiceDraft.objectUrl) URL.revokeObjectURL(voiceDraft.objectUrl);
+                setVoiceDraft(null);
+            }
         } catch {
             toast.error("ভয়েস পাঠাতে সমস্যা হয়েছে");
         } finally {
@@ -1423,83 +1672,201 @@ export default function SocialInboxWorkspace() {
                                     const isAudio =
                                         displayMediaUrl &&
                                         (msg.messageType === "AUDIO" ||
-                                            /\.(mp3|ogg|wav|m4a|webm)(\?|$)/i.test(displayMediaUrl));
+                                            /\.(mp3|ogg|wav|m4a|aac|opus|webm)(\?|$)/i.test(displayMediaUrl) ||
+                                            /audioclip/i.test(displayMediaUrl));
                                     const isVideo = displayMediaUrl && msg.messageType === "VIDEO";
                                     const isGenericMediaPlaceholder =
-                                        (Boolean(displayMediaUrl) || msg.messageType === "IMAGE") &&
+                                        (Boolean(displayMediaUrl) ||
+                                            msg.messageType === "IMAGE" ||
+                                            msg.messageType === "AUDIO") &&
                                         /^\[(image|audio|voice message|video|attachment|ছবি পাঠানো হয়েছে)\]$/i.test(
                                             String(msg.body || "").trim()
                                         );
+                                    const isEditingThisMsg = editingMessageId === msg.id;
+                                    const isDeletingThisMsg = deletingMessageId === msg.id;
+                                    const isLiveFbCommentMsg =
+                                        activeConv.channel === "FB_COMMENT" &&
+                                        isOutbound &&
+                                        Boolean(msg.metadata?.isPublicCommentReply);
                                     return (
                                         <div
                                             key={msg.id}
-                                            className={`flex flex-col ${
+                                            className={`group flex flex-col ${
                                                 isOutbound ? "items-end" : "items-start"
                                             }`}
                                         >
                                             <div
-                                                className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap break-words ${
-                                                    isOutbound
-                                                        ? `${outboundTone} rounded-br-sm shadow-sm`
-                                                        : "bg-white text-gray-800 border border-gray-200/90 rounded-bl-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                                                className={`flex items-end gap-1.5 max-w-[92%] ${
+                                                    isOutbound ? "flex-row-reverse" : "flex-row"
                                                 }`}
                                             >
-                                                {displayMediaUrl && isAudio && (
-                                                    <div className="space-y-1">
-                                                        <div className="flex items-center gap-1.5 text-[11px] font-semibold opacity-90">
-                                                            <Volume2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                                                            <span>Voice Message</span>
+                                                <div
+                                                    className={`rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap break-words ${
+                                                        isOutbound
+                                                            ? `${outboundTone} rounded-br-sm shadow-sm`
+                                                            : "bg-white text-gray-800 border border-gray-200/90 rounded-bl-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                                                    }`}
+                                                >
+                                                    {displayMediaUrl && isAudio && (
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-1.5 text-[11px] font-semibold opacity-90">
+                                                                <Volume2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                                                <span>Voice Message</span>
+                                                            </div>
+                                                            <audio
+                                                                controls
+                                                                preload="metadata"
+                                                                src={displayMediaUrl}
+                                                                className="w-60 sm:w-64 max-w-full h-9 rounded-lg"
+                                                            />
                                                         </div>
-                                                        <audio
+                                                    )}
+                                                    {!displayMediaUrl && msg.messageType === "AUDIO" && (
+                                                        <div
+                                                            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg mb-1 border ${
+                                                                isOutbound
+                                                                    ? "bg-white/15 border-white/25 text-white/95"
+                                                                    : "bg-slate-50 border-slate-200 text-slate-600"
+                                                            }`}
+                                                        >
+                                                            <Volume2 className="w-3.5 h-3.5 shrink-0 opacity-80" aria-hidden="true" />
+                                                            <span>Voice Message (অডিও পাওয়া যায়নি)</span>
+                                                        </div>
+                                                    )}
+                                                    {displayMediaUrl && isVideo && (
+                                                        <video
                                                             controls
                                                             preload="metadata"
                                                             src={displayMediaUrl}
-                                                            className="w-60 sm:w-64 max-w-full h-9 rounded-lg"
+                                                            className="rounded-lg max-h-56 w-auto mb-1.5 bg-black"
                                                         />
-                                                    </div>
-                                                )}
-                                                {displayMediaUrl && isVideo && (
-                                                    <video
-                                                        controls
-                                                        preload="metadata"
-                                                        src={displayMediaUrl}
-                                                        className="rounded-lg max-h-56 w-auto mb-1.5 bg-black"
-                                                    />
-                                                )}
-                                                {displayMediaUrl && !isAudio && !isVideo && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setLightboxImage(displayMediaUrl)}
-                                                        title="সাময়িক প্রিভিউ (ডাটাবেসে সেভ নেই) — বড় করে দেখতে ক্লিক করুন"
-                                                        className="group relative block rounded-lg overflow-hidden mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-                                                    >
-                                                        <img
+                                                    )}
+                                                    {displayMediaUrl && !isAudio && !isVideo && (
+                                                        <ChatImageAttachment
                                                             src={displayMediaUrl}
-                                                            alt="Chat attachment"
-                                                            width={320}
-                                                            height={240}
-                                                            loading="lazy"
-                                                            className="rounded-lg max-h-56 w-auto object-cover outline outline-1 outline-black/10 -outline-offset-1 transition-transform duration-150 group-hover:scale-[1.01]"
+                                                            isOutbound={isOutbound}
+                                                            onOpen={() => setLightboxImage(displayMediaUrl)}
                                                         />
-                                                        <span className="absolute bottom-1.5 right-1.5 p-1 rounded-md bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" />
-                                                        </span>
-                                                    </button>
-                                                )}
-                                                {!displayMediaUrl && msg.messageType === "IMAGE" && (
-                                                    <div
-                                                        className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg mb-1 border ${
-                                                            isOutbound
-                                                                ? "bg-white/15 border-white/25 text-white/95"
-                                                                : "bg-slate-50 border-slate-200 text-slate-600"
-                                                        }`}
-                                                    >
-                                                        <ImagePlus className="w-3.5 h-3.5 shrink-0 opacity-80" aria-hidden="true" />
-                                                        <span>সাময়িক ছবি (সার্ভারে সেভ করা হয়নি)</span>
+                                                    )}
+                                                    {!displayMediaUrl && msg.messageType === "IMAGE" && (
+                                                        <div
+                                                            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg mb-1 border ${
+                                                                isOutbound
+                                                                    ? "bg-white/15 border-white/25 text-white/95"
+                                                                    : "bg-slate-50 border-slate-200 text-slate-600"
+                                                            }`}
+                                                        >
+                                                            <ImagePlus className="w-3.5 h-3.5 shrink-0 opacity-80" aria-hidden="true" />
+                                                            <span>সাময়িক ছবি (সার্ভারে সেভ করা হয়নি)</span>
+                                                        </div>
+                                                    )}
+                                                    {isEditingThisMsg ? (
+                                                        <div className="space-y-1.5 min-w-[210px] sm:min-w-[260px]">
+                                                            <textarea
+                                                                rows={2}
+                                                                value={editingMessageText}
+                                                                onChange={(e) => setEditingMessageText(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === "Enter" && !e.shiftKey) {
+                                                                        e.preventDefault();
+                                                                        handleSaveEditMessage(msg.id);
+                                                                    } else if (e.key === "Escape") {
+                                                                        setEditingMessageId(null);
+                                                                        setEditingMessageText("");
+                                                                    }
+                                                                }}
+                                                                className="w-full text-xs sm:text-sm rounded-lg p-2 bg-white text-gray-900 border border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-y"
+                                                                autoFocus
+                                                            />
+                                                            <div className="flex items-center justify-between gap-2 text-[10px]">
+                                                                <span className={isOutbound ? "text-white/80" : "text-gray-500"}>
+                                                                    {isLiveFbCommentMsg
+                                                                        ? "Facebook কমেন্টেও এডিট হবে"
+                                                                        : "শুধু ড্যাশবোর্ডে এডিট হবে"}
+                                                                </span>
+                                                                <div className="flex items-center gap-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setEditingMessageId(null);
+                                                                            setEditingMessageText("");
+                                                                        }}
+                                                                        disabled={isSavingMessageEdit}
+                                                                        className="px-2 py-1 rounded bg-black/20 hover:bg-black/30 text-white font-medium"
+                                                                    >
+                                                                        বাতিল
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSaveEditMessage(msg.id)}
+                                                                        disabled={isSavingMessageEdit || !editingMessageText.trim()}
+                                                                        className="px-2 py-1 rounded bg-white text-emerald-700 hover:bg-emerald-50 font-semibold inline-flex items-center gap-1 disabled:opacity-50"
+                                                                    >
+                                                                        {isSavingMessageEdit ? (
+                                                                            <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+                                                                        ) : (
+                                                                            <Check className="w-3 h-3" aria-hidden="true" />
+                                                                        )}
+                                                                        সেভ
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        msg.body &&
+                                                        !isGenericMediaPlaceholder && (
+                                                            <p className="leading-relaxed">{msg.body}</p>
+                                                        )
+                                                    )}
+                                                </div>
+
+                                                {!isEditingThisMsg && (
+                                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
+                                                        {!isGenericMediaPlaceholder && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleStartEditMessage(msg)}
+                                                                title={
+                                                                    isLiveFbCommentMsg
+                                                                        ? "কমেন্ট এডিট করুন (Facebook-এও আপডেট হবে)"
+                                                                        : "মেসেজ এডিট করুন (শুধু ড্যাশবোর্ড)"
+                                                                }
+                                                                aria-label="মেসেজ এডিট করুন"
+                                                                className="p-1 rounded-md text-gray-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                                                            >
+                                                                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                                                            </button>
+                                                        )}
+                                                        {isOutbound && !isLiveFbCommentMsg && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCorrectionReply(msg)}
+                                                                title="ভুল সংশোধন করে কাস্টমারকে নতুন মেসেজ পাঠান"
+                                                                aria-label="সংশোধন পাঠান"
+                                                                className="p-1 rounded-md text-gray-400 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
+                                                            >
+                                                                <MessageSquareReply className="w-3.5 h-3.5" aria-hidden="true" />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteMessage(msg)}
+                                                            disabled={isDeletingThisMsg}
+                                                            title={
+                                                                isLiveFbCommentMsg
+                                                                    ? "কমেন্ট ডিলিট করুন (Facebook থেকেও মুছবে)"
+                                                                    : "ড্যাশবোর্ড থেকে ডিলিট করুন"
+                                                            }
+                                                            aria-label="মেসেজ ডিলিট করুন"
+                                                            className="p-1 rounded-md text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                                                        >
+                                                            {isDeletingThisMsg ? (
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                                                            ) : (
+                                                                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                                                            )}
+                                                        </button>
                                                     </div>
-                                                )}
-                                                {msg.body && !isGenericMediaPlaceholder && (
-                                                    <p className="leading-relaxed">{msg.body}</p>
                                                 )}
                                             </div>
                                             <span className="text-[10px] text-gray-400 mt-1 px-1 flex items-center gap-1 tabular-nums">
@@ -1520,6 +1887,9 @@ export default function SocialInboxWorkspace() {
                                                 {msg.senderType === "CUSTOMER" && activeConv.customerName}
                                                 {" · "}
                                                 {formatShortTime(msg.createdAt)}
+                                                {msg.metadata?.editedAt && (
+                                                    <span className="text-gray-400 italic ml-0.5">(সম্পাদিত)</span>
+                                                )}
                                             </span>
                                         </div>
                                     );
@@ -1529,6 +1899,50 @@ export default function SocialInboxWorkspace() {
 
                             {/* Reply Input Box + Quick Replies + Voice + Image */}
                             <div className="p-3 border-t border-gray-200 bg-white space-y-2 shrink-0">
+                                {undoSendState && (
+                                    <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600 shrink-0" aria-hidden="true" />
+                                            <span className="truncate font-medium">
+                                                {undoSendState.secondsLeft} সেকেন্ডে পাঠানো হচ্ছে:{" "}
+                                                <span className="font-normal text-amber-800">
+                                                    {undoSendState.text
+                                                        ? `"${undoSendState.text.slice(0, 50)}${undoSendState.text.length > 50 ? "…" : ""}"`
+                                                        : "[মিডিয়া]"}
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={handleUndoQueuedSend}
+                                                className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 font-semibold inline-flex items-center gap-1"
+                                            >
+                                                <RotateCcw className="w-3 h-3" aria-hidden="true" />
+                                                বাতিল / এডিট
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleSendQueuedNow}
+                                                className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 font-semibold"
+                                            >
+                                                এখনই পাঠান
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                {activeConv.channel === "MESSENGER" &&
+                                    activeConv.lastCustomerMessageAt &&
+                                    Date.now() - new Date(activeConv.lastCustomerMessageAt).getTime() >
+                                        24 * 60 * 60 * 1000 && (
+                                        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800">
+                                            <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-600" aria-hidden="true" />
+                                            <span>
+                                                কাস্টমারের শেষ মেসেজের ২৪ ঘণ্টা পার হয়েছে — Meta নীতিমালা অনুযায়ী API থেকে ভয়েস/মেসেজ নাও যেতে পারে।
+                                            </span>
+                                        </div>
+                                    )}
+
                                 <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
                                     {QUICK_REPLIES.map((qr) => (
                                         <button
@@ -1713,7 +2127,7 @@ export default function SocialInboxWorkspace() {
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter" && !e.shiftKey) {
                                                 e.preventDefault();
-                                                handleSendReply();
+                                                handleQueueOrSendReply();
                                             }
                                         }}
                                         placeholder={`${activeConvMeta?.label || "Inbox"}-এ রিপ্লাই লিখুন… (Enter চাপলে সেন্ড)`}
@@ -1721,7 +2135,7 @@ export default function SocialInboxWorkspace() {
                                     />
                                     <button
                                         type="button"
-                                        onClick={() => handleSendReply()}
+                                        onClick={() => handleQueueOrSendReply()}
                                         disabled={isSendingReply || isUploadingMedia || (!replyText.trim() && !pendingMedia)}
                                         className="h-[70px] px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 touch-manipulation transition-[background-color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                     >
