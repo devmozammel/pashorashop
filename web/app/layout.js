@@ -8,7 +8,7 @@ import FacebookPixel from "@/components/analytics/FacebookPixel";
 import TikTokPixel from "@/components/analytics/TikTokPixel";
 import AffiliateTracker from "@/components/analytics/AffiliateTracker";
 import { prisma } from "@/lib/prisma";
-import WhatsAppButton from "@/components/storefront/WhatsAppButton";
+import ChatButtons from "@/components/storefront/ChatButtons";
 import Script from "next/script";
 import { Suspense } from "react";
 import NextTopLoader from "nextjs-toploader";
@@ -229,7 +229,7 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
                     {children}
 
                     {/* User Engagement Utilities */}
-                    <WhatsAppButton waNumber={whatsappNumber} />
+                    <ChatButtons waNumber={whatsappNumber} />
                     <ScrollToTop />
 
                     <Toaster position="top-right" richColors />
