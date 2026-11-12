@@ -1,75 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 
-function ChatTab({ href, logoSrc, logoAlt, label, sublabel, pingColor, delay }) {
-    const [hovered, setHovered] = useState(false);
-
-    return (
-        <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={label}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            onTouchStart={() => setHovered(true)}
-            onTouchEnd={() => setTimeout(() => setHovered(false), 1200)}
-            style={{ transitionDelay: hovered ? "0ms" : delay }}
-            className="flex items-center group select-none"
-        >
-            {/* Slide-out label — appears on hover, slides from right edge */}
-            <div
-                className={`flex flex-col items-end justify-center pr-2 pl-3 py-1.5 rounded-l-xl
-                    bg-white border border-r-0 border-gray-200
-                    shadow-[−2px_2px_12px_rgba(0,0,0,0.10)]
-                    overflow-hidden whitespace-nowrap
-                    transition-all duration-300 ease-out
-                    ${hovered ? "max-w-[130px] opacity-100" : "max-w-0 opacity-0 px-0"}`}
-            >
-                <span className="text-[11px] font-bold text-gray-800 leading-tight">{label}</span>
-                <span className="text-[9px] text-gray-500 leading-tight">{sublabel}</span>
-            </div>
-
-            {/* Logo card — always visible, sticks to right edge */}
-            <div
-                className={`relative flex items-center justify-center
-                    w-11 h-11 rounded-l-xl bg-white overflow-hidden
-                    border border-r-0 border-gray-200
-                    shadow-[-3px_2px_14px_rgba(0,0,0,0.13)]
-                    transition-transform duration-300 ease-out
-                    ${hovered ? "-translate-x-0.5 scale-105" : "translate-x-0"}`}
-            >
-                <Image
-                    src={logoSrc}
-                    alt={logoAlt}
-                    width={36}
-                    height={36}
-                    className="w-9 h-9 object-contain"
-                />
-                {/* Subtle ping dot in top-left corner */}
-                <span
-                    className="absolute top-1 left-1 flex h-2 w-2"
-                    style={{ opacity: hovered ? 0 : 1, transition: "opacity 200ms" }}
-                >
-                    <span
-                        className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75`}
-                        style={{ backgroundColor: pingColor }}
-                    />
-                    <span
-                        className="relative inline-flex rounded-full h-2 w-2"
-                        style={{ backgroundColor: pingColor }}
-                    />
-                </span>
-            </div>
-        </a>
-    );
-}
-
 export default function ChatButtons({ waNumber: propWaNumber }) {
     const pathname = usePathname();
+    const [isOpen, setIsOpen] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
 
     // Resolve WhatsApp number
@@ -86,37 +23,101 @@ export default function ChatButtons({ waNumber: propWaNumber }) {
     const messengerLink = `https://m.me/pashorashop`;
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsVisible(true), 1500);
+        const timer = setTimeout(() => setIsVisible(true), 1200);
         return () => clearTimeout(timer);
     }, []);
+
+    useEffect(() => { setIsOpen(false); }, [pathname]);
 
     if (pathname?.startsWith("/admin")) return null;
 
     return (
         <div
-            className={`fixed right-0 z-50 flex flex-col gap-2 items-end
-                transition-all duration-700 ease-out
-                ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"}`}
-            style={{ bottom: "160px" }}
+            className={`fixed bottom-[160px] right-4 md:bottom-20 md:right-5 z-50 flex flex-col items-end gap-2.5
+                transition-all duration-500 ease-out
+                ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
         >
-            <ChatTab
+            {/* WhatsApp — logo only, no label */}
+            <a
                 href={waLink}
-                logoSrc="/whatsapp-logo.png"
-                logoAlt="WhatsApp"
-                label="হোয়াটসঅ্যাপ"
-                sublabel="সরাসরি চ্যাট করুন"
-                pingColor="#22c55e"
-                delay="60ms"
-            />
-            <ChatTab
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="হোয়াটসঅ্যাপে চ্যাট করুন"
+                className={`flex items-center justify-center w-11 h-11 rounded-full
+                    shadow-lg bg-white overflow-hidden
+                    transition-all duration-300 ease-out
+                    hover:scale-110 active:scale-95
+                    ${isOpen
+                        ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                        : "opacity-0 translate-y-4 scale-75 pointer-events-none"}`}
+                style={{ transitionDelay: isOpen ? "60ms" : "0ms" }}
+            >
+                <Image src="/whatsapp-logo.png" alt="WhatsApp" width={44} height={44} className="w-full h-full object-cover" />
+            </a>
+
+            {/* Messenger — logo only, no label */}
+            <a
                 href={messengerLink}
-                logoSrc="/messenger-logo.png"
-                logoAlt="Messenger"
-                label="মেসেঞ্জার"
-                sublabel="ইনবক্স করুন"
-                pingColor="#a855f7"
-                delay="0ms"
-            />
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="মেসেঞ্জারে ইনবক্স করুন"
+                className={`flex items-center justify-center w-11 h-11 rounded-full
+                    shadow-lg bg-white overflow-hidden
+                    transition-all duration-300 ease-out
+                    hover:scale-110 active:scale-95
+                    ${isOpen
+                        ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                        : "opacity-0 translate-y-4 scale-75 pointer-events-none"}`}
+                style={{ transitionDelay: isOpen ? "0ms" : "0ms" }}
+            >
+                <Image src="/messenger-logo.png" alt="Messenger" width={44} height={44} className="w-full h-full object-cover" />
+            </a>
+
+            {/* ── Toggle Button (Unique: both logos overlapping inside) ── */}
+            <button
+                onClick={() => setIsOpen((p) => !p)}
+                aria-label={isOpen ? "বন্ধ করুন" : "যোগাযোগ করুন"}
+                className={`relative flex items-center justify-center w-12 h-12 rounded-2xl
+                    shadow-xl transition-all duration-300 ease-out
+                    hover:scale-105 active:scale-95
+                    ${isOpen ? "bg-gray-800 rotate-[360deg]" : "bg-gray-900"}`}
+                style={{ transition: "background-color 300ms, transform 400ms cubic-bezier(0.34,1.56,0.64,1)" }}
+            >
+                {/* Closed state: two logos overlapping (the unique design) */}
+                <div
+                    className={`absolute inset-0 flex items-center justify-center
+                        transition-all duration-250
+                        ${isOpen ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                >
+                    {/* WA logo — top-left, slightly bigger */}
+                    <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full overflow-hidden ring-[1.5px] ring-gray-900 shadow">
+                        <Image src="/whatsapp-logo.png" alt="" width={24} height={24} className="w-full h-full object-cover" />
+                    </div>
+                    {/* Messenger logo — bottom-right, slightly smaller */}
+                    <div className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full overflow-hidden ring-[1.5px] ring-gray-900 shadow">
+                        <Image src="/messenger-logo.png" alt="" width={20} height={20} className="w-full h-full object-cover" />
+                    </div>
+                </div>
+
+                {/* Open state: X icon */}
+                <div
+                    className={`absolute inset-0 flex items-center justify-center
+                        transition-all duration-250
+                        ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-50"}`}
+                >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                    </svg>
+                </div>
+
+                {/* Red notification dot (only when closed) */}
+                {!isOpen && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                    </span>
+                )}
+            </button>
         </div>
     );
 }
