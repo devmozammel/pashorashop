@@ -63,7 +63,9 @@ export default function AbandonedCartsPage() {
         } else if (cleanPhone.startsWith("1") && cleanPhone.length === 10) {
             cleanPhone = "880" + cleanPhone;
         }
-        const message = encodeURIComponent(`হাই ${nameInput}! আপনি authenticbazar.shop এ কিছু প্রোডাক্ট অর্ডার করার চেষ্টা করছিলেন কিন্তু অর্ডারটি সম্পূর্ণ করেননি। আপনার কোনো সাহায্য লাগবে কি? অর্ডারটি সম্পূর্ণ করতে চাইলে আমাদের জানাতে পারেন। ধন্যবাদ!`);
+        const message = encodeURIComponent(`আসসালামু আলাইকুম ${nameInput || "স্যার/ম্যাম"}! আপনি Pashora Shop (pashorashop.com) থেকে আপনার পছন্দের পণ্যটি অর্ডার করার চেষ্টা করছিলেন, কিন্তু হয়তো কোনো কারণে অর্ডারটি সম্পন্ন করতে পারেননি। 
+
+আপনাকে একটি বিশেষ ছাড় বা ফ্রি হোম ডেলিভারি সুবিধার মাধ্যমে অর্ডারটি সম্পন্ন করতে সাহায্য করতে চাই। আপনি কি পণ্যটি নিতে আগ্রহী? আমাদের জানালে এখনই কনফার্ম করে দিচ্ছি। ধন্যবাদ!`);
         return `https://wa.me/${cleanPhone}?text=${message}`;
     };
 
